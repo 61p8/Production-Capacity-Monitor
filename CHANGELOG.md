@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
+  month labels, Calculate) and a **Results** tab (chart, table, overflow alerts). Calculate jumps
+  to Results automatically; snapshots open on Results with Setup hidden. The active tab is
+  remembered between sessions.
 - **OT days per step.** Each step now has a separate "OT days" field so OT can be applied to only
   some of the work days instead of all of them: `target = [ WD×hrs/shift + OT_days×OT_normal +
   HD×(hrs/shift + Holiday OT) ] × shifts`. Legacy configs without the field fall back to OT_days = WD.

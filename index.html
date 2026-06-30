@@ -240,6 +240,12 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 #notesTails .tail-edge { fill: none; stroke: #888780; stroke-width: 1; stroke-linejoin: miter; stroke-miterlimit: 10; }
 #notesTails .tail-tip { fill: transparent; stroke: transparent; cursor: move; pointer-events: auto; }
 #notesTails .tail-tip:hover { fill: rgba(95,79,14,0.15); stroke: rgba(95,79,14,0.5); stroke-width: 1; stroke-dasharray: 2,2; }
+.main-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #E5E3DB; position: sticky; top: var(--header-h, 0); background: #FAFAF7; z-index: 40; }
+.main-tabs button { background: none; border: none; padding: 11px 22px; font-size: 14px; font-family: inherit; color: #5F5E5A; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+.main-tabs button.active { color: #1D9E75; border-bottom-color: #1D9E75; }
+.main-tabs button:hover:not(.active) { color: #2C2C2A; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 </style>
 </head>
 <body>
@@ -293,6 +299,12 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     <span id="snapshotMetaText" style="color:#5F5E5A;"></span>
   </div>
 
+  <nav class="main-tabs" id="mainTabs">
+    <button data-tab="setup" class="active"><span>⚙️</span><span data-i18n="tab_setup">Setup</span></button>
+    <button data-tab="results"><span>📊</span><span data-i18n="tab_results">Results</span></button>
+  </nav>
+
+  <div class="tab-panel active" data-panel="setup">
   <div class="section" id="uploadSection">
     <h2>
       <span class="step-num">1</span><span data-i18n="sec_upload">Upload files</span>
@@ -435,7 +447,9 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <button class="btn-secondary btn" id="saveSettingsBtn" data-i18n="btn_save_settings">Save settings</button>
     </div>
   </div>
+  </div><!-- /tab-panel setup -->
 
+  <div class="tab-panel" data-panel="results">
   <div class="section" id="resultsSection" style="display:none">
     <h2>
       <span class="step-num">4</span><span data-i18n="sec_results">Results</span>
@@ -501,6 +515,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     </h2>
     <div class="alert-list" id="alertList"></div>
   </div>
+  </div><!-- /tab-panel results -->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -511,6 +526,7 @@ const I18N = {
   en: {
     app_title:'Capacity Planning Tool', app_subtitle:'Compare line demand vs capacity', clear_all:'Clear all', clear_datasets:'Clear datasets',
     sec_upload:'Upload files', sec_preview:'Verify parsed data', sec_settings:'Settings', sec_results:'Results', sec_alerts:'Overflow alerts',
+    tab_setup:'Setup', tab_results:'Results',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
     dl_master_tpl:'Download Master template', dl_monthly_tpl:'Download Monthly template',
@@ -574,6 +590,7 @@ const I18N = {
   th: {
     app_title:'Capacity Planning Tool', app_subtitle:'เช็คความสามารถของไลน์ผลิต — เปรียบเทียบยอดสั่ง vs capacity', clear_all:'ล้างทั้งหมด', clear_datasets:'ล้าง Datasets',
     sec_upload:'อัปโหลดไฟล์', sec_preview:'ตรวจสอบข้อมูลที่อ่านได้', sec_settings:'ตั้งค่า', sec_results:'ผลลัพธ์', sec_alerts:'การล้น',
+    tab_setup:'ตั้งค่า', tab_results:'ผลลัพธ์',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
     dl_master_tpl:'ดาวน์โหลด Template Master', dl_monthly_tpl:'ดาวน์โหลด Template Monthly',
@@ -637,6 +654,7 @@ const I18N = {
   jp: {
     app_title:'Capacity Planning Tool', app_subtitle:'ライン能力チェック', clear_all:'全クリア', clear_datasets:'データセットクリア',
     sec_upload:'ファイルアップロード', sec_preview:'解析データ確認', sec_settings:'設定', sec_results:'結果', sec_alerts:'オーバーフロー',
+    tab_setup:'設定', tab_results:'結果',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
     dl_master_tpl:'マスターテンプレートDL', dl_monthly_tpl:'月次テンプレートDL',
@@ -3644,6 +3662,11 @@ function applySnapshotMode() {
   // (results are pre-computed snapshot; tweaking would invalidate them)
   $('settingsSection').style.display = 'none';
 
+  // Snapshot is a frozen view — drop the Setup tab and show only Results.
+  const setupTabBtn = document.querySelector('#mainTabs button[data-tab="setup"]');
+  if (setupTabBtn) setupTabBtn.style.display = 'none';
+  switchTab('results');
+
   // Hide preview section (already shown in compact form via banner)
   $('previewSection').style.display = 'none';
 
@@ -3809,6 +3832,19 @@ function setupCollapsibleSections() {
   }
 }
 
+// ===== Top-level tabs (Setup / Results) =====
+function switchTab(name) {
+  document.querySelectorAll('#mainTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  if (!state.isSnapshot) saveStorage({ activeTab: name });
+}
+
+function setupTabs() {
+  document.querySelectorAll('#mainTabs button').forEach(b => {
+    b.onclick = () => switchTab(b.dataset.tab);
+  });
+}
+
 function setupEvents() {
   // Start/End year dropdowns + sensible current-month defaults.
   setupRangeYearOptions();
@@ -3837,7 +3873,8 @@ function setupEvents() {
     if (result) for (const proc of getProcesses()) if (result.byProcess[proc].lines.length > 0) { state.currentTab = proc; break; }
     renderResults();
     toast(t('calc_done'), 'success');
-    $('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    switchTab('results');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   $('balanceBtn').onclick = () => {
@@ -4016,6 +4053,7 @@ function init() {
   setupEvents();
   setupUpload();
   setupCollapsibleSections();
+  setupTabs();
 
   // Try snapshot mode first
   const isSnapshot = loadSnapshotIfPresent();
@@ -4038,6 +4076,8 @@ function init() {
     loadSavedMaster();
     loadSavedDatasets();
     loadSavedNotes();
+    const savedTab = loadStorage().activeTab;
+    if (savedTab === 'results' && state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) switchTab('results');
   }
 
   // Restore visual state for view toggle (process tabs are rendered dynamically by renderProcessTabs)
