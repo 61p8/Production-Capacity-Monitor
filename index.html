@@ -1,0 +1,3824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capacity Planning Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Set', 'IBM Plex Sans Thai', 'Hiragino Sans', sans-serif; background: #F5F4F0; color: #2C2C2A; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+.container { max-width: 1500px; margin: 0 auto; padding: 16px 24px 80px; }
+.app-header { background: white; border: 1px solid #E5E3DB; border-left: 4px solid #1D9E75; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; position: sticky; top: 0; z-index: 50; transition: padding 0.18s ease, border-radius 0.18s ease; }
+.app-header.compact { padding: 6px 16px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.app-header.compact h1 { font-size: 14px; line-height: 1.2; }
+.app-header.compact .subtitle { display: none; }
+.app-header.compact .btn-small { padding: 3px 8px; font-size: 11px; }
+.app-header.compact .lang-btn { padding: 3px 8px; font-size: 11px; }
+.app-header.compact .lang-selector { padding: 2px; }
+.app-header h1 { font-size: 20px; font-weight: 500; }
+.app-header .subtitle { font-size: 12px; color: #5F5E5A; }
+.section-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.lang-selector { display: flex; gap: 4px; background: #F5F4F0; padding: 3px; border-radius: 6px; }
+.lang-btn { background: transparent; color: #5F5E5A; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; font-family: inherit; }
+.lang-btn:hover { color: #2C2C2A; }
+.lang-btn.active { background: white; color: #1D9E75; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.section { background: white; border: 1px solid #E5E3DB; border-radius: 8px; padding: 18px 22px; margin-bottom: 14px; }
+.section.collapsed { padding: 12px 22px; }
+.section.collapsed h2 { margin-bottom: 0; }
+.section.collapsed > *:not(h2) { display: none !important; }
+.section h2 .collapse-toggle { margin-left: auto; cursor: pointer; padding: 4px 8px; border-radius: 4px; background: transparent; border: 1px solid transparent; font-size: 13px; color: #5F5E5A; user-select: none; transition: transform 0.18s, background 0.15s; flex-shrink: 0; line-height: 1; }
+.section h2 .collapse-toggle:hover { background: #F5F4F0; border-color: #E5E3DB; }
+.section.collapsed h2 .collapse-toggle { transform: rotate(-90deg); }
+.section h2 { font-size: 16px; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.section h2 .step-num { background: #1D9E75; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.badge-status { font-size: 11px; padding: 3px 10px; border-radius: 10px; background: #EAF3DE; color: #173404; font-weight: 500; }
+.badge-status.warn { background: #FAEEDA; color: #412402; }
+.badge-status.danger { background: #FCEBEB; color: #501313; }
+.badge-status.info { background: #E6F1FB; color: #0C447C; }
+
+.upload-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 14px; }
+.upload-zone { border: 2px dashed #B4B2A9; border-radius: 8px; padding: 22px 20px; text-align: center; cursor: pointer; transition: all 0.15s; background: #FAFAF7; user-select: none; position: relative; }
+.upload-zone:hover { border-color: #1D9E75; background: #F0F8F4; }
+.upload-zone.drag-over { border-color: #1D9E75; background: #E1F5EE; transform: scale(1.01); }
+.upload-zone.has-file { border-color: #1D9E75; border-style: solid; background: #F0F8F4; }
+.upload-icon { font-size: 26px; margin-bottom: 6px; }
+.upload-title { font-weight: 500; margin-bottom: 4px; }
+.upload-status { font-size: 12px; color: #5F5E5A; word-break: break-all; }
+.upload-zone.has-file .upload-status { color: #0F6E56; font-weight: 500; }
+.tpl-link { font-size: 11px; color: #185FA5; text-decoration: none; cursor: pointer; }
+.tpl-link:hover { text-decoration: underline; }
+
+.monthly-multi { display: flex; flex-direction: column; gap: 10px; }
+.monthly-multi-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.monthly-multi-header .title { font-size: 13px; font-weight: 500; }
+.dataset-list { display: flex; flex-direction: column; gap: 6px; }
+.dataset-item { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.dataset-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; color: #fff; font-weight: 500; min-width: 36px; text-align: center; }
+.dataset-name-input { flex: 1; border: none; background: transparent; font-size: 13px; font-weight: 500; font-family: inherit; outline: none; padding: 2px 4px; border-radius: 3px; }
+.dataset-name-input:focus { background: white; box-shadow: 0 0 0 1px #1D9E75; }
+.dataset-meta { font-size: 11px; color: #5F5E5A; }
+.dataset-remove { color: #5F5E5A; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; user-select: none; }
+.dataset-remove:hover { background: #FCEBEB; color: #791F1F; }
+.add-dataset-zone { border: 2px dashed #B4B2A9; border-radius: 6px; padding: 10px 12px; text-align: center; cursor: pointer; transition: all 0.15s; background: #FAFAF7; font-size: 12px; color: #5F5E5A; }
+.add-dataset-zone:hover { border-color: #1D9E75; color: #0F6E56; background: #F0F8F4; }
+.add-dataset-zone.drag-over { border-color: #1D9E75; background: #E1F5EE; }
+
+.btn { background: #1D9E75; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.15s; font-family: inherit; }
+.btn:hover { background: #0F6E56; }
+.btn:disabled { background: #B4B2A9; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn-secondary { background: white; color: #1D9E75; border: 1px solid #1D9E75; }
+.btn-secondary:hover { background: #E1F5EE; color: #0F6E56; }
+.btn-warn { background: #BA7517; color: white; }
+.btn-warn:hover:not(:disabled) { background: #854F0B; }
+.btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.btn-small { padding: 4px 10px; font-size: 12px; background: white; color: #5F5E5A; border: 1px solid #B4B2A9; border-radius: 4px; cursor: pointer; font-family: inherit; }
+.btn-small:hover { background: #F5F4F0; }
+
+.preview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.preview-card { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 12px; }
+.preview-card h3 { font-size: 11px; font-weight: 500; color: #5F5E5A; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.preview-card .stat { font-size: 22px; font-weight: 500; }
+.preview-card .stat-detail { font-size: 11px; color: #5F5E5A; margin-top: 2px; }
+
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.setting-item { display: flex; flex-direction: column; gap: 4px; }
+.setting-item label { font-size: 11px; color: #5F5E5A; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+.setting-item input, .setting-item select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 7px 9px; font-size: 13px; background: white; font-family: inherit; }
+.setting-item input:focus, .setting-item select:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
+.setting-item input:disabled { background: #F5F4F0; color: #5F5E5A; }
+.help-text { font-size: 11px; color: #5F5E5A; margin-top: 8px; }
+.relabel-box { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
+.calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
+.cal-item { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 5px; padding: 8px 10px; }
+.cal-item.invalid { border-color: #F09595; background: #FEF5F5; }
+.cal-label-input { width: 100%; border: none; background: transparent; font-size: 13px; font-weight: 500; font-family: inherit; padding: 2px 4px; border-radius: 3px; }
+.cal-label-input:focus { background: white; outline: none; box-shadow: 0 0 0 1px #1D9E75; }
+.cal-orig { font-size: 10px; color: #888780; margin-top: 1px; }
+.cal-inputs { display: grid; gap: 6px; margin-top: 6px; }
+.cal-inputs label { font-size: 10px; color: #5F5E5A; }
+.cal-inputs input { width: 100%; border: 1px solid #D3D1C7; border-radius: 3px; padding: 3px 6px; font-size: 12px; font-family: inherit; }
+.cal-info { font-size: 10px; color: #5F5E5A; margin-top: 5px; }
+.cal-error { font-size: 10px; color: #791F1F; margin-top: 5px; font-weight: 500; }
+
+.tabs { display: flex; gap: 0; border-bottom: 2px solid #E5E3DB; margin-bottom: 14px; }
+.tab { padding: 8px 18px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-weight: 500; color: #5F5E5A; font-size: 13px; }
+.tab:hover { color: #2C2C2A; }
+.tab.active { color: #1D9E75; border-bottom-color: #1D9E75; }
+
+.view-toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.view-toggle-row .label { font-size: 12px; color: #5F5E5A; font-weight: 500; }
+.view-toggle { background: #F5F4F0; padding: 3px; border-radius: 6px; display: inline-flex; gap: 2px; }
+.view-toggle button { background: transparent; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; color: #5F5E5A; font-family: inherit; }
+.view-toggle button:hover { color: #2C2C2A; }
+.view-toggle button.active { background: white; color: #1D9E75; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.dataset-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.ds-chip { font-size: 11px; padding: 4px 10px; border-radius: 14px; cursor: pointer; font-weight: 500; border: 1px solid transparent; transition: all 0.15s; user-select: none; }
+.ds-chip.active { color: white; }
+.ds-chip:not(.active) { background: #F5F4F0; color: #5F5E5A; border-color: #E5E3DB; }
+.ds-chip:not(.active):hover { background: #E5E3DB; }
+
+.step-history { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; padding: 8px; background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; }
+.step-history .label { font-size: 11px; color: #5F5E5A; font-weight: 500; margin-right: 4px; }
+.step-chip { padding: 5px 12px; cursor: pointer; border: 1px solid #B4B2A9; border-radius: 14px; font-size: 12px; background: white; color: #5F5E5A; font-weight: 500; }
+.step-chip:hover { background: #F5F4F0; }
+.step-chip.active { background: #1D9E75; color: white; border-color: #1D9E75; }
+.step-chip.fail { border-color: #BA7517; color: #854F0B; }
+.step-chip.fail.active { background: #BA7517; color: white; border-color: #BA7517; }
+
+.line-filter { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0 12px; border-bottom: 1px solid #E5E3DB; margin-bottom: 12px; align-items: center; }
+.line-chip { font-size: 11px; padding: 3px 10px; border: 1px solid #B4B2A9; border-radius: 12px; cursor: pointer; user-select: none; color: #5F5E5A; background: white; }
+.line-chip.active { color: #2C2C2A; }
+.line-chip:not(.active) { opacity: 0.45; }
+
+.results-table-wrap { overflow-x: auto; margin-bottom: 18px; border: 1px solid #E5E3DB; border-radius: 6px; max-height: 500px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { padding: 5px 8px; text-align: center; border-right: 1px solid #E5E3DB; border-bottom: 1px solid #E5E3DB; white-space: nowrap; }
+th { background: #2C2C2A; color: white; font-weight: 500; font-size: 11px; position: sticky; top: 0; z-index: 10; }
+td.line-name, th.line-name { text-align: left; font-weight: 500; background: #F5F4F0; position: sticky; left: 0; z-index: 5; min-width: 200px; }
+th.line-name { background: #2C2C2A; color: white; z-index: 15; }
+th.ds-sub { background: #5F5E5A; font-size: 10px; padding: 3px 6px; }
+td.month-total { font-weight: 500; background: #F5F4F0; }
+.status-empty { color: #B4B2A9; }
+.status-ok { background: #EAF3DE; color: #173404; }
+.status-warn { background: #FAEEDA; color: #412402; }
+.status-over { background: #FCEBEB; color: #501313; font-weight: 500; }
+.diff-pos { background: #FCEBEB; color: #791F1F; font-weight: 500; }
+.diff-neg { background: #EAF3DE; color: #173404; font-weight: 500; }
+.diff-zero { color: #B4B2A9; }
+
+.chart-wrap { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 12px; position: relative; height: 440px; }
+.chart-toolbar { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #5F5E5A; }
+.chart-toolbar label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.chart-toolbar input[type="checkbox"] { cursor: pointer; }
+.chart-toolbar select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 4px 8px; font-size: 12px; background: white; font-family: inherit; }
+.chart-legend-mini { font-size: 11px; color: #5F5E5A; padding: 4px 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.chart-legend-mini .swatch { display: inline-block; width: 14px; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: middle; border: 1px solid #B4B2A9; box-sizing: border-box; }
+.chart-legend-mini .swatch.solid { background: #888780; }
+.chart-legend-mini .swatch.hatch { background: repeating-linear-gradient(45deg, #888780 0 3px, #FFF 3px 6px); }
+
+.balance-info { font-size: 12px; color: #5F5E5A; }
+.balance-error { font-size: 12px; color: #791F1F; font-weight: 500; }
+
+.alert-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+.alert-item { background: #FCEBEB; border-left: 3px solid #E24B4A; padding: 8px 12px; border-radius: 4px; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.alert-where { font-size: 12px; font-weight: 500; }
+.alert-detail { font-size: 12px; color: #5F5E5A; font-family: 'Menlo', 'Consolas', monospace; }
+.alert-ds-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; color: #fff; font-weight: 500; margin-right: 6px; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: #888780; }
+.empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; }
+.unmatched-list { font-size: 11px; color: #5F5E5A; max-height: 140px; overflow-y: auto; padding: 8px; background: #FAFAF7; border-radius: 4px; margin-top: 6px; line-height: 1.6; }
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #E5E3DB; border-top-color: #1D9E75; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: #2C2C2A; color: white; padding: 10px 18px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; max-width: 360px; z-index: 999; }
+.toast.show { opacity: 1; }
+.toast.success { background: #1D9E75; }
+.toast.error { background: #993C1D; }
+
+/* === Text Box (PPT-style) === */
+.text-box { position: absolute; padding: 6px; box-sizing: border-box; cursor: move; user-select: none; z-index: 100; }
+.text-box-content { width: 100%; height: 100%; padding: 4px 6px; box-sizing: border-box; outline: none; cursor: text; overflow: hidden; word-break: break-word; border: 1.5px solid #D3D1C7; border-radius: 3px; line-height: 1.45; color: #2C2C2A; }
+.text-box.selected .text-box-content { border-color: #185FA5; }
+.text-box-content:empty:before { content: attr(data-placeholder); color: #B4B2A9; font-style: italic; pointer-events: none; }
+.text-box-content ul { padding-left: 20px; margin: 4px 0; }
+.text-box-content ol { padding-left: 22px; margin: 4px 0; }
+.text-box-content b, .text-box-content strong { font-weight: 600; }
+.tb-handle { position: absolute; width: 8px; height: 8px; background: white; border: 1px solid #185FA5; box-sizing: border-box; display: none; z-index: 1; }
+.text-box.selected .tb-handle { display: block; }
+.tb-handle.nw { left: 2px; top: 2px; cursor: nwse-resize; }
+.tb-handle.ne { right: 2px; top: 2px; cursor: nesw-resize; }
+.tb-handle.sw { left: 2px; bottom: 2px; cursor: nesw-resize; }
+.tb-handle.se { right: 2px; bottom: 2px; cursor: nwse-resize; }
+.tb-handle.n { left: 50%; top: 2px; margin-left: -4px; cursor: ns-resize; }
+.tb-handle.s { left: 50%; bottom: 2px; margin-left: -4px; cursor: ns-resize; }
+.tb-handle.w { left: 2px; top: 50%; margin-top: -4px; cursor: ew-resize; }
+.tb-handle.e { right: 2px; top: 50%; margin-top: -4px; cursor: ew-resize; }
+.text-box.readonly { cursor: default; }
+.text-box.readonly .text-box-content { cursor: default; border-color: #B4B2A9; }
+.text-box.readonly .tb-handle { display: none !important; }
+
+/* Ribbon */
+:root { --header-h: 60px; }
+.text-ribbon { display: none; position: fixed; top: calc(var(--header-h) + 8px); left: 50%; transform: translateX(-50%); z-index: 49; background: white; border: 1px solid #E5E3DB; border-radius: 6px; padding: 5px 8px; align-items: center; gap: 3px; flex-wrap: wrap; box-shadow: 0 4px 12px rgba(0,0,0,0.12); max-width: calc(100vw - 32px); }
+.text-ribbon.active { display: flex; }
+.text-ribbon .rib-btn { background: white; border: 1px solid transparent; border-radius: 4px; padding: 4px 9px; cursor: pointer; font-size: 13px; font-family: inherit; color: #2C2C2A; min-width: 26px; text-align: center; line-height: 1.2; }
+.text-ribbon .rib-btn:hover { background: #F5F4F0; border-color: #E5E3DB; }
+.text-ribbon .rib-btn.active { background: #E1F5EE; color: #0F6E56; border-color: #1D9E75; }
+.text-ribbon .rib-btn.danger:hover { background: #FCEBEB; border-color: #E24B4A; color: #791F1F; }
+.text-ribbon .rib-sep { border-left: 1px solid #E5E3DB; height: 18px; margin: 0 3px; align-self: center; }
+.text-ribbon .rib-label { font-size: 11px; color: #5F5E5A; font-weight: 500; margin: 0 4px 0 2px; }
+.rib-color-swatch { width: 20px; height: 20px; border-radius: 3px; cursor: pointer; border: 1px solid #B4B2A9; box-sizing: border-box; display: inline-block; vertical-align: middle; }
+.rib-color-swatch:hover { transform: scale(1.15); }
+.rib-color-swatch.active { box-shadow: 0 0 0 2px #1D9E75, inset 0 0 0 1px white; }
+.rib-color-swatch.no-fill { background: white !important; position: relative; }
+.rib-color-swatch.no-fill::after { content: ''; position: absolute; left: 1px; right: 1px; top: 50%; height: 1px; background: #E24B4A; transform: rotate(-45deg); }
+
+/* Tails (kept) */
+#notesTails { position: absolute; top: 0; left: 0; pointer-events: none; overflow: visible; }
+#notesTails .tail-poly { stroke: none; }
+#notesTails .tail-edge { fill: none; stroke: #888780; stroke-width: 1; stroke-linejoin: miter; stroke-miterlimit: 10; }
+#notesTails .tail-tip { fill: transparent; stroke: transparent; cursor: move; pointer-events: auto; }
+#notesTails .tail-tip:hover { fill: rgba(95,79,14,0.15); stroke: rgba(95,79,14,0.5); stroke-width: 1; stroke-dasharray: 2,2; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-header">
+    <div>
+      <h1 data-i18n="app_title">Capacity Planning Tool</h1>
+      <div class="subtitle"><span data-i18n="app_subtitle">Compare line demand vs capacity</span> • v2.0</div>
+    </div>
+    <div class="section-actions">
+      <div class="lang-selector">
+        <button class="lang-btn" data-lang="th">ไทย</button>
+        <button class="lang-btn active" data-lang="en">English</button>
+        <button class="lang-btn" data-lang="jp">日本語</button>
+      </div>
+      <button class="btn-small" id="addNoteBtn" data-i18n="add_note">📝 Add Note</button>
+      <button class="btn-small" id="exportSnapshotBtn" data-i18n="export_snapshot">📸 Export Snapshot</button>
+      <button class="btn-small" id="clearDatasetsBtn" data-i18n="clear_datasets">Clear datasets</button>
+      <button class="btn-small" id="clearAllBtn" data-i18n="clear_all">Clear all</button>
+    </div>
+  </div>
+
+  <div class="text-ribbon" id="textRibbon">
+    <button class="rib-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+    <button class="rib-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+    <button class="rib-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+    <span class="rib-sep"></span>
+    <button class="rib-btn" data-action="font-smaller" title="Smaller">A−</button>
+    <button class="rib-btn" data-action="font-larger" title="Larger">A+</button>
+    <span class="rib-sep"></span>
+    <button class="rib-btn" data-cmd="insertUnorderedList" title="Bullet list">•</button>
+    <button class="rib-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
+    <span class="rib-sep"></span>
+    <span class="rib-label" data-i18n="rib_fill">Fill:</span>
+    <span class="rib-color-swatch" style="background:#FEF6C7" data-bg="#FEF6C7" title="Yellow"></span>
+    <span class="rib-color-swatch" style="background:#FFFFFF" data-bg="#FFFFFF" title="White"></span>
+    <span class="rib-color-swatch" style="background:#E6F1FB" data-bg="#E6F1FB" title="Blue"></span>
+    <span class="rib-color-swatch" style="background:#EAF3DE" data-bg="#EAF3DE" title="Green"></span>
+    <span class="rib-color-swatch" style="background:#FCEBEB" data-bg="#FCEBEB" title="Red"></span>
+    <span class="rib-color-swatch" style="background:#FAEEDA" data-bg="#FAEEDA" title="Amber"></span>
+    <span class="rib-color-swatch" style="background:#F1EFE8" data-bg="#F1EFE8" title="Gray"></span>
+    <span class="rib-sep"></span>
+    <button class="rib-btn" data-action="toggle-tail" title="Show/Hide arrow tail">↗ <span data-i18n="rib_tail">Tail</span></button>
+    <span class="rib-sep"></span>
+    <button class="rib-btn danger" data-action="delete" title="Delete">🗑</button>
+  </div>
+
+  <div id="snapshotBanner" style="display:none; background:#FAEEDA; border:1px solid #BA7517; border-radius:8px; padding:10px 16px; margin-bottom:14px; font-size:13px; color:#412402; align-items:center; gap:10px; flex-wrap:wrap;">
+    <span style="font-size:18px;">📸</span>
+    <strong data-i18n="snapshot_mode">Snapshot Mode (read-only)</strong>
+    <span id="snapshotMetaText" style="color:#5F5E5A;"></span>
+  </div>
+
+  <div class="section" id="uploadSection">
+    <h2>
+      <span class="step-num">1</span><span data-i18n="sec_upload">Upload files</span>
+      <span class="badge-status" id="uploadBadge" style="display:none" data-i18n="ready_to_calc">Ready to calculate</span>
+    </h2>
+    <div class="upload-row">
+      <div>
+        <div class="upload-zone" id="masterZone">
+          <input type="file" id="masterInput" accept=".xlsx,.xlsm" hidden>
+          <div class="upload-icon">📊</div>
+          <div class="upload-title" data-i18n="upload_master">Master Data Matrix</div>
+          <div class="upload-status" id="masterStatus" data-i18n="upload_hint">Drag-drop or click to choose</div>
+        </div>
+        <div style="margin-top:6px; text-align:center;">
+          <a class="tpl-link" id="dlMasterTpl">↓ <span data-i18n="dl_master_tpl">Download Master template</span></a>
+        </div>
+      </div>
+      <div class="monthly-multi">
+        <div class="monthly-multi-header">
+          <div class="title"><span style="margin-right:6px;">📋</span><span data-i18n="upload_monthly">Monthly Requirements</span> <span style="font-weight:400;color:#5F5E5A;font-size:11px;" id="monthlyCountHint">(≤5)</span></div>
+          <a class="tpl-link" id="dlMonthlyTpl">↓ <span data-i18n="dl_monthly_tpl">Download Monthly template</span></a>
+        </div>
+        <div class="dataset-list" id="datasetList"></div>
+        <div class="add-dataset-zone" id="addDatasetZone">
+          <input type="file" id="addDatasetInput" accept=".xlsx,.xlsm" hidden multiple>
+          + <span data-i18n="add_dataset">Add Monthly Req. dataset (drag-drop or click)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="previewSection" style="display:none">
+    <h2><span class="step-num">2</span><span data-i18n="sec_preview">Verify parsed data</span></h2>
+    <div class="preview-grid">
+      <div class="preview-card">
+        <h3 data-i18n="prev_master">Master</h3>
+        <div class="stat" id="prevMasterParts">—</div>
+        <div class="stat-detail" id="prevMasterDetail">parts</div>
+      </div>
+      <div class="preview-card">
+        <h3 data-i18n="prev_datasets">Datasets</h3>
+        <div class="stat" id="prevDatasetCount">—</div>
+        <div class="stat-detail" id="prevDatasetDetail">monthly req. files</div>
+      </div>
+      <div class="preview-card">
+        <h3 data-i18n="prev_active_ds">Active dataset</h3>
+        <div class="stat" id="prevActiveDsParts">—</div>
+        <div class="stat-detail" id="prevActiveDsDetail">parts × months</div>
+      </div>
+      <div class="preview-card">
+        <h3 data-i18n="prev_matched">Matched</h3>
+        <div class="stat" id="prevMatched">—</div>
+        <div class="stat-detail" id="prevMatchedDetail">parts</div>
+      </div>
+    </div>
+    <details style="margin-top:10px">
+      <summary data-i18n="show_unmatched">Show unmatched parts</summary>
+      <div class="unmatched-list" id="unmatchedList"></div>
+    </details>
+  </div>
+
+  <div class="section" id="settingsSection" style="display:none">
+    <h2><span class="step-num">3</span><span data-i18n="sec_settings">Settings</span></h2>
+    <div class="settings-grid">
+      <div class="setting-item">
+        <label data-i18n="hrs_per_shift">Hours per shift</label>
+        <input type="number" id="hrsPerShift" value="7.44" step="0.01" min="0" max="12">
+      </div>
+      <div class="setting-item">
+        <label data-i18n="ot_hrs">OT hours/shift (fixed)</label>
+        <input type="number" id="otHours" value="2.5" step="0.01" disabled>
+      </div>
+      <div class="setting-item">
+        <label data-i18n="shifts">Shifts</label>
+        <select id="shifts">
+          <option value="1" data-i18n="shift_1">1 shift</option>
+          <option value="2" selected data-i18n="shift_2">2 shifts</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label data-i18n="default_wd">Default WD</label>
+        <input type="number" id="defaultWD" value="22" step="1" min="0" max="31">
+      </div>
+    </div>
+
+    <div style="margin-top:18px; padding-top:14px; border-top:1px solid #E5E3DB;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+        <strong style="font-size:13px;" data-i18n="month_config">Per-month config — Label / WD / HD</strong>
+        <button class="btn-small" id="fillDefaultBtn" type="button" data-i18n="fill_defaults">Fill defaults</button>
+        <button class="btn-small" id="clearMonthBtn" type="button" data-i18n="clear_overrides">Clear overrides</button>
+      </div>
+
+      <div class="relabel-box" id="relabelBox" style="display:none">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <strong style="font-size:12px; color:#5F5E5A;" data-i18n="auto_label">Auto-label months:</strong>
+          <span style="font-size:12px;" data-i18n="start_from">start from</span>
+          <select id="anchorMonth">
+            <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
+            <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
+            <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+            <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
+          </select>
+          <input type="number" id="anchorYear" value="2026" min="2020" max="2040" style="width:70px">
+          <button class="btn-small" id="autoLabelBtn" type="button" data-i18n="apply_sequential">Apply sequential</button>
+          <button class="btn-small" id="resetLabelBtn" type="button" data-i18n="reset_labels">Reset to original</button>
+        </div>
+        <div class="help-text" style="margin-top:6px" data-i18n="auto_label_help">Pick the month/year of the first column → system labels remaining columns sequentially</div>
+      </div>
+
+      <div class="help-text" style="margin-top:0" data-i18n="month_help">Edit each month label directly • WD = Working Day, HD = Holiday • Empty = use default above</div>
+      <div class="calendar-grid" id="calendarGrid">
+        <div class="empty-state" style="grid-column: 1 / -1; padding: 18px;">
+          <div style="font-size: 13px;" data-i18n="upload_first">📅 Upload Monthly Req. first → fields will appear</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; padding-top:14px; border-top:1px solid #E5E3DB;" id="ctOverridesBox">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
+        <strong style="font-size:13px;" data-i18n="ct_overrides_title">CT Period Overrides — App layer</strong>
+        <span style="font-size:11px; color:#5F5E5A;" data-i18n="ct_overrides_help">Step function: from month X onwards → CT = Y. Excel CT_Changes sheet is the lower layer.</span>
+      </div>
+      <div id="ctOverridesList" style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px;"></div>
+      <div id="ctOverridesAddRow" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px; background:#FAFAF7; border:1px solid #E5E3DB; border-radius:6px;">
+        <select id="ctoPart" style="font-size:12px; padding:4px 8px; border:1px solid #B4B2A9; border-radius:4px; min-width:140px; max-width:180px;"></select>
+        <select id="ctoProc" style="font-size:12px; padding:4px 8px; border:1px solid #B4B2A9; border-radius:4px; min-width:80px;"></select>
+        <select id="ctoLine" style="font-size:12px; padding:4px 8px; border:1px solid #B4B2A9; border-radius:4px; min-width:160px; max-width:200px;"></select>
+        <span style="font-size:12px; color:#5F5E5A;" data-i18n="from_month">From</span>
+        <select id="ctoFrom" style="font-size:12px; padding:4px 8px; border:1px solid #B4B2A9; border-radius:4px; min-width:100px;"></select>
+        <span style="font-size:12px; color:#5F5E5A;">CT (sec)</span>
+        <input type="number" id="ctoCT" step="0.1" min="0" style="font-size:12px; padding:4px 8px; border:1px solid #B4B2A9; border-radius:4px; width:80px;">
+        <button class="btn-small" id="ctoAddBtn" data-i18n="ct_add">+ Add</button>
+        <button class="btn-small" id="ctoClearBtn" data-i18n="ct_clear_all">Clear all</button>
+      </div>
+      <div style="font-size:11px; color:#5F5E5A; margin-top:6px;" id="ctoExcelInfo"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="calculateBtn" data-i18n="btn_calculate">Calculate (Step 0 — initial)</button>
+      <button class="btn-secondary btn" id="saveSettingsBtn" data-i18n="btn_save_settings">Save settings</button>
+    </div>
+  </div>
+
+  <div class="section" id="resultsSection" style="display:none">
+    <h2>
+      <span class="step-num">4</span><span data-i18n="sec_results">Results</span>
+      <span class="badge-status" id="resultStepBadge">Step 0</span>
+    </h2>
+
+    <div class="view-toggle-row">
+      <span class="label" data-i18n="view_label">View:</span>
+      <div class="view-toggle" id="viewToggle">
+        <button class="active" data-view="single" data-i18n="view_single">Single</button>
+        <button data-view="compare" data-i18n="view_compare">Compare</button>
+        <button data-view="diff" data-i18n="view_diff">Diff</button>
+      </div>
+      <span style="flex:1"></span>
+      <span class="label" data-i18n="dataset_label">Dataset:</span>
+      <div class="dataset-chips" id="dsChips"></div>
+    </div>
+
+    <div class="step-history" id="stepHistory"></div>
+
+    <div class="tabs" id="processTabs">
+    </div>
+
+    <div class="line-filter" id="lineFilter"></div>
+
+    <div class="results-table-wrap" id="tableWrap">
+      <div id="tableContainer"></div>
+    </div>
+
+    <div class="chart-toolbar">
+      <span style="font-weight:500" data-i18n="threshold_lines">Threshold lines:</span>
+      <label><input type="checkbox" id="show417" checked> 417</label>
+      <label><input type="checkbox" id="show447" checked> 447</label>
+      <label><input type="checkbox" id="show497" checked> 497</label>
+      <label><input type="checkbox" id="showMaxCap" checked> Max Cap</label>
+      <label><input type="checkbox" id="showTrend" checked> <span data-i18n="show_trend">Trend</span></label>
+      <label><input type="checkbox" id="showLineInAxis" checked> <span data-i18n="show_line_axis">Line name</span></label>
+      <span style="flex:1"></span>
+      <span style="font-weight:500" data-i18n="chart_mode">Chart:</span>
+      <select id="chartMode">
+        <option value="byPart" data-i18n="chart_by_part">Stacked by Part</option>
+        <option value="byLine" data-i18n="chart_by_line">By Line (totals)</option>
+      </select>
+      <span style="font-weight:500" data-i18n="month_range">Range:</span>
+      <select id="rangeFrom"></select>
+      <span>→</span>
+      <select id="rangeTo"></select>
+    </div>
+
+    <div class="chart-legend-mini" id="chartLegendMini">
+      <span><span class="swatch solid"></span><span data-i18n="legend_natural">Natural (Pri 1)</span></span>
+      <span><span class="swatch hatch"></span><span data-i18n="legend_balanced">Balanced (moved)</span></span>
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="resultChart"></canvas>
+    </div>
+
+    <div class="btn-row" id="balanceRow">
+      <button class="btn-warn btn" id="balanceBtn" data-i18n="btn_balance">Balance →</button>
+      <span class="balance-info" id="balanceInfo"></span>
+    </div>
+  </div>
+
+  <div class="section" id="alertsSection" style="display:none">
+    <h2>
+      <span class="step-num">5</span><span data-i18n="sec_alerts">Overflow alerts</span>
+      <span class="badge-status danger" id="alertCount">0</span>
+    </h2>
+    <div class="alert-list" id="alertList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== I18N =====
+const I18N = {
+  en: {
+    app_title:'Capacity Planning Tool', app_subtitle:'Compare line demand vs capacity', clear_all:'Clear all', clear_datasets:'Clear datasets',
+    sec_upload:'Upload files', sec_preview:'Verify parsed data', sec_settings:'Settings', sec_results:'Results', sec_alerts:'Overflow alerts',
+    ready_to_calc:'Ready to calculate',
+    upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
+    dl_master_tpl:'Download Master template', dl_monthly_tpl:'Download Monthly template',
+    add_dataset:'Add Monthly Req. dataset (drag-drop or click)',
+    prev_master:'Master', prev_datasets:'Datasets', prev_active_ds:'Active dataset', prev_matched:'Matched',
+    show_unmatched:'Show unmatched parts (in Monthly but not Master)',
+    hrs_per_shift:'Hours per shift', ot_hrs:'OT hours/shift (fixed)', shifts:'Shifts', shift_1:'1 shift', shift_2:'2 shifts',
+    max_cap:'Max Cap (per month)', default_wd:'Default WD',
+    month_config:'Per-month config — Label / WD / HD', fill_defaults:'Fill defaults', clear_overrides:'Clear overrides',
+    auto_label:'Auto-label months:', start_from:'start from', apply_sequential:'Apply sequential', reset_labels:'Reset to original',
+    auto_label_help:'Pick the month/year of the first column → system labels remaining columns sequentially',
+    month_help:'Edit each month label directly • WD = Working Day, HD = Holiday • Empty = use default above',
+    upload_first:'📅 Upload Monthly Req. first → fields will appear',
+    btn_calculate:'Calculate (Step 0 — initial)', btn_save_settings:'Save settings', btn_balance:'Balance →',
+    threshold_lines:'Threshold lines:', view_label:'View:', view_single:'Single', view_compare:'Compare', view_diff:'Diff',
+    dataset_label:'Dataset:', chart_mode:'Chart:', chart_by_part:'Stacked by Part', chart_by_line:'By Line (totals)', month_range:'Range:',
+    line_filter_show_all:'Show all', line_filter_hide_all:'Hide all',
+    no_data_in_proc:'process "{proc}" has no matched parts',
+    hint_other_tab:'Try other tabs (Lathe / Rolling / IHA) — may have data',
+    hint_check_match:'Check "Verify parsed data" above — matched count > 0?',
+    no_overflow:'No overflow — capacity sufficient',
+    show_trend:'Trend', show_line_axis:'Line name',
+    cant_parse_month:'Cannot parse — set year', days_info:'{d} days • HD = {h}',
+    trend_label:'Trend', legend_natural:'Natural (Pri 1)', legend_balanced:'Balanced (moved)',
+    legend_ds_border:'Border = Dataset', legend_hover_hint:'(hover chip to highlight)',
+    cannot_balance:'No more balance steps available', confirm_clear_all:'Clear ALL saved data (Master + datasets + settings)?', confirm_clear_datasets:'Clear all Monthly Req datasets? (Master and settings will be kept)',
+    auto_loaded:'Loaded {n} dataset(s) from previous session',
+    export_snapshot:'📸 Export Snapshot', snapshot_mode:'Snapshot Mode (read-only)',
+    snapshot_meta:'Created {date} • {n} dataset(s)', snapshot_author_label:'by',
+    enter_author_name:'Your name (will appear in snapshot)', snapshot_no_data:'No data to export — upload Master + Monthly first',
+    snapshot_exported:'Snapshot exported',
+    ct_overrides_title:'CT Period Overrides — App layer',
+    ct_overrides_help:'Step function: from month X onwards → CT = Y. Excel CT_Changes sheet is the lower layer.',
+    from_month:'From', ct_add:'+ Add', ct_clear_all:'Clear all', ct_excel_info:'{n} CT change(s) loaded from Excel CT_Changes sheet',
+    ct_added:'CT override added', ct_removed:'CT override removed', ct_invalid:'Fill all fields first',
+    ct_confirm_clear:'Clear all app-layer CT overrides?',
+    add_note:'📝 Add Note', note_placeholder:'Type your note...', note_label:'Note', confirm_delete_note:'Delete this text box?',
+    rib_fill:'Fill:', rib_tail:'Tail',
+    must_upload_first:'Must upload Master + ≥1 Monthly Req. first', settings_saved:'Settings saved',
+    monthly_required:'Need Monthly Req. first',
+    fill_defaults_done_wd:'Filled WD={wd} for all months (HD auto-calc)', overrides_cleared:'Cleared all month overrides',
+    labels_applied:'Labels applied sequentially from {anchor}', labels_reset:'Labels reset to original',
+    master_parsed:'Master parsed: {n} parts', monthly_parsed:'{name} parsed: {n} parts',
+    parse_error_master:'No data in Master (check sheet names "Matrix - Lathe/Rolling/IHA")',
+    parse_error_monthly:'Header row not found (need "PRTNO" or "Part No.")',
+    step_initial:'Step 0 — Initial', step_417:'Step 1 → 417', step_447:'Step 2 → 447', step_497:'Step 3 → 497', step_maxcap:'Step 4 → Max Cap',
+    line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
+    line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
+    not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
+    balance_done:'{step} done', nothing_changed:'Nothing changed (no backup options)',
+    chain_too_deep:'⚠️ Chain push depth > 5 — some lines remain over target',
+    max_datasets:'Max 5 datasets reached', dataset_removed:'Dataset removed',
+    diff_label:'Δ vs {base}', select_2_for_diff:'Select 2 datasets for Diff mode'
+  },
+  th: {
+    app_title:'Capacity Planning Tool', app_subtitle:'เช็คความสามารถของไลน์ผลิต — เปรียบเทียบยอดสั่ง vs capacity', clear_all:'ล้างทั้งหมด', clear_datasets:'ล้าง Datasets',
+    sec_upload:'อัปโหลดไฟล์', sec_preview:'ตรวจสอบข้อมูลที่อ่านได้', sec_settings:'ตั้งค่า', sec_results:'ผลลัพธ์', sec_alerts:'การล้น',
+    ready_to_calc:'พร้อมคำนวณ',
+    upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
+    dl_master_tpl:'ดาวน์โหลด Template Master', dl_monthly_tpl:'ดาวน์โหลด Template Monthly',
+    add_dataset:'เพิ่ม Monthly Req. (ลากวาง / คลิก)',
+    prev_master:'Master', prev_datasets:'Datasets', prev_active_ds:'Dataset ที่เลือก', prev_matched:'จับคู่ได้',
+    show_unmatched:'ดู part ที่ไม่จับคู่',
+    hrs_per_shift:'ชม.ทำงาน/กะ', ot_hrs:'OT/กะ (คงที่)', shifts:'จำนวนกะ', shift_1:'1 กะ', shift_2:'2 กะ',
+    max_cap:'Max Cap (รายเดือน)', default_wd:'WD Default',
+    month_config:'ตั้งค่ารายเดือน — Label / WD / HD', fill_defaults:'เติม default', clear_overrides:'ล้างค่ารายเดือน',
+    auto_label:'ตั้ง label อัตโนมัติ:', start_from:'เริ่มจาก', apply_sequential:'Apply ลำดับต่อกัน', reset_labels:'Reset เป็น label เดิม',
+    auto_label_help:'เลือกเดือน-ปีของคอลัมน์แรก → ระบบ label ที่เหลือเป็นลำดับต่อกัน',
+    month_help:'แก้ label ของแต่ละเดือนได้โดยตรง • WD = วันทำงาน, HD = วันหยุด • ปล่อยว่าง = ใช้ค่า default ด้านบน',
+    upload_first:'📅 อัปโหลด Monthly Req. ก่อน → จะแสดงช่องให้กรอก',
+    btn_calculate:'คำนวณ (Step 0 — เริ่มต้น)', btn_save_settings:'บันทึกค่าตั้งต้น', btn_balance:'Balance →',
+    threshold_lines:'เส้นเกณฑ์:', view_label:'มุมมอง:', view_single:'เดี่ยว', view_compare:'เปรียบเทียบ', view_diff:'ส่วนต่าง',
+    dataset_label:'Dataset:', chart_mode:'กราฟ:', chart_by_part:'แยกสีตาม Part', chart_by_line:'รวมต่อไลน์', month_range:'ช่วงเดือน:',
+    line_filter_show_all:'เลือกทั้งหมด', line_filter_hide_all:'ไม่เลือก',
+    no_data_in_proc:'process "{proc}" ไม่มี part ที่ matched',
+    hint_other_tab:'ลองคลิก tab อื่น (Lathe / Rolling / IHA) — อาจมีข้อมูล',
+    hint_check_match:'ตรวจ "ตรวจสอบข้อมูลที่อ่านได้" ด้านบนว่า matched > 0 ไหม',
+    no_overflow:'ไม่มีจุดล้น — capacity เพียงพอ',
+    show_trend:'แนวโน้ม', show_line_axis:'ชื่อไลน์',
+    cant_parse_month:'อ่าน label ไม่ได้ — ใส่ปีให้ชัด', days_info:'{d} วัน • HD = {h}',
+    trend_label:'แนวโน้ม', legend_natural:'ธรรมชาติ (Pri 1)', legend_balanced:'ถูกย้าย (Balanced)',
+    legend_ds_border:'ขอบ = Dataset', legend_hover_hint:'(hover ที่ chip เพื่อเน้น)',
+    cannot_balance:'ไม่มี step balance ต่อแล้ว', confirm_clear_all:'ล้างข้อมูลทั้งหมด (Master + datasets + settings)?', confirm_clear_datasets:'ล้าง Monthly Req datasets ทั้งหมด? (เก็บ Master กับ settings ไว้)',
+    auto_loaded:'โหลด {n} dataset(s) จากครั้งที่แล้ว',
+    export_snapshot:'📸 Export Snapshot', snapshot_mode:'Snapshot Mode (อ่านอย่างเดียว)',
+    snapshot_meta:'สร้างเมื่อ {date} • {n} dataset(s)', snapshot_author_label:'โดย',
+    enter_author_name:'ชื่อของคุณ (จะปรากฏใน snapshot)', snapshot_no_data:'ไม่มีข้อมูล — ต้อง Upload Master + Monthly ก่อน',
+    snapshot_exported:'Export Snapshot เรียบร้อย',
+    ct_overrides_title:'CT Period Overrides — ชั้น App',
+    ct_overrides_help:'Step function: ตั้งแต่เดือน X เป็นต้นไป → CT = Y. ถ้ามี Excel CT_Changes จะอยู่ชั้นล่าง',
+    from_month:'ตั้งแต่', ct_add:'+ เพิ่ม', ct_clear_all:'ล้างทั้งหมด', ct_excel_info:'มี {n} CT changes จาก Excel CT_Changes sheet',
+    ct_added:'เพิ่ม CT override แล้ว', ct_removed:'ลบ CT override แล้ว', ct_invalid:'กรอกครบทุกช่องก่อน',
+    ct_confirm_clear:'ล้าง CT overrides ชั้น App ทั้งหมด?',
+    add_note:'📝 เพิ่ม Note', note_placeholder:'พิมพ์โน้ต...', note_label:'Note', confirm_delete_note:'ลบ text box นี้?',
+    rib_fill:'พื้น:', rib_tail:'ลูกศร',
+    must_upload_first:'ต้องอัปโหลด Master + Monthly อย่างน้อย 1 ไฟล์ ก่อน', settings_saved:'บันทึกค่าตั้งต้นแล้ว',
+    monthly_required:'ยังไม่มี Monthly Req',
+    fill_defaults_done_wd:'เติม WD={wd} ทุกเดือน (HD auto)', overrides_cleared:'ล้างค่าเดือนทั้งหมด',
+    labels_applied:'Apply label ลำดับจาก {anchor}', labels_reset:'Reset label กลับเป็นเดิม',
+    master_parsed:'อ่าน Master สำเร็จ: {n} parts', monthly_parsed:'{name}: {n} parts',
+    parse_error_master:'ไม่พบข้อมูลใน Master (ตรวจชื่อ tab "Matrix - Lathe/Rolling/IHA")',
+    parse_error_monthly:'หา header row ไม่เจอ (ต้องมี "PRTNO" หรือ "Part No.")',
+    step_initial:'Step 0 — เริ่มต้น', step_417:'Step 1 → 417', step_447:'Step 2 → 447', step_497:'Step 3 → 497', step_maxcap:'Step 4 → Max Cap',
+    line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
+    line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
+    not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
+    balance_done:'{step} เสร็จ', nothing_changed:'ไม่มีอะไรเปลี่ยน (ไม่มี backup ให้ใช้)',
+    chain_too_deep:'⚠️ Chain push ลึกเกิน 5 ชั้น — บางไลน์ยัง over target',
+    max_datasets:'รับสูงสุด 5 datasets', dataset_removed:'ลบ dataset แล้ว',
+    diff_label:'Δ เทียบกับ {base}', select_2_for_diff:'ต้องเลือก 2 datasets สำหรับ Diff mode'
+  },
+  jp: {
+    app_title:'Capacity Planning Tool', app_subtitle:'ライン能力チェック', clear_all:'全クリア', clear_datasets:'データセットクリア',
+    sec_upload:'ファイルアップロード', sec_preview:'解析データ確認', sec_settings:'設定', sec_results:'結果', sec_alerts:'オーバーフロー',
+    ready_to_calc:'計算準備完了',
+    upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
+    dl_master_tpl:'マスターテンプレートDL', dl_monthly_tpl:'月次テンプレートDL',
+    add_dataset:'月次要求を追加',
+    prev_master:'マスター', prev_datasets:'データセット', prev_active_ds:'アクティブDS', prev_matched:'一致',
+    show_unmatched:'未一致パーツを表示',
+    hrs_per_shift:'勤務時間/シフト', ot_hrs:'残業時間/シフト', shifts:'シフト数', shift_1:'1シフト', shift_2:'2シフト',
+    max_cap:'Max Cap (月別)', default_wd:'デフォルト WD',
+    month_config:'月別設定', fill_defaults:'デフォルト適用', clear_overrides:'上書きクリア',
+    auto_label:'月ラベル自動:', start_from:'開始', apply_sequential:'順次適用', reset_labels:'元に戻す',
+    auto_label_help:'最初の月/年を選択 → 残りの列に順次ラベル',
+    month_help:'各月のラベル直接編集可',
+    upload_first:'📅 まず月次要求をアップロード',
+    btn_calculate:'計算 (Step 0 — 初期)', btn_save_settings:'設定保存', btn_balance:'バランス →',
+    threshold_lines:'基準ライン:', view_label:'表示:', view_single:'シングル', view_compare:'比較', view_diff:'差分',
+    dataset_label:'データセット:', chart_mode:'グラフ:', chart_by_part:'パーツ別積み上げ', chart_by_line:'ライン別合計', month_range:'範囲:',
+    line_filter_show_all:'全選択', line_filter_hide_all:'全解除',
+    no_data_in_proc:'プロセス "{proc}" 一致なし',
+    hint_other_tab:'他のタブを試す',
+    hint_check_match:'解析データを確認',
+    no_overflow:'オーバーフローなし',
+    show_trend:'トレンド', show_line_axis:'ライン名',
+    cant_parse_month:'解析不可', days_info:'{d}日 • HD = {h}',
+    trend_label:'トレンド', legend_natural:'通常 (Pri 1)', legend_balanced:'バランス済み',
+    legend_ds_border:'枠線 = データセット', legend_hover_hint:'(chipにhoverで強調)',
+    cannot_balance:'これ以上のバランス不可', confirm_clear_all:'全データを消去(Master+データセット+設定)?', confirm_clear_datasets:'月次データセットを全消去?(Masterと設定は保持)',
+    auto_loaded:'前回の{n}データセットを読み込みました',
+    export_snapshot:'📸 スナップショット出力', snapshot_mode:'スナップショット (読み取り専用)',
+    snapshot_meta:'作成日 {date} • {n}データセット', snapshot_author_label:'by',
+    enter_author_name:'あなたの名前 (スナップショットに表示)', snapshot_no_data:'データなし — マスターと月次をアップロード',
+    snapshot_exported:'スナップショット出力完了',
+    ct_overrides_title:'CT 期間上書き — Appレイヤー',
+    ct_overrides_help:'ステップ関数: 月Xから → CT = Y。Excel CT_Changesは下層',
+    from_month:'開始', ct_add:'+ 追加', ct_clear_all:'全クリア', ct_excel_info:'Excel CT_Changesから{n}件読込',
+    ct_added:'CT上書きを追加', ct_removed:'CT上書きを削除', ct_invalid:'全項目を入力',
+    ct_confirm_clear:'AppレイヤーのCT上書きを全クリア?',
+    add_note:'📝 ノート追加', note_placeholder:'ノート入力...', note_label:'ノート', confirm_delete_note:'このテキストボックスを削除?',
+    rib_fill:'塗り:', rib_tail:'矢印',
+    must_upload_first:'マスターと月次要求が必要', settings_saved:'設定保存',
+    monthly_required:'月次要求なし',
+    fill_defaults_done_wd:'WD={wd} を全月適用', overrides_cleared:'月別上書きクリア',
+    labels_applied:'{anchor} から順次適用', labels_reset:'ラベルを元に戻す',
+    master_parsed:'マスター解析: {n} parts', monthly_parsed:'{name}: {n} parts',
+    parse_error_master:'マスターにデータなし',
+    parse_error_monthly:'ヘッダー行なし',
+    step_initial:'Step 0 — 初期', step_417:'Step 1 → 417', step_447:'Step 2 → 447', step_497:'Step 3 → 497', step_maxcap:'Step 4 → Max Cap',
+    line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
+    line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
+    not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
+    balance_done:'{step} 完了', nothing_changed:'変化なし',
+    chain_too_deep:'⚠️ Chain push 5層超 — 一部ライン超過',
+    max_datasets:'最大5データセット', dataset_removed:'削除しました',
+    diff_label:'Δ vs {base}', select_2_for_diff:'差分には2データセットが必要'
+  }
+};
+
+// ===== Constants =====
+// Default process names (fallback if no master loaded yet, or for default Matrix template).
+// Actual process list is dynamic — derived from state.master.processList after parsing.
+const PROCESSES = ['Lathe', 'Rolling', 'IHA'];
+
+// Returns the active process list — uses master's processList if loaded, else defaults.
+function getProcesses() {
+  return (state.master && Array.isArray(state.master.processList) && state.master.processList.length > 0)
+    ? state.master.processList
+    : PROCESSES;
+}
+const STORAGE_KEY = 'capPlanV2';
+const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
+const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
+const MAX_DATASETS = 5;
+const MAX_CHAIN_DEPTH = 5;
+
+// Step targets — fixed sequence (Step 0 = initial Pri=1, Step 1+ = balance to target)
+const STEP_TARGETS = [
+  { id: 0, key: 'step_initial', target: null, type: 'initial' },
+  { id: 1, key: 'step_417',     target: 417,  type: 'fixed' },
+  { id: 2, key: 'step_447',     target: 447,  type: 'fixed' },
+  { id: 3, key: 'step_497',     target: 497,  type: 'fixed' },
+  { id: 4, key: 'step_maxcap',  target: null, type: 'maxcap' }   // per-month Max Cap
+];
+
+const T_417 = ['#1D9E75', [4, 4]];
+const T_447 = ['#185FA5', [6, 4]];
+const T_497 = ['#E24B4A', []];
+const T_MC  = ['#A32D2D', [8, 4]];
+const TREND_COLOR = '#2C2C2A';
+
+const DIM_FILL = '#E5E3DB';
+const DIM_BORDER = '#B4B2A9';
+
+// ===== State =====
+const state = {
+  lang: 'en',
+  master: null,
+  datasets: [],          // [{ id, name, monthlyData, resultsHistory[], currentStepIdx }]
+  activeDatasetId: null,
+  compareDatasetIds: [], // for compare/diff mode
+  viewMode: 'single',    // 'single' | 'compare' | 'diff'
+  currentTab: 'Lathe',
+  chart: null,
+  monthOverrides: {},
+  labelOverrides: {},
+  hiddenLines: new Set(),
+  partColors: new Map(),
+  patternCache: new Map(),
+  hoveredDsId: null,
+  isSnapshot: false,
+  snapshotMeta: null,
+  ctOverrides: [],
+  notes: [],
+  dsIdCounter: 0
+};
+
+const $ = id => document.getElementById(id);
+
+// ===== Helpers =====
+function generatePartColor(partNo) {
+  let hash = 0;
+  for (let i = 0; i < partNo.length; i++) hash = ((hash << 5) - hash + partNo.charCodeAt(i)) | 0;
+  const hue = Math.abs(hash) % 360;
+  const sat = 55 + (Math.abs(hash >> 8) % 25);
+  const light = 50 + (Math.abs(hash >> 16) % 15);
+  return `hsl(${hue}, ${sat}%, ${light}%)`;
+}
+
+function getPartColor(partNo) {
+  if (!state.partColors.has(partNo)) state.partColors.set(partNo, generatePartColor(partNo));
+  return state.partColors.get(partNo);
+}
+
+function t(key, params) {
+  let text = (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key;
+  if (params) for (const [k, v] of Object.entries(params)) text = text.replaceAll(`{${k}}`, v);
+  return text;
+}
+
+function applyLanguage() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.documentElement.lang = state.lang === 'jp' ? 'ja' : state.lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === state.lang));
+  renderDatasetList();
+  if (getActiveDataset()?.resultsHistory?.length > 0) renderResults();
+  if (state.master && state.datasets.length > 0 && !state.isSnapshot) renderPreview();
+}
+
+function toast(msg, type) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (type || '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast', 2800);
+}
+
+function loadStorage() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+function saveStorage(patch) { if (state.isSnapshot) return; const c = loadStorage(); Object.assign(c, patch); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(c)); } catch (e) {} }
+
+async function readWorkbook(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => { try { resolve(XLSX.read(e.target.result, { type: 'array', cellDates: true })); } catch (err) { reject(err); } };
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  });
+}
+
+// ===== Parsers =====
+function parseMaster(wb) {
+  const partsMap = new Map();
+  const stats = { sheets: 0, lineCount: new Set() };
+  // Auto-detect process sheets — any sheet starting with "Matrix - " (or "Matrix-")
+  const processSheets = [];
+  for (const sheetName of wb.SheetNames) {
+    const m = sheetName.match(/^Matrix\s*-\s*(.+)$/i);
+    if (m) processSheets.push({ proc: m[1].trim(), sheetName });
+  }
+  // Preserve order from Excel
+  const processList = [];
+  for (const { proc, sheetName } of processSheets) {
+    const ws = wb.Sheets[sheetName];
+    if (!ws) continue;
+    stats.sheets++;
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    if (rows.length < 3) continue;
+    const row1 = rows[0] || [];
+    const row2 = rows[1] || [];
+    const findCol = (label) => row1.findIndex(c => c && String(c).trim().toLowerCase() === label.toLowerCase());
+    const partCol = findCol('Part No.');
+    const partNameCol = findCol('Part Name');
+    const modelCol = findCol('Model');
+    const oaCol = findCol('OA');
+    const fluctCol = findCol('Fluct');
+    if (partCol < 0) continue;
+    const lineGroups = [];
+    for (let c = 0; c < row2.length; c++) {
+      if (row2[c] === 'Pri' && row1[c]) {
+        lineGroups.push({ priCol: c, ctCol: c + 1, line: String(row1[c]).trim() });
+        stats.lineCount.add(`${proc}|${String(row1[c]).trim()}`);
+      }
+    }
+    if (lineGroups.length === 0) continue;
+    let foundData = false;
+    for (let r = 2; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row) continue;
+      const partNo = row[partCol];
+      if (!partNo || typeof partNo !== 'string') continue;
+      const trimmed = partNo.trim();
+      if (!trimmed) continue;
+      let part = partsMap.get(trimmed);
+      if (!part) {
+        part = { partNo: trimmed, partName: row[partNameCol] || '', model: row[modelCol] || '', processes: {} };
+        partsMap.set(trimmed, part);
+      } else {
+        if (!part.partName && row[partNameCol]) part.partName = row[partNameCol];
+        if (!part.model && row[modelCol]) part.model = row[modelCol];
+      }
+      const oa = parseFloat(row[oaCol]) || 0.85;
+      const fluct = parseFloat(row[fluctCol]) || 1.0;
+      const lines = [];
+      for (const lg of lineGroups) {
+        const pri = parseInt(row[lg.priCol]);
+        const ct = parseFloat(row[lg.ctCol]);
+        if (pri && ct > 0) lines.push({ name: lg.line, priority: pri, ct });
+      }
+      if (lines.length > 0) {
+        lines.sort((a, b) => a.priority - b.priority);
+        part.processes[proc] = { oa, fluct, lines };
+        foundData = true;
+      }
+    }
+    if (foundData && !processList.includes(proc)) processList.push(proc);
+  }
+
+  // Parse "CT_Changes" sheet (optional) — for step-function CT updates
+  const ctChanges = [];
+  const ctSheet = wb.Sheets['CT_Changes'] || wb.Sheets['CT Changes'] || wb.Sheets['CT_changes'];
+  if (ctSheet) {
+    const rows = XLSX.utils.sheet_to_json(ctSheet, { header: 1, defval: null });
+    if (rows.length >= 2) {
+      const header = rows[0] || [];
+      const findCol = (label) => header.findIndex(c => c && String(c).trim().toLowerCase() === label.toLowerCase());
+      const partCol = findCol('Part No.');
+      const procCol = findCol('Process');
+      const lineCol = findCol('Line');
+      const fromCol = findCol('From');
+      const ctCol = findCol('New CT');
+      if (partCol >= 0 && procCol >= 0 && lineCol >= 0 && fromCol >= 0 && ctCol >= 0) {
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r]; if (!row) continue;
+          const partNo = row[partCol]; if (!partNo || typeof partNo !== 'string') continue;
+          const proc = row[procCol]; if (!proc) continue;
+          const line = row[lineCol]; if (!line) continue;
+          const fromRaw = row[fromCol]; if (fromRaw == null) continue;
+          const ct = parseFloat(row[ctCol]); if (!(ct > 0)) continue;
+          const fromMonth = parseMonthLabel(fromRaw);
+          if (!fromMonth) continue;
+          ctChanges.push({ partNo: partNo.trim(), process: String(proc).trim(), line: String(line).trim(), fromMonth, ct });
+        }
+      }
+    }
+  }
+
+  return { parts: Array.from(partsMap.values()), processList, ctChanges, stats: { sheets: stats.sheets, totalLines: stats.lineCount.size } };
+}
+
+function parseMonthLabel(value) {
+  if (value instanceof Date) return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][value.getMonth()]}'${String(value.getFullYear()).slice(-2)}`;
+  if (typeof value === 'string') {
+    const m = value.trim().match(/^([A-Za-z]{3,9})[\u0027'\u2019\s\-]*(\d{2,4})?$/);
+    if (m) {
+      const mn = m[1].slice(0, 3).toLowerCase();
+      if (['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].includes(mn)) return value.trim();
+    }
+  }
+  if (typeof value === 'number' && value > 30000 && value < 80000) {
+    const d = XLSX.SSF.parse_date_code(value);
+    if (d) return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.m-1]}'${String(d.y).slice(-2)}`;
+  }
+  return null;
+}
+
+function parseMonthly(wb) {
+  const sorted = [...wb.SheetNames].sort((a, b) => {
+    const aS = /monthly|requirement|req|demand/i.test(a) ? 0 : 1;
+    const bS = /monthly|requirement|req|demand/i.test(b) ? 0 : 1;
+    return aS - bS;
+  });
+  for (const sheetName of sorted) {
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    let headerRowIdx = -1, partColIdx = -1;
+    for (let r = 0; r < Math.min(20, rows.length); r++) {
+      const row = rows[r]; if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        if (typeof cell === 'string') {
+          const u = cell.trim().toUpperCase();
+          if (['PRTNO','PART NO.','PART NO','PARTNO','PART NUMBER'].includes(u)) {
+            headerRowIdx = r; partColIdx = c; break;
+          }
+        }
+      }
+      if (headerRowIdx >= 0) break;
+    }
+    if (headerRowIdx < 0) continue;
+    const headerRow = rows[headerRowIdx];
+    const monthCols = [];
+    const seen = new Set();
+    for (let c = partColIdx + 1; c < headerRow.length; c++) {
+      const cell = headerRow[c]; if (cell == null) continue;
+      let label = parseMonthLabel(cell);
+      if (label) {
+        let f = label, sf = 2;
+        while (seen.has(f)) { f = `${label} (${sf})`; sf++; }
+        seen.add(f);
+        monthCols.push({ col: c, label: f });
+      }
+    }
+    if (monthCols.length === 0) continue;
+    const data = new Map();
+    const months = monthCols.map(mc => mc.label);
+    for (let r = headerRowIdx + 1; r < rows.length; r++) {
+      const row = rows[r]; if (!row) continue;
+      const pn = row[partColIdx];
+      if (!pn || typeof pn !== 'string') continue;
+      const tr = pn.trim();
+      if (!tr.startsWith('TG')) continue;
+      const mq = data.get(tr) || {};
+      for (const mc of monthCols) {
+        const q = parseFloat(row[mc.col]) || 0;
+        mq[mc.label] = (mq[mc.label] || 0) + q;
+      }
+      data.set(tr, mq);
+    }
+    return { months, data, sheetName, headerRowIdx };
+  }
+  return null;
+}
+
+// ===== Settings & Month info =====
+function readSettings() {
+  return {
+    hrsPerShift: parseFloat($('hrsPerShift').value) || 7.44,
+    otHours: 2.5,
+    shifts: parseInt($('shifts').value) || 2,
+    defaultWD: parseInt($('defaultWD').value) || 22,
+    monthOverrides: state.monthOverrides
+  };
+}
+
+function applySavedSettings() {
+  const d = loadStorage();
+  if (d.lang) state.lang = d.lang;
+  if (d.settings) {
+    const s = d.settings;
+    if (s.hrsPerShift) $('hrsPerShift').value = s.hrsPerShift;
+    if (s.shifts) $('shifts').value = s.shifts;
+    if (s.defaultWD) $('defaultWD').value = s.defaultWD;
+    state.monthOverrides = s.monthOverrides || {};
+  }
+  if (d.labelOverrides) state.labelOverrides = d.labelOverrides;
+  if (Array.isArray(d.ctOverrides)) state.ctOverrides = d.ctOverrides;
+}
+
+function calculateMaxCap(setting, monthLabel) {
+  const ov = setting.monthOverrides[monthLabel] || {};
+  const wd = (ov.wd != null) ? ov.wd : setting.defaultWD;
+  const info = getMonthInfo(monthLabel);
+  const totalDays = info.valid ? info.days : 30;
+  const hd = Math.max(0, totalDays - wd);
+  return (wd + hd) * (setting.hrsPerShift + setting.otHours) * setting.shifts;
+}
+
+function getStepTarget(stepIdx, setting, monthLabel) {
+  const cfg = STEP_TARGETS[stepIdx];
+  if (!cfg) return 417;
+  if (cfg.type === 'initial' || cfg.type === 'fixed') return cfg.target || 417;
+  if (cfg.type === 'maxcap') return calculateMaxCap(setting, monthLabel);
+  return 417;
+}
+
+function getStepLabel(stepIdx) {
+  return t(STEP_TARGETS[stepIdx]?.key || 'step_initial');
+}
+
+function getDisplayLabel(internalLabel) {
+  return state.labelOverrides[internalLabel] || internalLabel;
+}
+
+function parseMonthYearFromLabel(label) {
+  if (!label) return null;
+  const trim = String(label).trim();
+  const M3 = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  let m = trim.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})$/i);
+  if (m) return { monthIdx: M3.indexOf(m[1].slice(0,3).toLowerCase()), year: parseInt(m[2]) };
+  m = trim.match(/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)['\u2019]\s*(\d{2,4})$/i);
+  if (m) {
+    let y = parseInt(m[2]);
+    if (y < 100) y += 2000;
+    return { monthIdx: M3.indexOf(m[1].toLowerCase()), year: y };
+  }
+  m = trim.match(/^(\d{4})[-\/](\d{1,2})$/);
+  if (m) return { monthIdx: parseInt(m[2]) - 1, year: parseInt(m[1]) };
+  return null;
+}
+
+function getDaysInMonth(year, monthIdx) { return new Date(year, monthIdx + 1, 0).getDate(); }
+
+function getMonthInfo(internalLabel) {
+  const display = getDisplayLabel(internalLabel);
+  const parsed = parseMonthYearFromLabel(display) || parseMonthYearFromLabel(internalLabel);
+  if (!parsed) return { valid: false };
+  return { valid: true, year: parsed.year, monthIdx: parsed.monthIdx, days: getDaysInMonth(parsed.year, parsed.monthIdx) };
+}
+
+// ===== Dataset helpers =====
+function getActiveDataset() {
+  if (!state.activeDatasetId) return null;
+  return state.datasets.find(d => d.id === state.activeDatasetId);
+}
+function getDatasetById(id) { return state.datasets.find(d => d.id === id); }
+function getDatasetColor(id) {
+  const idx = state.datasets.findIndex(d => d.id === id);
+  return DATASET_COLORS[idx % DATASET_COLORS.length];
+}
+
+// ===== CT step-function helper (Comment #3) =====
+// Resolution order: App override > Excel CT_Changes > Matrix base CT
+function compareMonths(monthLabelA, monthLabelB) {
+  const pa = parseMonthYearFromLabel(getDisplayLabel(monthLabelA)) || parseMonthYearFromLabel(monthLabelA);
+  const pb = parseMonthYearFromLabel(getDisplayLabel(monthLabelB)) || parseMonthYearFromLabel(monthLabelB);
+  if (!pa || !pb) return 0;
+  return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+}
+
+function getEffectiveCT(partNo, process, lineName, monthLabel, baseCT) {
+  // Find latest applicable change with from <= monthLabel
+  const candidates = [];
+  // App overrides (highest priority)
+  for (const o of (state.ctOverrides || [])) {
+    if (o.partNo === partNo && o.process === process && o.line === lineName) {
+      if (compareMonths(o.fromMonth, monthLabel) <= 0) candidates.push({ src: 'app', from: o.fromMonth, ct: o.ct });
+    }
+  }
+  // Excel CT_Changes
+  const excelChanges = state.master?.ctChanges || [];
+  for (const c of excelChanges) {
+    if (c.partNo === partNo && c.process === process && c.line === lineName) {
+      if (compareMonths(c.fromMonth, monthLabel) <= 0) candidates.push({ src: 'excel', from: c.fromMonth, ct: c.ct });
+    }
+  }
+  if (candidates.length === 0) return baseCT;
+  // Sort: app > excel; then latest from-month (most recent change wins)
+  candidates.sort((a, b) => {
+    if (a.src !== b.src) return a.src === 'app' ? -1 : 1;
+    return -compareMonths(a.from, b.from);
+  });
+  return candidates[0].ct;
+}
+
+// ===== Chart helpers: month-only label + plugin for hierarchical X-axis (Comments #1, #2) =====
+function getMonthOnly(label, asNumber) {
+  const parsed = parseMonthYearFromLabel(label);
+  if (!parsed) return label;
+  if (asNumber) return String(parsed.monthIdx + 1);
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parsed.monthIdx];
+}
+
+// Estimate chart's drawable width to decide if month labels should switch to numeric (Comment #2)
+function shouldUseNumericMonths(totalBars) {
+  const wrap = document.querySelector('.chart-wrap');
+  const chartW = wrap ? Math.max(300, wrap.clientWidth - 24) : 800;
+  const slotW = (chartW - 60) / Math.max(1, totalBars); // subtract y-axis label area
+  // "Apr"/"Sep" need ~24px to fit comfortably
+  return slotW < 24;
+}
+
+// Chart.js plugin — draws line-name & year tier rows below x-axis labels,
+// plus dashed vertical separators between line groups.
+const xHierarchyPlugin = {
+  id: 'xHierarchy',
+  afterDraw(chart) {
+    const opt = chart.options.plugins?.xHierarchy;
+    if (!opt) return;
+    const { lineGroups, yearGroups, separators, axisLabelHeight } = opt;
+    const xAxis = chart.scales.x;
+    const yAxis = chart.scales.y;
+    const ctx = chart.ctx;
+    const labels = chart.data.labels;
+    if (!labels || labels.length === 0) return;
+    // half-bar width (in pixels). use difference between consecutive ticks.
+    const totalWidth = xAxis.right - xAxis.left;
+    const barWidth = totalWidth / labels.length;
+
+    ctx.save();
+    // Vertical separators (Comment #1)
+    if (separators && separators.length) {
+      ctx.strokeStyle = '#5F5E5A';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      for (const idx of separators) {
+        const x = xAxis.left + idx * barWidth;
+        ctx.beginPath();
+        ctx.moveTo(x, yAxis.top);
+        ctx.lineTo(x, yAxis.bottom);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    // Compute starting Y for tiers (below x-axis labels)
+    let yOffset = yAxis.bottom + (axisLabelHeight || 50) + 6;
+
+    // Year tier (Comment #2)
+    if (yearGroups && yearGroups.length) {
+      const h = 18;
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const g of yearGroups) {
+        const left = xAxis.left + g.fromIdx * barWidth + 1;
+        const right = xAxis.left + (g.toIdx + 1) * barWidth - 1;
+        ctx.fillStyle = '#F1EFE8';
+        ctx.strokeStyle = '#B4B2A9';
+        ctx.lineWidth = 0.5;
+        ctx.fillRect(left, yOffset, right - left, h);
+        ctx.strokeRect(left, yOffset, right - left, h);
+        ctx.fillStyle = '#5F5E5A';
+        ctx.fillText(g.label, (left + right) / 2, yOffset + h / 2);
+      }
+      yOffset += h + 3;
+    }
+
+    // Line tier (Comment #2 - outermost)
+    if (lineGroups && lineGroups.length) {
+      const h = 22;
+      ctx.font = '500 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const g of lineGroups) {
+        const left = xAxis.left + g.fromIdx * barWidth + 1;
+        const right = xAxis.left + (g.toIdx + 1) * barWidth - 1;
+        ctx.fillStyle = g.bg || '#FAFAF7';
+        ctx.strokeStyle = g.color || '#B4B2A9';
+        ctx.lineWidth = 1;
+        ctx.fillRect(left, yOffset, right - left, h);
+        ctx.strokeRect(left, yOffset, right - left, h);
+        ctx.fillStyle = g.color || '#2C2C2A';
+        // Truncate label if too narrow
+        const maxWidth = right - left - 8;
+        let label = g.label;
+        if (ctx.measureText(label).width > maxWidth && maxWidth > 20) {
+          while (label.length > 3 && ctx.measureText(label + '…').width > maxWidth) label = label.slice(0, -1);
+          label = label + '…';
+        }
+        ctx.fillText(label, (left + right) / 2, yOffset + h / 2);
+      }
+    }
+
+    ctx.restore();
+  }
+};
+
+// Compute x-axis hierarchy groups for byPart mode (visibleLines × months layout)
+function computeXHierarchy(visibleLines, months) {
+  const lineGroups = [];
+  const yearGroups = [];
+  const separators = [];
+  for (let li = 0; li < visibleLines.length; li++) {
+    const lineColor = LINE_COLORS[li % LINE_COLORS.length];
+    const fromIdx = li * months.length;
+    const toIdx = fromIdx + months.length - 1;
+    lineGroups.push({
+      label: visibleLines[li].replace(/^Shaft /, ''),
+      fromIdx, toIdx,
+      bg: '#FAFAF7', color: lineColor
+    });
+    if (li > 0) separators.push(li * months.length);
+    // Year sub-groups within this line
+    let curYear = null, startIdx = null;
+    for (let mi = 0; mi < months.length; mi++) {
+      const idx = fromIdx + mi;
+      const parsed = parseMonthYearFromLabel(getDisplayLabel(months[mi])) || parseMonthYearFromLabel(months[mi]);
+      const year = parsed?.year ?? '?';
+      if (year !== curYear) {
+        if (startIdx !== null) yearGroups.push({ label: String(curYear), fromIdx: startIdx, toIdx: idx - 1 });
+        curYear = year;
+        startIdx = idx;
+      }
+    }
+    if (startIdx !== null) yearGroups.push({ label: String(curYear), fromIdx: startIdx, toIdx });
+  }
+  return { lineGroups, yearGroups, separators };
+}
+
+// ===== Calculation: initial allocation =====
+function calculateInitialAllocation(masterParts, monthlyData) {
+  const months = monthlyData.months;
+  const byProcess = {};
+  for (const proc of getProcesses()) byProcess[proc] = { lines: new Set(), months, hours: {}, partAlloc: {}, partOrigin: {} };
+  const partMap = new Map(masterParts.map(p => [p.partNo, p]));
+  const matched = [], unmatched = [];
+
+  for (const [partNo, monthQty] of monthlyData.data.entries()) {
+    const part = partMap.get(partNo);
+    if (!part) {
+      const total = Object.values(monthQty).reduce((a, b) => a + b, 0);
+      if (total > 0) unmatched.push({ partNo, totalQty: total });
+      continue;
+    }
+    matched.push(partNo);
+    for (const proc of getProcesses()) {
+      const pd = part.processes[proc];
+      if (!pd || pd.lines.length === 0) continue;
+      const primary = pd.lines[0];
+      byProcess[proc].lines.add(primary.name);
+      // Track origin: the Pri=1 line of this part on this process
+      if (!byProcess[proc].partOrigin[partNo]) byProcess[proc].partOrigin[partNo] = primary.name;
+      for (const month of months) {
+        const qty = monthQty[month] || 0;
+        if (qty <= 0) continue;
+        const effCT = getEffectiveCT(partNo, proc, primary.name, month, primary.ct);
+        const hrs = (qty * effCT / 3600) / pd.oa * pd.fluct;
+        addToAlloc(byProcess[proc], primary.name, month, partNo, qty, hrs);
+      }
+    }
+  }
+  for (const proc of getProcesses()) byProcess[proc].lines = Array.from(byProcess[proc].lines).sort();
+  return { byProcess, months, matched, unmatched, partMap };
+}
+
+function addToAlloc(procData, line, month, partNo, qty, hrs) {
+  if (!procData.hours[line]) procData.hours[line] = {};
+  procData.hours[line][month] = (procData.hours[line][month] || 0) + hrs;
+  if (!procData.partAlloc[line]) procData.partAlloc[line] = {};
+  if (!procData.partAlloc[line][month]) procData.partAlloc[line][month] = {};
+  if (!procData.partAlloc[line][month][partNo]) procData.partAlloc[line][month][partNo] = { qty: 0, hours: 0 };
+  procData.partAlloc[line][month][partNo].qty += qty;
+  procData.partAlloc[line][month][partNo].hours += hrs;
+  if (!(procData.lines instanceof Set)) {
+    if (!procData.lines.includes(line)) procData.lines.push(line);
+  } else {
+    procData.lines.add(line);
+  }
+}
+
+function removeFromAlloc(procData, line, month, partNo, qty, hrs) {
+  if (procData.hours[line]) procData.hours[line][month] = Math.max(0, (procData.hours[line][month] || 0) - hrs);
+  const a = procData.partAlloc[line]?.[month]?.[partNo];
+  if (a) {
+    a.qty = Math.max(0, a.qty - qty);
+    a.hours = Math.max(0, a.hours - hrs);
+    if (a.qty < 0.01) delete procData.partAlloc[line][month][partNo];
+  }
+}
+
+// ===== Smart Balance =====
+// Goal: bring all lines ≤ target via direct moves OR chain push (depth ≤ 5).
+// Each iteration: pick best move (max excess reduction, tiebreak: part flexibility, chain depth).
+function smartBalance(byProcess, partMap, setting, months, target, isMaxCap) {
+  let chainExceeded = false;
+  for (const proc of getProcesses()) {
+    const procData = byProcess[proc];
+    for (const month of months) {
+      const monthTarget = isMaxCap ? calculateMaxCap(setting, month) : target;
+      let iter = 0;
+      const MAX_ITER = 80;
+      while (iter < MAX_ITER) {
+        iter++;
+        const move = findBestMove(procData, partMap, proc, month, monthTarget);
+        if (!move) break;
+        if (move.error === 'CHAIN_TOO_DEEP') { chainExceeded = true; break; }
+        executeMove(procData, move);
+      }
+    }
+  }
+  return { chainExceeded };
+}
+
+// Find the single best move that reduces total over-target hours the most.
+function findBestMove(procData, partMap, proc, month, target) {
+  const lines = (procData.lines instanceof Set) ? Array.from(procData.lines) : procData.lines.slice();
+  const overLines = lines.filter(l => (procData.hours[l]?.[month] || 0) > target + 0.01);
+  if (overLines.length === 0) return null;
+
+  const candidates = [];
+  for (const overLine of overLines) {
+    const excess = (procData.hours[overLine][month] || 0) - target;
+    const partsOnLine = procData.partAlloc[overLine]?.[month] || {};
+    const list = Object.entries(partsOnLine).filter(([_, a]) => a.qty > 0.01).sort((a, b) => b[1].qty - a[1].qty);
+    for (const [pn, alloc] of list) {
+      const part = partMap.get(pn);
+      if (!part?.processes[proc]) continue;
+      const pd = part.processes[proc];
+      const primCfg = pd.lines.find(l => l.name === overLine);
+      if (!primCfg) continue;
+      const backups = pd.lines.filter(l => l.name !== overLine);
+      if (backups.length === 0) continue;
+
+      for (const bk of backups) {
+        // Direct move: part can fit (partially) into backup line within target
+        const direct = simulateDirectMove(procData, proc, month, pn, alloc, primCfg, bk, pd, target, excess);
+        if (direct) {
+          candidates.push({
+            ...direct,
+            kind: 'direct',
+            chainDepth: 1,
+            partFlex: backups.length,
+            gain: direct.hoursFromOver
+          });
+        }
+        // Chain push: push displaced parts on backup line out first
+        const chain = simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, bk, pd, target, excess, 1, new Set([pn]));
+        if (chain) {
+          candidates.push({
+            ...chain,
+            kind: 'chain',
+            partFlex: backups.length,
+            gain: chain.hoursFromOver
+          });
+        }
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    // Check if there's any move that COULD work but exceeded chain depth
+    return null;
+  }
+
+  // Sort: gain DESC, partFlex DESC, chainDepth ASC
+  candidates.sort((a, b) => {
+    if (Math.abs(b.gain - a.gain) > 0.01) return b.gain - a.gain;
+    if (b.partFlex !== a.partFlex) return b.partFlex - a.partFlex;
+    return a.chainDepth - b.chainDepth;
+  });
+  return candidates[0];
+}
+
+function simulateDirectMove(procData, proc, month, pn, alloc, primCfg, bk, pd, target, excess) {
+  const bkHrs = procData.hours[bk.name]?.[month] || 0;
+  const bkRem = target - bkHrs;
+  if (bkRem <= 0.01) return null;
+  const fact = pd.oa * pd.fluct;
+  const fromCT = getEffectiveCT(pn, proc, primCfg.name, month, primCfg.ct);
+  const toCT = getEffectiveCT(pn, proc, bk.name, month, bk.ct);
+  const pHr = fromCT / 3600 / fact;
+  const bHr = toCT / 3600 / fact;
+  const qMove = Math.min(excess / pHr, bkRem / bHr, alloc.qty);
+  if (qMove <= 0.01) return null;
+  const hF = qMove * pHr, hA = qMove * bHr;
+  return {
+    operations: [{ from: primCfg.name, to: bk.name, partNo: pn, qty: qMove, hrsFrom: hF, hrsTo: hA }],
+    hoursFromOver: hF
+  };
+}
+
+// Recursive chain push — try to clear space on backup line by pushing its parts further
+function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, bk, pd, target, excess, depth, seen) {
+  if (depth > MAX_CHAIN_DEPTH) return { error: 'CHAIN_TOO_DEEP', operations: [], hoursFromOver: 0, chainDepth: depth };
+
+  const bkHrs = procData.hours[bk.name]?.[month] || 0;
+  const bkRem = target - bkHrs;
+  if (bkRem > 0.01) return null; // No need to chain — direct works
+
+  const fact = pd.oa * pd.fluct;
+  const fromCT = getEffectiveCT(pn, proc, primCfg.name, month, primCfg.ct);
+  const toCT = getEffectiveCT(pn, proc, bk.name, month, bk.ct);
+  const pHr = fromCT / 3600 / fact;
+  const bHr = toCT / 3600 / fact;
+  const wantQty = Math.min(excess / pHr, alloc.qty);
+  const wantHrsOnBackup = wantQty * bHr;
+
+  const partsOnBk = procData.partAlloc[bk.name]?.[month] || {};
+  const candidatesToDisplace = Object.entries(partsOnBk).filter(([opn, oa]) => oa.qty > 0.01 && !seen.has(opn));
+
+  let pushedHrs = 0;
+  const ops = [];
+  for (const [otherPn, otherAlloc] of candidatesToDisplace) {
+    if (pushedHrs >= wantHrsOnBackup - 0.01) break;
+    const otherPart = partMap.get(otherPn);
+    if (!otherPart?.processes[proc]) continue;
+    const otherPd = otherPart.processes[proc];
+    const otherPrimCfg = otherPd.lines.find(l => l.name === bk.name);
+    if (!otherPrimCfg) continue;
+    const otherBackups = otherPd.lines.filter(l => l.name !== bk.name && !seen.has(otherPn));
+    if (otherBackups.length === 0) continue;
+
+    const need = wantHrsOnBackup - pushedHrs;
+    let bestSub = null;
+    for (const ob of otherBackups) {
+      const otherFromCT = getEffectiveCT(otherPn, proc, otherPrimCfg.name, month, otherPrimCfg.ct);
+      const sub = simulateDirectMove(procData, proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, target, otherAlloc.qty * (otherFromCT / 3600 / (otherPd.oa * otherPd.fluct)));
+      if (sub) {
+        if (sub.operations[0].hrsFrom > need - 0.01) {
+          // Limit qty to need
+          const newSeen = new Set(seen); newSeen.add(otherPn);
+          const limited = limitMoveByHours(proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, need);
+          if (limited && (!bestSub || limited.hrsFrom > bestSub.hrsFrom)) bestSub = limited;
+        } else {
+          if (!bestSub || sub.operations[0].hrsFrom > bestSub.hrsFrom) bestSub = sub.operations[0];
+        }
+      }
+      if (!bestSub) {
+        // Try chain push 1 level deeper
+        const nextSeen = new Set(seen); nextSeen.add(otherPn);
+        const recur = simulateChainPush(procData, partMap, proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, target, otherAlloc.qty * (otherFromCT / 3600 / (otherPd.oa * otherPd.fluct)), depth + 1, nextSeen);
+        if (recur && !recur.error && recur.hoursFromOver > 0) {
+          if (!bestSub || recur.hoursFromOver > (bestSub.hrsFrom || 0)) {
+            ops.push(...recur.operations);
+            pushedHrs += recur.hoursFromOver;
+            bestSub = null;
+            continue;
+          }
+        }
+      }
+    }
+    if (bestSub) {
+      ops.push({ from: bk.name, to: bestSub.to, partNo: otherPn, qty: bestSub.qty, hrsFrom: bestSub.hrsFrom, hrsTo: bestSub.hrsTo });
+      pushedHrs += bestSub.hrsFrom;
+    }
+  }
+
+  if (pushedHrs < 0.01) return null; // Couldn't displace anyone
+
+  // Now insert the original move with newly available space
+  const finalQ = Math.min(wantQty, pushedHrs / bHr);
+  if (finalQ <= 0.01) return null;
+  const finalHF = finalQ * pHr, finalHA = finalQ * bHr;
+  ops.push({ from: primCfg.name, to: bk.name, partNo: pn, qty: finalQ, hrsFrom: finalHF, hrsTo: finalHA });
+  return { operations: ops, hoursFromOver: finalHF, chainDepth: depth + 1 };
+}
+
+function limitMoveByHours(proc, month, partNo, alloc, fromCfg, toCfg, pd, maxHrsFrom) {
+  const fact = pd.oa * pd.fluct;
+  const fromCT = getEffectiveCT(partNo, proc, fromCfg.name, month, fromCfg.ct);
+  const toCT = getEffectiveCT(partNo, proc, toCfg.name, month, toCfg.ct);
+  const pHr = fromCT / 3600 / fact;
+  const bHr = toCT / 3600 / fact;
+  const qMove = Math.min(alloc.qty, maxHrsFrom / pHr);
+  if (qMove <= 0.01) return null;
+  return { from: fromCfg.name, to: toCfg.name, partNo, qty: qMove, hrsFrom: qMove * pHr, hrsTo: qMove * bHr };
+}
+
+function executeMove(procData, move) {
+  for (const op of move.operations) {
+    removeFromAlloc(procData, op.from, undefined, op.partNo, op.qty, op.hrsFrom);
+    // Need month — pass via move? Re-derive from operations
+  }
+  // Fix: month is implicit per move, all ops in same month
+  // Reset: do it properly
+}
+
+// Better executeMove — operations include month (we'll add month to ops)
+function applyMove(procData, month, move) {
+  for (const op of move.operations) {
+    removeFromAlloc(procData, op.from, month, op.partNo, op.qty, op.hrsFrom);
+    addToAlloc(procData, op.to, month, op.partNo, op.qty, op.hrsTo);
+  }
+}
+
+// Replace smartBalance to use applyMove
+function smartBalanceV2(byProcess, partMap, setting, months, target, isMaxCap) {
+  let chainExceeded = false;
+  for (const proc of getProcesses()) {
+    const procData = byProcess[proc];
+    for (const month of months) {
+      const monthTarget = isMaxCap ? calculateMaxCap(setting, month) : target;
+      let iter = 0;
+      const MAX_ITER = 100;
+      while (iter < MAX_ITER) {
+        iter++;
+        const move = findBestMove(procData, partMap, proc, month, monthTarget);
+        if (!move) break;
+        if (move.error === 'CHAIN_TOO_DEEP') { chainExceeded = true; break; }
+        applyMove(procData, month, move);
+      }
+    }
+  }
+  // Sort lines after rebalance
+  for (const proc of getProcesses()) {
+    if (!(byProcess[proc].lines instanceof Set)) {
+      byProcess[proc].lines = Array.from(new Set(byProcess[proc].lines)).sort();
+    } else {
+      byProcess[proc].lines = Array.from(byProcess[proc].lines).sort();
+    }
+  }
+  return { chainExceeded };
+}
+
+// ===== Calculate full result for a step =====
+function calculateForStep(masterParts, monthlyData, setting, stepIdx) {
+  const initial = calculateInitialAllocation(masterParts, monthlyData);
+  let chainExceeded = false;
+  if (stepIdx > 0) {
+    const cfg = STEP_TARGETS[stepIdx];
+    const target = cfg.target;
+    const isMaxCap = cfg.type === 'maxcap';
+    const r = smartBalanceV2(initial.byProcess, initial.partMap, setting, initial.months, target, isMaxCap);
+    chainExceeded = r.chainExceeded;
+  } else {
+    // sort lines for initial
+    for (const proc of getProcesses()) {
+      if (initial.byProcess[proc].lines instanceof Set) initial.byProcess[proc].lines = Array.from(initial.byProcess[proc].lines).sort();
+    }
+  }
+  const alerts = generateAlerts(initial.byProcess, initial.months, setting, stepIdx);
+  return {
+    byProcess: initial.byProcess,
+    months: initial.months,
+    matched: initial.matched,
+    unmatched: initial.unmatched,
+    alerts,
+    settings: setting,
+    stepIdx,
+    chainExceeded
+  };
+}
+
+function generateAlerts(byProcess, months, setting, stepIdx) {
+  const alerts = [];
+  for (const proc of getProcesses()) {
+    const lines = byProcess[proc].lines instanceof Set ? Array.from(byProcess[proc].lines) : byProcess[proc].lines;
+    for (const line of lines) {
+      for (const month of months) {
+        const hours = byProcess[proc].hours[line]?.[month] || 0;
+        const tgt = getStepTarget(stepIdx, setting, month);
+        if (hours > tgt + 0.01) alerts.push({ process: proc, line, month, hours, threshold: tgt, excess: hours - tgt });
+      }
+    }
+  }
+  return alerts;
+}
+
+
+// ===== Render: utilities =====
+function formatHours(h) {
+  if (h == null || Math.abs(h) < 0.05) return '0';
+  if (Math.abs(h) < 10) return h.toFixed(1);
+  return Math.round(h).toLocaleString();
+}
+
+function formatDelta(d) {
+  if (d == null || Math.abs(d) < 0.5) return '0';
+  const sign = d > 0 ? '+' : '';
+  if (Math.abs(d) < 10) return sign + d.toFixed(1);
+  return sign + Math.round(d).toLocaleString();
+}
+
+function getStatusClass(hours, threshold) {
+  if (hours <= 0) return 'status-empty';
+  const r = hours / threshold;
+  if (r <= 0.85) return 'status-ok';
+  if (r <= 1.0) return 'status-warn';
+  return 'status-over';
+}
+
+function getCurrentResult(ds) {
+  ds = ds || getActiveDataset();
+  if (!ds || !ds.resultsHistory) return null;
+  return ds.resultsHistory[ds.currentStepIdx];
+}
+
+function populateRangeSelectors() {
+  const ds = getActiveDataset();
+  const result = getCurrentResult();
+  if (!result) return;
+  const months = result.months;
+  const fromS = $('rangeFrom'), toS = $('rangeTo');
+  const opts = months.map(m => `<option value="${m}">${getDisplayLabel(m)}</option>`).join('');
+  const sig = months.join(',') + '|' + state.lang + '|' + JSON.stringify(state.labelOverrides);
+  if (fromS.dataset.sig !== sig) {
+    const prevFrom = fromS.value, prevTo = toS.value;
+    fromS.innerHTML = opts;
+    toS.innerHTML = opts;
+    fromS.value = months.includes(prevFrom) ? prevFrom : months[0];
+    toS.value = months.includes(prevTo) ? prevTo : months[Math.min(months.length - 1, 11)];
+    fromS.dataset.sig = sig;
+    toS.dataset.sig = sig;
+  }
+}
+
+function getRangeMonths() {
+  const result = getCurrentResult();
+  if (!result) return [];
+  const all = result.months;
+  const f = $('rangeFrom').value, to = $('rangeTo').value;
+  const i1 = all.indexOf(f), i2 = all.indexOf(to);
+  if (i1 < 0 || i2 < 0 || i1 > i2) return all;
+  return all.slice(i1, i2 + 1);
+}
+
+// ===== Pattern cache for hatched bars =====
+function getHatchPattern(color) {
+  const key = color;
+  if (state.patternCache.has(key)) return state.patternCache.get(key);
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 8;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 8, 8);
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(0, 8); ctx.lineTo(8, 0);
+  ctx.moveTo(-4, 4); ctx.lineTo(4, -4);
+  ctx.moveTo(4, 12); ctx.lineTo(12, 4);
+  ctx.stroke();
+  const pat = ctx.createPattern(c, 'repeat');
+  state.patternCache.set(key, pat);
+  return pat;
+}
+
+// ===== Render: Step history =====
+function renderStepHistory() {
+  const c = $('stepHistory');
+  // Determine which datasets to sync step across
+  let displayedIds;
+  if (state.viewMode === 'single') {
+    displayedIds = state.activeDatasetId ? [state.activeDatasetId] : [];
+  } else {
+    displayedIds = state.compareDatasetIds.length > 0 ? state.compareDatasetIds.slice() : state.datasets.map(d => d.id);
+  }
+  if (displayedIds.length === 0) { c.innerHTML = ''; return; }
+  // Reference dataset — for chip-list base (max history length, current step display)
+  const refDs = getDatasetById(displayedIds[0]) || getActiveDataset();
+  if (!refDs || !refDs.resultsHistory || refDs.resultsHistory.length === 0) { c.innerHTML = ''; return; }
+  // Use longest history length among displayed datasets to show all available chips
+  let maxLen = 0;
+  for (const id of displayedIds) {
+    const d = getDatasetById(id);
+    if (d && d.resultsHistory) maxLen = Math.max(maxLen, d.resultsHistory.length);
+  }
+  let html = `<span class="label">Step:</span>`;
+  for (let i = 0; i < maxLen; i++) {
+    const r = refDs.resultsHistory[i];
+    const label = getStepLabel(r ? r.stepIdx : i);
+    // chainExceeded if ANY displayed dataset has exceeded at this step
+    let chainFail = false;
+    for (const id of displayedIds) {
+      const d = getDatasetById(id);
+      const rr = d?.resultsHistory[i];
+      if (rr?.chainExceeded) { chainFail = true; break; }
+    }
+    const cls = `step-chip ${i === refDs.currentStepIdx ? 'active' : ''} ${chainFail ? 'fail' : ''}`;
+    html += `<span class="${cls}" data-step="${i}">${label}${chainFail ? ' ⚠' : ''}</span>`;
+  }
+  c.innerHTML = html;
+  c.querySelectorAll('.step-chip').forEach(chip => {
+    chip.onclick = () => {
+      const stepIdx = parseInt(chip.dataset.step);
+      // Sync all displayed datasets to this step (compute on-demand if missing)
+      for (const id of displayedIds) {
+        const d = getDatasetById(id);
+        if (!d) continue;
+        while (d.resultsHistory.length <= stepIdx) {
+          const nextIdx = d.resultsHistory.length;
+          const useSetting = d.resultsHistory[0]?.settings || readSettings();
+          d.resultsHistory.push(calculateForStep(state.master.parts, d.monthlyData, useSetting, nextIdx));
+        }
+        d.currentStepIdx = stepIdx;
+      }
+      renderResults();
+    };
+  });
+}
+
+// ===== Render: Dataset chips =====
+function renderDatasetChips() {
+  const c = $('dsChips');
+  if (state.datasets.length === 0) { c.innerHTML = ''; return; }
+  if (state.viewMode === 'single') {
+    c.innerHTML = state.datasets.map(d => {
+      const color = getDatasetColor(d.id);
+      const active = d.id === state.activeDatasetId;
+      return `<span class="ds-chip ${active ? 'active' : ''}" data-id="${d.id}" style="${active ? `background:${color};border-color:${color};` : ''}">${d.name}</span>`;
+    }).join('');
+    c.querySelectorAll('.ds-chip').forEach(chip => {
+      chip.onclick = () => { state.activeDatasetId = chip.dataset.id; saveDatasets(); renderResults(); };
+    });
+  } else {
+    // multi-select for compare/diff
+    c.innerHTML = state.datasets.map(d => {
+      const color = getDatasetColor(d.id);
+      const active = state.compareDatasetIds.includes(d.id);
+      return `<span class="ds-chip ${active ? 'active' : ''}" data-id="${d.id}" style="${active ? `background:${color};border-color:${color};` : ''}">${d.name}</span>`;
+    }).join('');
+    c.querySelectorAll('.ds-chip').forEach(chip => {
+      chip.onclick = () => {
+        const id = chip.dataset.id;
+        const idx = state.compareDatasetIds.indexOf(id);
+        if (idx >= 0) state.compareDatasetIds.splice(idx, 1);
+        else {
+          if (state.viewMode === 'diff' && state.compareDatasetIds.length >= 2) state.compareDatasetIds.shift();
+          state.compareDatasetIds.push(id);
+        }
+        saveDatasets();
+        renderResults();
+      };
+      // E: Hover dimming — only for active chips in compare/diff
+      chip.onmouseenter = () => {
+        if (!state.compareDatasetIds.includes(chip.dataset.id)) return;
+        state.hoveredDsId = chip.dataset.id;
+        updateChartDimming();
+      };
+      chip.onmouseleave = () => {
+        if (state.hoveredDsId !== null) {
+          state.hoveredDsId = null;
+          updateChartDimming();
+        }
+      };
+    });
+  }
+}
+
+// ===== Render: Line filter =====
+function renderLineFilter() {
+  const ds = getActiveDataset();
+  const c = $('lineFilter');
+  if (!ds) { c.innerHTML = ''; return; }
+  const result = getCurrentResult(ds);
+  if (!result) { c.innerHTML = ''; return; }
+  const data = result.byProcess[state.currentTab];
+  if (!data || data.lines.length === 0) { c.innerHTML = ''; return; }
+  let html = `<button class="btn-small" id="showAllLines">${t('line_filter_show_all')}</button>`;
+  html += `<button class="btn-small" id="hideAllLines">${t('line_filter_hide_all')}</button>`;
+  data.lines.forEach((line, i) => {
+    const key = `${state.currentTab}|${line}`;
+    const active = !state.hiddenLines.has(key);
+    const color = LINE_COLORS[i % LINE_COLORS.length];
+    html += `<span class="line-chip ${active ? 'active' : ''}" data-line="${line}" style="${active ? `border-color:${color}; color:${color};` : ''}">${line}</span>`;
+  });
+  c.innerHTML = html;
+  c.querySelectorAll('.line-chip').forEach(ch => {
+    ch.onclick = () => {
+      const k = `${state.currentTab}|${ch.dataset.line}`;
+      if (state.hiddenLines.has(k)) state.hiddenLines.delete(k); else state.hiddenLines.add(k);
+      renderTableArea();
+      renderChart();
+      renderLineFilter();
+    };
+  });
+  $('showAllLines').onclick = () => {
+    data.lines.forEach(l => state.hiddenLines.delete(`${state.currentTab}|${l}`));
+    renderTableArea(); renderChart(); renderLineFilter();
+  };
+  $('hideAllLines').onclick = () => {
+    data.lines.forEach(l => state.hiddenLines.add(`${state.currentTab}|${l}`));
+    renderTableArea(); renderChart(); renderLineFilter();
+  };
+}
+
+// ===== Render: Table (Single mode) =====
+function renderTableSingle(process) {
+  const result = getCurrentResult();
+  if (!result) return '';
+  const data = result.byProcess[process];
+  if (!data || data.lines.length === 0) {
+    const hasOther = PROCESSES.some(p => p !== process && result.byProcess[p].lines.length > 0);
+    const hint = hasOther ? `<br><small style="color:#5F5E5A">${t('hint_other_tab')}</small>` : `<br><small style="color:#5F5E5A">${t('hint_check_match')}</small>`;
+    return `<div class="empty-state"><div class="empty-icon">📭</div>${t('no_data_in_proc', { proc: process })}${hint}</div>`;
+  }
+  const months = getRangeMonths();
+  const setting = result.settings;
+  const visibleLines = data.lines.filter(l => !state.hiddenLines.has(`${process}|${l}`));
+  let html = '<table>';
+  html += `<thead><tr><th class="line-name">${t('line_col')}</th>`;
+  for (const m of months) html += `<th>${getDisplayLabel(m)}</th>`;
+  html += `<th>${t('total_col')}</th></tr></thead><tbody>`;
+  for (const line of visibleLines) {
+    html += `<tr><td class="line-name">${line}</td>`;
+    let total = 0;
+    for (const m of months) {
+      const hrs = data.hours[line]?.[m] || 0;
+      total += hrs;
+      const tgt = getStepTarget(result.stepIdx, setting, m);
+      const cls = getStatusClass(hrs, tgt);
+      const display = hrs > 0 ? formatHours(hrs) : '—';
+      html += `<td class="${cls}" title="${getDisplayLabel(m)}: ${formatHours(hrs)} / target ${formatHours(tgt)}">${display}</td>`;
+    }
+    html += `<td class="month-total">${formatHours(total)}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+// ===== Render: Table (Compare mode) =====
+function renderTableCompare(process) {
+  if (state.compareDatasetIds.length === 0) {
+    return `<div class="empty-state"><div class="empty-icon">👈</div>${t('dataset_label')} — ${t('view_compare')}</div>`;
+  }
+  const compareDs = state.compareDatasetIds.map(id => getDatasetById(id)).filter(Boolean);
+  if (compareDs.length === 0) return '';
+
+  // Use first dataset's months as reference
+  const refResult = getCurrentResult(compareDs[0]);
+  if (!refResult) return '';
+  const months = getRangeMonths();
+  const allLines = new Set();
+  for (const ds of compareDs) {
+    const r = getCurrentResult(ds);
+    if (!r) continue;
+    const data = r.byProcess[process];
+    if (data) for (const l of data.lines) allLines.add(l);
+  }
+  const lines = Array.from(allLines).sort().filter(l => !state.hiddenLines.has(`${process}|${l}`));
+
+  let html = '<table>';
+  // Header row 1: line + month group
+  html += `<thead><tr><th class="line-name" rowspan="2">${t('line_col')}</th>`;
+  for (const m of months) html += `<th colspan="${compareDs.length}">${getDisplayLabel(m)}</th>`;
+  html += '</tr><tr>';
+  for (const m of months) {
+    for (const ds of compareDs) {
+      const color = getDatasetColor(ds.id);
+      html += `<th class="ds-sub" style="background:${color}">${ds.name.slice(0, 8)}</th>`;
+    }
+  }
+  html += '</tr></thead><tbody>';
+  for (const line of lines) {
+    html += `<tr><td class="line-name">${line}</td>`;
+    for (const m of months) {
+      for (const ds of compareDs) {
+        const r = getCurrentResult(ds);
+        const hrs = r?.byProcess[process]?.hours[line]?.[m] || 0;
+        const tgt = r ? getStepTarget(r.stepIdx, r.settings, m) : 417;
+        const cls = getStatusClass(hrs, tgt);
+        const display = hrs > 0 ? formatHours(hrs) : '—';
+        html += `<td class="${cls}">${display}</td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+// ===== Render: Table (Diff mode) =====
+function renderTableDiff(process) {
+  if (state.compareDatasetIds.length !== 2) {
+    return `<div class="empty-state"><div class="empty-icon">📊</div>${t('select_2_for_diff')}</div>`;
+  }
+  const dsA = getDatasetById(state.compareDatasetIds[0]);
+  const dsB = getDatasetById(state.compareDatasetIds[1]);
+  if (!dsA || !dsB) return '';
+  const rA = getCurrentResult(dsA), rB = getCurrentResult(dsB);
+  if (!rA || !rB) return '';
+  const months = getRangeMonths();
+  const allLines = new Set([...(rA.byProcess[process]?.lines || []), ...(rB.byProcess[process]?.lines || [])]);
+  const lines = Array.from(allLines).sort().filter(l => !state.hiddenLines.has(`${process}|${l}`));
+
+  let html = `<div style="padding:6px 10px;font-size:11px;color:#5F5E5A;background:#F5F4F0;border-bottom:1px solid #E5E3DB;">${t('diff_label', { base: dsA.name })} → ${dsB.name}</div>`;
+  html += '<table>';
+  html += `<thead><tr><th class="line-name">${t('line_col')}</th>`;
+  for (const m of months) html += `<th>${getDisplayLabel(m)}</th>`;
+  html += `<th>${t('total_col')}</th></tr></thead><tbody>`;
+  for (const line of lines) {
+    html += `<tr><td class="line-name">${line}</td>`;
+    let totalDiff = 0;
+    for (const m of months) {
+      const hA = rA.byProcess[process]?.hours[line]?.[m] || 0;
+      const hB = rB.byProcess[process]?.hours[line]?.[m] || 0;
+      const d = hB - hA;
+      totalDiff += d;
+      let cls = 'diff-zero';
+      if (d > 0.5) cls = 'diff-pos';
+      else if (d < -0.5) cls = 'diff-neg';
+      const display = (Math.abs(d) < 0.5) ? '—' : formatDelta(d);
+      html += `<td class="${cls}" title="A: ${formatHours(hA)} → B: ${formatHours(hB)}">${display}</td>`;
+    }
+    const tcls = totalDiff > 0.5 ? 'diff-pos' : (totalDiff < -0.5 ? 'diff-neg' : 'diff-zero');
+    html += `<td class="month-total ${tcls}">${formatDelta(totalDiff)}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderTableArea() {
+  const proc = state.currentTab;
+  let html = '';
+  if (state.viewMode === 'single') html = renderTableSingle(proc);
+  else if (state.viewMode === 'compare') html = renderTableCompare(proc);
+  else if (state.viewMode === 'diff') html = renderTableDiff(proc);
+  $('tableContainer').innerHTML = html;
+}
+
+
+// ===== Render: Chart =====
+function renderChart() {
+  if (state.chart) { state.chart.destroy(); state.chart = null; }
+  const ctx = $('resultChart');
+  if (!ctx) return;
+  if (state.viewMode === 'single') renderChartSingle();
+  else if (state.viewMode === 'compare') renderChartCompare();
+  else if (state.viewMode === 'diff') renderChartDiff();
+}
+
+// E: Hover dimming — dim datasets not matching hoveredDsId
+function updateChartDimming() {
+  if (!state.chart) return;
+  let dirty = false;
+  for (const ds of state.chart.data.datasets) {
+    if (!ds._dsId) continue;
+    const dimmed = state.hoveredDsId && state.hoveredDsId !== ds._dsId;
+    const newBg = dimmed ? DIM_FILL : ds._origBackground;
+    const newBd = dimmed ? DIM_BORDER : ds._origBorder;
+    if (ds.backgroundColor !== newBg) { ds.backgroundColor = newBg; dirty = true; }
+    if (ds.borderColor !== newBd) { ds.borderColor = newBd; dirty = true; }
+  }
+  if (dirty) state.chart.update('none');
+}
+
+function getThresholdOpts() {
+  return {
+    show417: $('show417').checked,
+    show447: $('show447').checked,
+    show497: $('show497').checked,
+    showMaxCap: $('showMaxCap').checked,
+    showTrend: $('showTrend').checked,
+    showLineInAxis: $('showLineInAxis').checked
+  };
+}
+
+function thresholdLineDataset(label, val, color, dash, dataArr) {
+  return { type: 'line', label, data: dataArr, borderColor: color, borderWidth: 2, borderDash: dash, pointRadius: 0, fill: false, stack: `th_${label}`, order: 0 };
+}
+
+function renderChartSingle() {
+  const result = getCurrentResult();
+  if (!result) { return; }
+  const process = state.currentTab;
+  const data = result.byProcess[process];
+  if (!data || data.lines.length === 0) return;
+  const months = getRangeMonths();
+  const setting = result.settings;
+  const visibleLines = data.lines.filter(l => !state.hiddenLines.has(`${process}|${l}`));
+  const mode = $('chartMode').value;
+  const datasets = [];
+  const opts = getThresholdOpts();
+
+  if (mode === 'byPart') {
+    const allParts = new Set();
+    for (const line of visibleLines) for (const m of months) {
+      const alloc = data.partAlloc[line]?.[m] || {};
+      for (const pn of Object.keys(alloc)) if (alloc[pn].hours > 0) allParts.add(pn);
+    }
+    const partList = Array.from(allParts).sort();
+    const totalBars = visibleLines.length * months.length;
+    const useNumeric = shouldUseNumericMonths(totalBars);
+    const labels = [];
+    for (const line of visibleLines) for (const m of months) {
+      labels.push(getMonthOnly(getDisplayLabel(m), useNumeric));
+    }
+    const xHier = computeXHierarchy(visibleLines, months);
+
+    for (const pn of partList) {
+      const arr = [];
+      const colorArr = [];
+      const solidColor = getPartColor(pn);
+      const hatchPattern = getHatchPattern(solidColor);
+      for (const line of visibleLines) for (const m of months) {
+        const a = data.partAlloc[line]?.[m]?.[pn];
+        arr.push(a ? Math.round(a.hours * 10) / 10 : 0);
+        const origin = data.partOrigin?.[pn];
+        const isBalanced = origin && origin !== line;
+        colorArr.push(isBalanced ? hatchPattern : solidColor);
+      }
+      datasets.push({
+        type: 'bar', label: pn, data: arr,
+        backgroundColor: colorArr, borderWidth: 0, stack: 'parts', order: 2
+      });
+    }
+
+    if (opts.showTrend) {
+      const trendData = labels.map((_, idx) => {
+        let sum = 0;
+        for (const ds of datasets) if (ds.type === 'bar') sum += ds.data[idx] || 0;
+        return Math.round(sum * 10) / 10;
+      });
+      datasets.push({
+        type: 'line', label: t('trend_label'), data: trendData,
+        borderColor: TREND_COLOR, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: TREND_COLOR,
+        fill: false, tension: 0.25, stack: 'trend', order: 1
+      });
+    }
+
+    if (opts.show417) datasets.push(thresholdLineDataset('417', 417, T_417[0], T_417[1], labels.map(() => 417)));
+    if (opts.show447) datasets.push(thresholdLineDataset('447', 447, T_447[0], T_447[1], labels.map(() => 447)));
+    if (opts.show497) datasets.push(thresholdLineDataset('497', 497, T_497[0], T_497[1], labels.map(() => 497)));
+    if (opts.showMaxCap) {
+      const mcData = [];
+      for (const line of visibleLines) for (const m of months) mcData.push(Math.round(calculateMaxCap(setting, m)));
+      datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
+    }
+
+    state.chart = new Chart($('resultChart'), {
+      plugins: [xHierarchyPlugin],
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { bottom: 60 } },
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: t('hours_axis') } }
+        },
+        plugins: {
+          xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
+          legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+          tooltip: { callbacks: {
+            title: items => {
+              if (!items.length) return '';
+              const idx = items[0].dataIndex;
+              const lineIdx = Math.floor(idx / months.length);
+              const monthIdx = idx % months.length;
+              return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
+            },
+            label: c => {
+              if (c.parsed.y <= 0) return null;
+              const pn = c.dataset.label;
+              const origin = data.partOrigin?.[pn];
+              const idx = c.dataIndex;
+              const lineIdx = Math.floor(idx / months.length);
+              const curLine = visibleLines[lineIdx];
+              const balanced = origin && origin !== curLine;
+              const tag = balanced ? ` (balanced from ${origin.replace(/^Shaft /, '')})` : '';
+              return `${pn}: ${formatHours(c.parsed.y)}${tag}`;
+            }
+          } }
+        }
+      }
+    });
+  } else {
+    // byLine mode
+    const labels = months.map(m => getDisplayLabel(m));
+    visibleLines.forEach((line, i) => {
+      datasets.push({ type: 'bar', label: line, data: months.map(m => Math.round(data.hours[line]?.[m] || 0)), backgroundColor: LINE_COLORS[i % LINE_COLORS.length], borderWidth: 0, order: 2 });
+    });
+    if (opts.showTrend) {
+      const trendData = months.map(m => {
+        let sum = 0;
+        for (const line of visibleLines) sum += data.hours[line]?.[m] || 0;
+        return Math.round(sum * 10) / 10;
+      });
+      datasets.push({ type: 'line', label: t('trend_label'), data: trendData, borderColor: TREND_COLOR, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: TREND_COLOR, fill: false, tension: 0.25, order: 1 });
+    }
+    if (opts.show417) datasets.push({ type: 'line', label: '417', data: months.map(() => 417), borderColor: T_417[0], borderWidth: 2, borderDash: T_417[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.show447) datasets.push({ type: 'line', label: '447', data: months.map(() => 447), borderColor: T_447[0], borderWidth: 2, borderDash: T_447[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.show497) datasets.push({ type: 'line', label: '497', data: months.map(() => 497), borderColor: T_497[0], borderWidth: 2, borderDash: T_497[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => Math.round(calculateMaxCap(setting, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+
+    state.chart = new Chart($('resultChart'), {
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: { y: { beginAtZero: true, title: { display: true, text: t('hours_axis') } }, x: { title: { display: true, text: t('month_axis') } } },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatHours(c.parsed.y)}` } } }
+      }
+    });
+  }
+}
+
+function renderChartCompare() {
+  const compareDs = state.compareDatasetIds.map(id => getDatasetById(id)).filter(Boolean);
+  if (compareDs.length === 0) return;
+  const process = state.currentTab;
+  const refResult = getCurrentResult(compareDs[0]);
+  if (!refResult) return;
+  const months = getRangeMonths();
+  const allLines = new Set();
+  for (const ds of compareDs) {
+    const r = getCurrentResult(ds);
+    if (!r) continue;
+    const data = r.byProcess[process];
+    if (data) for (const l of data.lines) allLines.add(l);
+  }
+  const visibleLines = Array.from(allLines).sort().filter(l => !state.hiddenLines.has(`${process}|${l}`));
+  const mode = $('chartMode').value;
+  const datasets = [];
+  const opts = getThresholdOpts();
+
+  if (mode === 'byPart') {
+    // x-axis: line × month — same as Single. Each slot has N bars (1 per dataset) side-by-side, each stacked by part.
+    const totalBars = visibleLines.length * months.length;
+    const useNumeric = shouldUseNumericMonths(totalBars);
+    const labels = [];
+    for (const line of visibleLines) for (const m of months) {
+      labels.push(getMonthOnly(getDisplayLabel(m), useNumeric));
+    }
+    const xHier = computeXHierarchy(visibleLines, months);
+    // Collect parts across all datasets
+    const allParts = new Set();
+    for (const ds of compareDs) {
+      const data = getCurrentResult(ds)?.byProcess[process];
+      if (!data) continue;
+      for (const line of visibleLines) for (const m of months) {
+        const alloc = data.partAlloc[line]?.[m] || {};
+        for (const pn of Object.keys(alloc)) if (alloc[pn].hours > 0) allParts.add(pn);
+      }
+    }
+    const partList = Array.from(allParts).sort();
+
+    // Per dataset → push parts as stacked bars; different stack key per dataset → side-by-side groups
+    for (const ds of compareDs) {
+      const r = getCurrentResult(ds);
+      const data = r?.byProcess[process];
+      if (!data) continue;
+      const dsBorderColor = getDatasetColor(ds.id);
+      for (const pn of partList) {
+        const arr = [];
+        const colorArr = [];
+        const solidColor = getPartColor(pn);
+        const hatchPattern = getHatchPattern(solidColor);
+        for (const line of visibleLines) for (const m of months) {
+          const a = data.partAlloc[line]?.[m]?.[pn];
+          arr.push(a ? Math.round(a.hours * 10) / 10 : 0);
+          const origin = data.partOrigin?.[pn];
+          const isBalanced = origin && origin !== line;
+          colorArr.push(isBalanced ? hatchPattern : solidColor);
+        }
+        datasets.push({
+          type: 'bar', label: `${pn} [${ds.name}]`, data: arr,
+          backgroundColor: colorArr,
+          borderColor: dsBorderColor,
+          borderWidth: { top: 1.5, left: 1.5, right: 1.5, bottom: 0 },
+          borderSkipped: false,
+          stack: `${ds.id}_parts`, order: 2,
+          _ds: ds.name, _part: pn,
+          _dsId: ds.id, _origBackground: colorArr, _origBorder: dsBorderColor
+        });
+      }
+    }
+
+    if (opts.show417) datasets.push(thresholdLineDataset('417', 417, T_417[0], T_417[1], labels.map(() => 417)));
+    if (opts.show447) datasets.push(thresholdLineDataset('447', 447, T_447[0], T_447[1], labels.map(() => 447)));
+    if (opts.show497) datasets.push(thresholdLineDataset('497', 497, T_497[0], T_497[1], labels.map(() => 497)));
+    if (opts.showMaxCap) {
+      const mcData = [];
+      for (const line of visibleLines) for (const m of months) mcData.push(Math.round(calculateMaxCap(refResult.settings, m)));
+      datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
+    }
+
+    state.chart = new Chart($('resultChart'), {
+      plugins: [xHierarchyPlugin],
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { bottom: 60 } },
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: t('hours_axis') } }
+        },
+        plugins: {
+          xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => {
+                if (!items.length) return '';
+                const idx = items[0].dataIndex;
+                const lineIdx = Math.floor(idx / months.length);
+                const monthIdx = idx % months.length;
+                return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
+              },
+              label: c => {
+                if (c.parsed.y <= 0) return null;
+                return `${c.dataset._ds || ''} • ${c.dataset._part || c.dataset.label}: ${formatHours(c.parsed.y)}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  } else {
+    // byLine mode — side-by-side bars per (line × dataset), grouped per month
+    const labels = months.map(m => getDisplayLabel(m));
+    visibleLines.forEach((line, i) => {
+      const lineColor = LINE_COLORS[i % LINE_COLORS.length];
+      compareDs.forEach((ds, dsIdx) => {
+        const r = getCurrentResult(ds);
+        const data = r?.byProcess[process];
+        const arr = months.map(m => Math.round((data?.hours[line]?.[m] || 0)));
+        const dsBorderColor = getDatasetColor(ds.id);
+        datasets.push({
+          type: 'bar', label: `${line} [${ds.name}]`, data: arr,
+          backgroundColor: lineColor,
+          borderColor: dsBorderColor,
+          borderWidth: { top: 1.5, left: 1.5, right: 1.5, bottom: 0 },
+          borderSkipped: false,
+          order: 2,
+          _dsId: ds.id, _origBackground: lineColor, _origBorder: dsBorderColor
+        });
+      });
+    });
+
+    if (opts.show417) datasets.push({ type: 'line', label: '417', data: labels.map(() => 417), borderColor: T_417[0], borderWidth: 2, borderDash: T_417[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.show447) datasets.push({ type: 'line', label: '447', data: labels.map(() => 447), borderColor: T_447[0], borderWidth: 2, borderDash: T_447[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.show497) datasets.push({ type: 'line', label: '497', data: labels.map(() => 497), borderColor: T_497[0], borderWidth: 2, borderDash: T_497[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => Math.round(calculateMaxCap(refResult.settings, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+
+    state.chart = new Chart($('resultChart'), {
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: { y: { beginAtZero: true, title: { display: true, text: t('hours_axis') } }, x: { title: { display: true, text: t('month_axis') } } },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatHours(c.parsed.y)}` } } }
+      }
+    });
+  }
+}
+
+function renderChartDiff() {
+  if (state.compareDatasetIds.length !== 2) return;
+  const dsA = getDatasetById(state.compareDatasetIds[0]);
+  const dsB = getDatasetById(state.compareDatasetIds[1]);
+  if (!dsA || !dsB) return;
+  const rA = getCurrentResult(dsA), rB = getCurrentResult(dsB);
+  if (!rA || !rB) return;
+  const process = state.currentTab;
+  const months = getRangeMonths();
+  const allLines = new Set([...(rA.byProcess[process]?.lines || []), ...(rB.byProcess[process]?.lines || [])]);
+  const visibleLines = Array.from(allLines).sort().filter(l => !state.hiddenLines.has(`${process}|${l}`));
+  const labels = months.map(m => getDisplayLabel(m));
+  const datasets = [];
+
+  // Per-line delta bars (B - A) — stacked
+  visibleLines.forEach((line, i) => {
+    const arr = months.map(m => {
+      const hA = rA.byProcess[process]?.hours[line]?.[m] || 0;
+      const hB = rB.byProcess[process]?.hours[line]?.[m] || 0;
+      return Math.round((hB - hA) * 10) / 10;
+    });
+    datasets.push({ type: 'bar', label: line, data: arr, backgroundColor: LINE_COLORS[i % LINE_COLORS.length], borderWidth: 0, stack: 'diff', order: 2 });
+  });
+
+  state.chart = new Chart($('resultChart'), {
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: { y: { stacked: true, beginAtZero: false, title: { display: true, text: `Δ ${t('hours_axis')} (${dsB.name} − ${dsA.name})` } }, x: { stacked: true, title: { display: true, text: t('month_axis') } } },
+      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatDelta(c.parsed.y)}` } } }
+    }
+  });
+}
+
+// ===== Render: Alerts =====
+function renderAlerts() {
+  const list = $('alertList');
+  let combined = [];
+  if (state.viewMode === 'single') {
+    const result = getCurrentResult();
+    if (result) combined = result.alerts.map(a => ({ ...a, dsName: getActiveDataset()?.name, dsColor: getDatasetColor(state.activeDatasetId) }));
+  } else {
+    const dsIds = state.compareDatasetIds.length > 0 ? state.compareDatasetIds : state.datasets.map(d => d.id);
+    for (const id of dsIds) {
+      const ds = getDatasetById(id);
+      const r = getCurrentResult(ds);
+      if (!r) continue;
+      for (const a of r.alerts) combined.push({ ...a, dsName: ds.name, dsColor: getDatasetColor(id) });
+    }
+  }
+  $('alertCount').textContent = combined.length;
+  if (combined.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div>${t('no_overflow')}</div>`;
+    return;
+  }
+  combined.sort((a, b) => b.excess - a.excess);
+  list.innerHTML = combined.map(a => `<div class="alert-item">
+    <div class="alert-where"><span class="alert-ds-tag" style="background:${a.dsColor}">${a.dsName || ''}</span>[${a.process}] ${a.line} • ${getDisplayLabel(a.month)}</div>
+    <div class="alert-detail">${formatHours(a.hours)} / ${formatHours(a.threshold)} = +${formatHours(a.excess)}</div>
+  </div>`).join('');
+}
+
+// ===== Render: Process tabs (dynamic) =====
+function renderProcessTabs() {
+  const tabs = $('processTabs');
+  if (!tabs) return;
+  const processList = getProcesses();
+  // Build tabs from current process list
+  tabs.innerHTML = processList.map(p =>
+    `<div class="tab${p === state.currentTab ? ' active' : ''}" data-process="${p}">${p}</div>`
+  ).join('');
+  // Wire up click handlers
+  tabs.querySelectorAll('.tab').forEach(tt => {
+    tt.onclick = () => {
+      tabs.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      tt.classList.add('active');
+      state.currentTab = tt.dataset.process;
+      saveDatasets();
+      if (state.datasets.some(d => d.resultsHistory.length > 0)) {
+        renderLineFilter(); renderTableArea(); renderChart();
+      }
+    };
+  });
+}
+
+// ===== Render: View toggle =====
+function renderViewToggle() {
+  document.querySelectorAll('#viewToggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === state.viewMode);
+  });
+  $('stepHistory').style.display = '';
+}
+
+// ===== Render: Main =====
+function renderResults() {
+  if (state.datasets.length === 0) return;
+  $('resultsSection').style.display = '';
+  $('alertsSection').style.display = '';
+  renderViewToggle();
+  renderDatasetChips();
+  const ds = getActiveDataset();
+  if (!ds || !ds.resultsHistory || ds.resultsHistory.length === 0) {
+    $('tableContainer').innerHTML = '';
+    if (state.chart) { state.chart.destroy(); state.chart = null; }
+    return;
+  }
+
+  const result = getCurrentResult(ds);
+  $('resultStepBadge').textContent = getStepLabel(result.stepIdx);
+  $('resultStepBadge').className = result.stepIdx === 0 ? 'badge-status' : (result.chainExceeded ? 'badge-status warn' : 'badge-status info');
+
+  populateRangeSelectors();
+  renderStepHistory();
+  renderProcessTabs();
+
+  // Auto-pick a tab that has data
+  const processList = getProcesses();
+  if (!processList.includes(state.currentTab) || !result.byProcess[state.currentTab] || result.byProcess[state.currentTab].lines.length === 0) {
+    for (const proc of processList) {
+      if (result.byProcess[proc] && result.byProcess[proc].lines.length > 0) {
+        state.currentTab = proc; break;
+      }
+    }
+    // Fallback to first process if nothing has lines
+    if (!processList.includes(state.currentTab)) state.currentTab = processList[0] || 'Lathe';
+  }
+  document.querySelectorAll('#processTabs .tab').forEach(x => x.classList.toggle('active', x.dataset.process === state.currentTab));
+
+  renderLineFilter();
+  renderTableArea();
+  renderChart();
+  renderAlerts();
+
+  // Balance button — enable based on step level
+  const nextStepIdx = ds.currentStepIdx + 1;
+  const hasNext = nextStepIdx < STEP_TARGETS.length;
+  if (!state.isSnapshot) {
+    $('balanceBtn').disabled = !hasNext;
+    if (!hasNext) {
+      $('balanceInfo').textContent = t('cannot_balance');
+      $('balanceBtn').textContent = '✓';
+    } else {
+      $('balanceInfo').textContent = '';
+      $('balanceBtn').innerHTML = `Balance → <strong>${getStepLabel(nextStepIdx)}</strong>`;
+    }
+    if (result.chainExceeded) {
+      $('balanceInfo').innerHTML = `<span class="balance-error">${t('chain_too_deep')}</span>`;
+    }
+  }
+  renderChartLegendMini();
+}
+
+function renderChartLegendMini() {
+  const el = $('chartLegendMini');
+  const mode = $('chartMode').value;
+  if (state.viewMode === 'single') {
+    if (mode === 'byPart') {
+      el.style.display = '';
+      el.innerHTML = `<span><span class="swatch solid"></span>${t('legend_natural')}</span>
+        <span><span class="swatch hatch"></span>${t('legend_balanced')}</span>`;
+    } else {
+      el.style.display = 'none';
+    }
+  } else {
+    // compare or diff
+    el.style.display = '';
+    let html = '';
+    if (state.viewMode === 'compare' && mode === 'byPart') {
+      html += `<span><span class="swatch solid"></span>${t('legend_natural')}</span>
+        <span><span class="swatch hatch"></span>${t('legend_balanced')}</span>
+        <span style="border-left:1px solid #E5E3DB;height:14px;margin:0 4px;"></span>`;
+    }
+    html += `<span style="font-weight:500;color:#5F5E5A;">${t('legend_ds_border')}:</span>`;
+    const shown = state.compareDatasetIds.length > 0 ? state.compareDatasetIds : state.datasets.map(d => d.id);
+    for (const id of shown) {
+      const ds = getDatasetById(id);
+      if (!ds) continue;
+      const color = getDatasetColor(id);
+      html += `<span><span class="swatch" style="background:#F5F4F0;border:2px solid ${color};"></span>${ds.name}</span>`;
+    }
+    html += `<span style="font-style:italic;color:#888780;">${t('legend_hover_hint')}</span>`;
+    el.innerHTML = html;
+  }
+}
+
+// ===== Render: Preview =====
+function renderPreview() {
+  if (!state.isSnapshot) $('previewSection').style.display = '';
+  if (state.master) {
+    const procList = getProcesses();
+    const procCounts = {};
+    for (const proc of procList) procCounts[proc] = 0;
+    for (const p of state.master.parts) for (const proc of procList) if (p.processes[proc]) procCounts[proc]++;
+    $('prevMasterParts').textContent = state.master.parts.length.toLocaleString();
+    $('prevMasterDetail').textContent = procList.map(p => `${p} ${procCounts[p]}`).join(' • ');
+  }
+  $('prevDatasetCount').textContent = state.datasets.length;
+  $('prevDatasetDetail').textContent = state.datasets.map(d => d.name).join(', ');
+  const active = getActiveDataset();
+  if (active) {
+    $('prevActiveDsParts').textContent = active.monthlyData.data.size.toLocaleString();
+    $('prevActiveDsDetail').textContent = t('months_sheet', { n: active.monthlyData.months.length, s: active.monthlyData.sheetName });
+  } else {
+    $('prevActiveDsParts').textContent = '—';
+    $('prevActiveDsDetail').textContent = '';
+  }
+  if (state.master && active) {
+    const ms = new Set(state.master.parts.map(p => p.partNo));
+    let m = 0, u = 0; const ul = [];
+    for (const [pn, mq] of active.monthlyData.data.entries()) {
+      const tot = Object.values(mq).reduce((a, b) => a + b, 0);
+      if (tot <= 0) continue;
+      if (ms.has(pn)) m++; else { u++; ul.push({ pn, totalQty: tot }); }
+    }
+    $('prevMatched').textContent = m.toLocaleString();
+    $('prevMatchedDetail').textContent = t('not_matched', { n: u });
+    ul.sort((a, b) => b.totalQty - a.totalQty);
+    $('unmatchedList').innerHTML = ul.length === 0 ? `<i>${t('all_matched')}</i>` : ul.map(x => `${x.pn} — ${x.totalQty.toLocaleString()}`).join('<br>');
+    if (!state.isSnapshot) {
+      $('settingsSection').style.display = '';
+      $('relabelBox').style.display = '';
+      $('uploadBadge').style.display = '';
+    }
+    renderCalendarGrid();
+    renderCtOverrides();
+  }
+}
+
+
+// ===== Calendar grid =====
+function renderCalendarGrid() {
+  const g = $('calendarGrid');
+  const active = getActiveDataset();
+  if (!active) {
+    g.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 18px;"><div style="font-size: 13px;">${t('upload_first')}</div></div>`;
+    return;
+  }
+  // Union of months across all datasets
+  const allMonths = new Set();
+  for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
+  const months = Array.from(allMonths).sort((a, b) => {
+    const pa = parseMonthYearFromLabel(getDisplayLabel(a)) || parseMonthYearFromLabel(a);
+    const pb = parseMonthYearFromLabel(getDisplayLabel(b)) || parseMonthYearFromLabel(b);
+    if (!pa && !pb) return 0;
+    if (!pa) return 1;
+    if (!pb) return -1;
+    return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+  });
+  const setting = readSettings();
+  g.innerHTML = months.map(m => {
+    const ov = state.monthOverrides[m] || {};
+    const wd = ov.wd != null ? ov.wd : '';
+    const lbl = state.labelOverrides[m] || m;
+    const info = getMonthInfo(m);
+    const wdEffective = wd !== '' ? parseInt(wd) : setting.defaultWD;
+    const hdComputed = info.valid ? Math.max(0, info.days - wdEffective) : null;
+    return `<div class="cal-item ${info.valid ? '' : 'invalid'}">
+      <input type="text" class="cal-label-input" data-month="${m}" data-key="label" value="${lbl}">
+      ${lbl !== m ? `<div class="cal-orig">orig: ${m}</div>` : ''}
+      <div class="cal-inputs" style="grid-template-columns: 1fr;">
+        <div><label>WD</label><input type="number" data-month="${m}" data-key="wd" value="${wd}" placeholder="—" min="0" max="31"></div>
+      </div>
+      ${info.valid ? `<div class="cal-info">${t('days_info', { d: info.days, h: hdComputed })}</div>` : `<div class="cal-error">⚠️ ${t('cant_parse_month')}</div>`}
+    </div>`;
+  }).join('');
+  g.oninput = e => {
+    const i = e.target;
+    if (i.tagName !== 'INPUT') return;
+    const mon = i.dataset.month, key = i.dataset.key;
+    if (key === 'label') {
+      if (i.value && i.value !== mon) state.labelOverrides[mon] = i.value;
+      else delete state.labelOverrides[mon];
+      saveStorage({ labelOverrides: state.labelOverrides });
+      renderCalendarGrid();
+      if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
+    } else {
+      const v = i.value === '' ? null : parseInt(i.value);
+      if (!state.monthOverrides[mon]) state.monthOverrides[mon] = {};
+      if (v == null) delete state.monthOverrides[mon][key];
+      else state.monthOverrides[mon][key] = v;
+      const item = i.closest('.cal-item');
+      const info = getMonthInfo(mon);
+      if (info.valid) {
+        const hdC = Math.max(0, info.days - (v != null ? v : setting.defaultWD));
+        const inf = item.querySelector('.cal-info');
+        if (inf) inf.textContent = t('days_info', { d: info.days, h: hdC });
+      }
+    }
+  };
+}
+
+// ===== CT Overrides rendering (Comment #3) =====
+function renderCtOverrides() {
+  const list = $('ctOverridesList');
+  if (!list) return;
+
+  // Refresh list of existing overrides
+  list.innerHTML = (state.ctOverrides || []).map((o, i) => {
+    const lineShort = o.line.replace(/^Shaft /, '');
+    return `<div style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:#FAFAF7; border:1px solid #E5E3DB; border-radius:6px; font-size:12px;">
+      <span style="background:#1D9E75; color:#fff; font-size:10px; padding:2px 6px; border-radius:3px;">App</span>
+      <span style="font-family:monospace;">${o.partNo}</span>
+      <span style="color:#5F5E5A;">·</span>
+      <span>${o.process}</span>
+      <span style="color:#5F5E5A;">·</span>
+      <span>${lineShort}</span>
+      <span style="color:#5F5E5A;">·</span>
+      <span data-i18n="from_month">From</span>
+      <strong>${getDisplayLabel(o.fromMonth)}</strong>
+      <span style="color:#5F5E5A;">→</span>
+      <span style="font-weight:500;">CT = ${o.ct.toFixed(1)}</span>
+      <span style="flex:1"></span>
+      <span class="dataset-remove" data-idx="${i}" title="Remove">×</span>
+    </div>`;
+  }).join('') || `<div style="font-size:11px; color:#888780; padding:6px 10px;">— no overrides —</div>`;
+
+  list.querySelectorAll('.dataset-remove').forEach(btn => {
+    btn.onclick = () => {
+      const idx = parseInt(btn.dataset.idx);
+      state.ctOverrides.splice(idx, 1);
+      saveStorage({ ctOverrides: state.ctOverrides });
+      renderCtOverrides();
+      // Re-compute results if any
+      if (state.datasets.some(d => d.resultsHistory.length > 0)) recomputeAllSteps();
+      toast(t('ct_removed'), 'success');
+    };
+  });
+
+  // Populate add-row dropdowns
+  const partSel = $('ctoPart');
+  const procSel = $('ctoProc');
+  const lineSel = $('ctoLine');
+  const fromSel = $('ctoFrom');
+
+  if (!state.master || !state.master.parts) {
+    partSel.innerHTML = '<option value="">(no master)</option>';
+    procSel.innerHTML = '';
+    lineSel.innerHTML = '';
+    fromSel.innerHTML = '';
+  } else {
+    // Parts dropdown
+    const prevPart = partSel.value;
+    partSel.innerHTML = state.master.parts.map(p => `<option value="${p.partNo}">${p.partNo}</option>`).join('');
+    if (prevPart && state.master.parts.find(p => p.partNo === prevPart)) partSel.value = prevPart;
+    repopulateCtoProcLine();
+  }
+
+  // From-month dropdown — union of dataset months
+  const allMonths = new Set();
+  for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
+  const monthsSorted = Array.from(allMonths).sort((a, b) => compareMonths(a, b));
+  const prevFrom = fromSel.value;
+  fromSel.innerHTML = monthsSorted.map(m => `<option value="${m}">${getDisplayLabel(m)}</option>`).join('') || '<option value="">(no months)</option>';
+  if (prevFrom && monthsSorted.includes(prevFrom)) fromSel.value = prevFrom;
+
+  // Excel info
+  const excelCount = (state.master?.ctChanges || []).length;
+  $('ctoExcelInfo').textContent = excelCount > 0 ? t('ct_excel_info', { n: excelCount }) : '';
+}
+
+function repopulateCtoProcLine() {
+  if (!state.master) return;
+  const partNo = $('ctoPart').value;
+  const part = state.master.parts.find(p => p.partNo === partNo);
+  const procSel = $('ctoProc');
+  const lineSel = $('ctoLine');
+  if (!part) { procSel.innerHTML = ''; lineSel.innerHTML = ''; return; }
+  const procs = Object.keys(part.processes);
+  const prevProc = procSel.value;
+  procSel.innerHTML = procs.map(p => `<option value="${p}">${p}</option>`).join('');
+  if (procs.includes(prevProc)) procSel.value = prevProc;
+  // Lines for selected process
+  const selProc = procSel.value;
+  const lines = part.processes[selProc]?.lines || [];
+  const prevLine = lineSel.value;
+  lineSel.innerHTML = lines.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
+  if (lines.find(l => l.name === prevLine)) lineSel.value = prevLine;
+}
+
+// Recompute all steps for all datasets (used when CT overrides change)
+function recomputeAllSteps() {
+  for (const ds of state.datasets) {
+    if (!ds.resultsHistory || ds.resultsHistory.length === 0) continue;
+    const setting = ds.resultsHistory[0].settings;
+    const newHist = [];
+    for (let i = 0; i < ds.resultsHistory.length; i++) {
+      newHist.push(calculateForStep(state.master.parts, ds.monthlyData, setting, i));
+    }
+    ds.resultsHistory = newHist;
+    if (ds.currentStepIdx >= newHist.length) ds.currentStepIdx = newHist.length - 1;
+  }
+  renderResults();
+}
+
+// ===== Text Boxes (PPT-style — Comment redesign) =====
+let focusedNoteId = null;
+
+function saveNotes() { saveStorage({ notes: state.notes }); }
+
+function migrateNoteTails() {
+  // Add new fields with defaults to legacy notes
+  for (const n of state.notes) {
+    if (typeof n.tipX !== 'number') n.tipX = n.x - 30;
+    if (typeof n.tipY !== 'number') n.tipY = n.y + (n.height || 80) + 30;
+    if (typeof n.showTail !== 'boolean') n.showTail = false; // default off in new design
+    if (!n.bgColor) n.bgColor = '#FEF6C7';
+    if (typeof n.fontSize !== 'number') n.fontSize = 13;
+  }
+}
+
+function addNote() {
+  const baseX = window.scrollX + window.innerWidth / 2 - 100;
+  const baseY = window.scrollY + 120;
+  const offset = (state.notes.length % 8) * 24;
+  const noteX = Math.max(20, baseX + offset);
+  const noteY = Math.max(20, baseY + offset);
+  const note = {
+    id: 'note_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    x: noteX, y: noteY, width: 200, height: 80,
+    html: '',
+    tipX: noteX - 30, tipY: noteY + 80 + 40,
+    showTail: false,
+    bgColor: '#FEF6C7',
+    fontSize: 13
+  };
+  state.notes.push(note);
+  renderNotes();
+  saveNotes();
+  // Auto-select + focus content of new note
+  setTimeout(() => {
+    selectNote(note.id);
+    const el = document.querySelector(`.text-box[data-id="${note.id}"] .text-box-content`);
+    if (el) el.focus();
+  }, 50);
+}
+
+function removeNote(id) {
+  if (!confirm(t('confirm_delete_note'))) return;
+  state.notes = state.notes.filter(n => n.id !== id);
+  if (focusedNoteId === id) deselectAll();
+  renderNotes();
+  saveNotes();
+}
+
+function updateNote(id, patch) {
+  const n = state.notes.find(x => x.id === id);
+  if (!n) return;
+  Object.assign(n, patch);
+  saveNotes();
+}
+
+function selectNote(id) {
+  focusedNoteId = id;
+  document.querySelectorAll('.text-box').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  const ribbon = $('textRibbon');
+  if (ribbon && !state.isSnapshot) ribbon.classList.add('active');
+  updateRibbonState();
+}
+
+function deselectAll() {
+  focusedNoteId = null;
+  document.querySelectorAll('.text-box').forEach(el => el.classList.remove('selected'));
+  const ribbon = $('textRibbon');
+  if (ribbon) ribbon.classList.remove('active');
+}
+
+function updateRibbonState() {
+  const ribbon = $('textRibbon');
+  if (!ribbon || !focusedNoteId) return;
+  const n = state.notes.find(x => x.id === focusedNoteId);
+  if (!n) return;
+  // Cmd state (B/I/U/lists)
+  ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList'].forEach(cmd => {
+    const btn = ribbon.querySelector(`[data-cmd="${cmd}"]`);
+    if (btn) {
+      try { btn.classList.toggle('active', document.queryCommandState(cmd)); }
+      catch (e) { /* ignore */ }
+    }
+  });
+  // Tail toggle
+  const tailBtn = ribbon.querySelector('[data-action="toggle-tail"]');
+  if (tailBtn) tailBtn.classList.toggle('active', !!n.showTail);
+  // Color swatches
+  ribbon.querySelectorAll('.rib-color-swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.bg === n.bgColor);
+  });
+}
+
+// ===== Tail rendering =====
+function computeTailGeometry(n) {
+  if (!n.showTail) return null;
+  // Box visible edge is inset by wrapper padding (6px) — tail must start at content edge, not wrapper edge
+  const P = 6;
+  const bx = n.x + P, by = n.y + P, w = n.width - 2*P, h = n.height - 2*P;
+  if (w < 20 || h < 20) return null; // box too small for tail
+  const tipX = n.tipX, tipY = n.tipY;
+  if (tipX >= bx && tipX <= bx + w && tipY >= by && tipY <= by + h) return null;
+  const cx = bx + w/2, cy = by + h/2;
+  const dx = tipX - cx, dy = tipY - cy;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  let edge;
+  if (adx * h > ady * w) edge = dx > 0 ? 'right' : 'left';
+  else edge = dy > 0 ? 'bottom' : 'top';
+  const halfBase = 9;
+  const clamp = (v, mn, mx) => Math.max(mn, Math.min(mx, v));
+  let p1, p2;
+  if (edge === 'top') {
+    const ax = clamp(tipX, bx + 14, bx + w - 14);
+    p1 = [ax - halfBase, by]; p2 = [ax + halfBase, by];
+  } else if (edge === 'bottom') {
+    const ax = clamp(tipX, bx + 14, bx + w - 14);
+    p1 = [ax - halfBase, by + h]; p2 = [ax + halfBase, by + h];
+  } else if (edge === 'left') {
+    const ay = clamp(tipY, by + 14, by + h - 14);
+    p1 = [bx, ay - halfBase]; p2 = [bx, ay + halfBase];
+  } else {
+    const ay = clamp(tipY, by + 14, by + h - 14);
+    p1 = [bx + w, ay - halfBase]; p2 = [bx + w, ay + halfBase];
+  }
+  return { p1, p2, tip: [tipX, tipY] };
+}
+
+function ensureTailsSvg(layer) {
+  let svg = document.getElementById('notesTails');
+  if (!svg) {
+    const NS = 'http://www.w3.org/2000/svg';
+    svg = document.createElementNS(NS, 'svg');
+    svg.id = 'notesTails';
+    svg.setAttribute('xmlns', NS);
+    layer.appendChild(svg);
+  }
+  const w = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth, window.innerWidth);
+  const hh = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight);
+  svg.setAttribute('width', w);
+  svg.setAttribute('height', hh);
+  svg.style.width = w + 'px';
+  svg.style.height = hh + 'px';
+  return svg;
+}
+
+function renderTails() {
+  const layer = document.getElementById('notesLayer');
+  if (!layer) return;
+  const svg = ensureTailsSvg(layer);
+  const NS = 'http://www.w3.org/2000/svg';
+  svg.innerHTML = '';
+  const readonly = state.isSnapshot;
+  for (const n of state.notes) {
+    const tg = computeTailGeometry(n);
+    if (!tg) continue;
+    const poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('class', 'tail-poly');
+    poly.setAttribute('fill', n.bgColor || '#FEF6C7');
+    poly.setAttribute('points', `${tg.p1[0]},${tg.p1[1]} ${tg.tip[0]},${tg.tip[1]} ${tg.p2[0]},${tg.p2[1]}`);
+    svg.appendChild(poly);
+    const edge = document.createElementNS(NS, 'polyline');
+    edge.setAttribute('class', 'tail-edge');
+    edge.setAttribute('points', `${tg.p1[0]},${tg.p1[1]} ${tg.tip[0]},${tg.tip[1]} ${tg.p2[0]},${tg.p2[1]}`);
+    svg.appendChild(edge);
+    const tip = document.createElementNS(NS, 'circle');
+    tip.setAttribute('class', 'tail-tip');
+    tip.setAttribute('cx', tg.tip[0]);
+    tip.setAttribute('cy', tg.tip[1]);
+    tip.setAttribute('r', readonly ? 0 : 12);
+    tip.dataset.noteId = n.id;
+    if (!readonly) wireTailTip(tip, n.id);
+    svg.appendChild(tip);
+  }
+}
+
+function wireTailTip(circle, id) {
+  circle.addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation();
+    const onMove = ev => {
+      const note = state.notes.find(n => n.id === id);
+      if (!note) return;
+      note.tipX = ev.clientX + window.scrollX;
+      note.tipY = ev.clientY + window.scrollY;
+      renderTails();
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      const note = state.notes.find(n => n.id === id);
+      if (note) updateNote(id, { tipX: note.tipX, tipY: note.tipY });
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ===== Note rendering (text-box) =====
+function renderNotes() {
+  let layer = document.getElementById('notesLayer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = 'notesLayer';
+    document.body.appendChild(layer);
+  }
+  layer.innerHTML = '';
+  const readonly = state.isSnapshot;
+  for (const n of state.notes) {
+    const noteEl = document.createElement('div');
+    noteEl.className = 'text-box' + (readonly ? ' readonly' : '');
+    noteEl.dataset.id = n.id;
+    noteEl.style.left = n.x + 'px';
+    noteEl.style.top = n.y + 'px';
+    noteEl.style.width = n.width + 'px';
+    noteEl.style.height = n.height + 'px';
+    noteEl.innerHTML = `
+      <div class="text-box-content" ${readonly ? '' : 'contenteditable="true"'} data-placeholder="${t('note_placeholder')}" style="background:${n.bgColor || '#FEF6C7'}; font-size:${n.fontSize || 13}px;">${n.html || ''}</div>
+      ${readonly ? '' : `
+      <div class="tb-handle nw" data-h="nw"></div>
+      <div class="tb-handle ne" data-h="ne"></div>
+      <div class="tb-handle sw" data-h="sw"></div>
+      <div class="tb-handle se" data-h="se"></div>
+      <div class="tb-handle n" data-h="n"></div>
+      <div class="tb-handle s" data-h="s"></div>
+      <div class="tb-handle w" data-h="w"></div>
+      <div class="tb-handle e" data-h="e"></div>`}
+    `;
+    layer.appendChild(noteEl);
+    if (!readonly) wireNote(noteEl, n.id);
+  }
+  renderTails();
+  // Re-apply selection if focused note still exists
+  if (focusedNoteId) {
+    const exists = state.notes.find(n => n.id === focusedNoteId);
+    if (exists) selectNote(focusedNoteId);
+    else deselectAll();
+  }
+}
+
+function wireNote(noteEl, id) {
+  const content = noteEl.querySelector('.text-box-content');
+
+  // Click on content → select note + focus for editing
+  content.addEventListener('mousedown', e => { e.stopPropagation(); selectNote(id); });
+  content.addEventListener('focus', () => selectNote(id));
+  content.addEventListener('input', () => updateNote(id, { html: content.innerHTML }));
+  content.addEventListener('keyup', updateRibbonState);
+  content.addEventListener('mouseup', updateRibbonState);
+
+  // Drag from outer padding (border area) — mousedown directly on noteEl wrapper, NOT content
+  noteEl.addEventListener('mousedown', e => {
+    if (e.target !== noteEl) return; // only when clicked on padding/border
+    e.preventDefault();
+    selectNote(id);
+    const startX = e.clientX, startY = e.clientY;
+    const note = state.notes.find(n => n.id === id);
+    const sx = note.x, sy = note.y;
+    const stipX = note.tipX, stipY = note.tipY;
+    const onMove = ev => {
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      note.x = Math.max(0, sx + dx);
+      note.y = Math.max(0, sy + dy);
+      note.tipX = stipX + (note.x - sx);
+      note.tipY = stipY + (note.y - sy);
+      noteEl.style.left = note.x + 'px';
+      noteEl.style.top = note.y + 'px';
+      renderTails();
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      updateNote(id, { x: note.x, y: note.y, tipX: note.tipX, tipY: note.tipY });
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Resize handles
+  noteEl.querySelectorAll('.tb-handle').forEach(h => {
+    h.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      selectNote(id);
+      const dir = h.dataset.h;
+      const startX = e.clientX, startY = e.clientY;
+      const note = state.notes.find(n => n.id === id);
+      const sx = note.x, sy = note.y, sw = note.width, sh = note.height;
+      const onMove = ev => {
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        let nx = sx, ny = sy, nw = sw, nh = sh;
+        if (dir.includes('e')) nw = Math.max(60, sw + dx);
+        if (dir.includes('w')) { const newW = Math.max(60, sw - dx); nx = sx + (sw - newW); nw = newW; }
+        if (dir.includes('s')) nh = Math.max(40, sh + dy);
+        if (dir.includes('n')) { const newH = Math.max(40, sh - dy); ny = sy + (sh - newH); nh = newH; }
+        note.x = nx; note.y = ny; note.width = nw; note.height = nh;
+        noteEl.style.left = nx + 'px';
+        noteEl.style.top = ny + 'px';
+        noteEl.style.width = nw + 'px';
+        noteEl.style.height = nh + 'px';
+        renderTails();
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        updateNote(id, { x: note.x, y: note.y, width: note.width, height: note.height });
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+function loadSavedNotes() {
+  const d = loadStorage();
+  if (Array.isArray(d.notes)) state.notes = d.notes;
+  migrateNoteTails();
+  renderNotes();
+}
+
+// ===== Dataset list rendering =====
+function renderDatasetList() {
+  const c = $('datasetList');
+  if (!c) return;
+  c.innerHTML = state.datasets.map(d => {
+    const color = getDatasetColor(d.id);
+    return `<div class="dataset-item" data-id="${d.id}">
+      <span class="dataset-tag" style="background:${color}">DS${state.datasets.indexOf(d) + 1}</span>
+      <input class="dataset-name-input" data-id="${d.id}" value="${d.name.replace(/"/g, '&quot;')}">
+      <span class="dataset-meta">${d.monthlyData.data.size} parts × ${d.monthlyData.months.length} mo</span>
+      <span class="dataset-remove" data-id="${d.id}" title="Remove">×</span>
+    </div>`;
+  }).join('');
+  c.querySelectorAll('.dataset-name-input').forEach(inp => {
+    inp.oninput = () => {
+      const ds = getDatasetById(inp.dataset.id);
+      if (ds) ds.name = inp.value || 'Unnamed';
+    };
+    inp.onblur = () => { renderDatasetList(); renderDatasetChips(); renderPreview(); saveDatasets(); };
+  });
+  c.querySelectorAll('.dataset-remove').forEach(btn => {
+    btn.onclick = () => removeDataset(btn.dataset.id);
+  });
+  $('monthlyCountHint').textContent = `(${state.datasets.length}/${MAX_DATASETS})`;
+  $('addDatasetZone').style.display = state.datasets.length >= MAX_DATASETS ? 'none' : '';
+}
+
+function removeDataset(id) {
+  const idx = state.datasets.findIndex(d => d.id === id);
+  if (idx < 0) return;
+  state.datasets.splice(idx, 1);
+  if (state.activeDatasetId === id) state.activeDatasetId = state.datasets[0]?.id || null;
+  state.compareDatasetIds = state.compareDatasetIds.filter(x => x !== id);
+  renderDatasetList();
+  renderPreview();
+  saveDatasets();
+  if (state.datasets.length === 0) {
+    $('resultsSection').style.display = 'none';
+    $('alertsSection').style.display = 'none';
+    $('settingsSection').style.display = 'none';
+    $('previewSection').style.display = 'none';
+    $('uploadBadge').style.display = 'none';
+  } else if (state.datasets.some(d => d.resultsHistory.length > 0)) {
+    renderResults();
+  }
+  toast(t('dataset_removed'), 'success');
+}
+
+// ===== Upload management =====
+function setupUpload() {
+  // Master
+  const mz = $('masterZone'), mInp = $('masterInput');
+  mz.onclick = () => mInp.click();
+  mInp.onchange = e => { if (e.target.files.length > 0) handleMasterFile(e.target.files[0]); };
+  mz.ondragover = e => { e.preventDefault(); mz.classList.add('drag-over'); };
+  mz.ondragleave = () => mz.classList.remove('drag-over');
+  mz.ondrop = e => { e.preventDefault(); mz.classList.remove('drag-over'); if (e.dataTransfer.files.length > 0) handleMasterFile(e.dataTransfer.files[0]); };
+
+  // Add dataset zone
+  const az = $('addDatasetZone'), aInp = $('addDatasetInput');
+  az.onclick = () => aInp.click();
+  aInp.onchange = e => { for (const f of e.target.files) handleDatasetFile(f); aInp.value = ''; };
+  az.ondragover = e => { e.preventDefault(); az.classList.add('drag-over'); };
+  az.ondragleave = () => az.classList.remove('drag-over');
+  az.ondrop = e => { e.preventDefault(); az.classList.remove('drag-over'); for (const f of e.dataTransfer.files) handleDatasetFile(f); };
+}
+
+async function handleMasterFile(file) {
+  const z = $('masterZone'), s = $('masterStatus');
+  s.innerHTML = '<span class="spinner"></span>';
+  try {
+    const wb = await readWorkbook(file);
+    const r = parseMaster(wb);
+    if (r.parts.length === 0) throw new Error(t('parse_error_master'));
+    state.master = r;
+    saveStorage({ master: r });
+    s.innerHTML = `✓ ${file.name} — ${r.parts.length} parts`;
+    z.classList.add('has-file');
+    toast(t('master_parsed', { n: r.parts.length }), 'success');
+    renderPreview();
+    renderCtOverrides();
+  } catch (err) {
+    s.innerHTML = `✗ ${err.message}`;
+    z.classList.remove('has-file');
+    toast(err.message, 'error');
+  }
+}
+
+async function handleDatasetFile(file) {
+  if (state.datasets.length >= MAX_DATASETS) { toast(t('max_datasets'), 'error'); return; }
+  try {
+    const wb = await readWorkbook(file);
+    const r = parseMonthly(wb);
+    if (!r) throw new Error(t('parse_error_monthly'));
+    state.dsIdCounter++;
+    const id = `ds_${Date.now()}_${state.dsIdCounter}`;
+    const baseName = file.name.replace(/\.(xlsx|xlsm)$/i, '');
+    const ds = { id, name: baseName, monthlyData: r, resultsHistory: [], currentStepIdx: 0 };
+    state.datasets.push(ds);
+    if (!state.activeDatasetId) state.activeDatasetId = id;
+    renderDatasetList();
+    renderPreview();
+    saveDatasets();
+    toast(t('monthly_parsed', { name: baseName, n: r.data.size }), 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+    console.error(err);
+  }
+}
+
+// ===== Persistence: serialize / restore =====
+function serializeDataset(ds) {
+  // monthlyData.data is a Map → convert to array of [key, value] pairs
+  return {
+    id: ds.id, name: ds.name,
+    monthlyData: {
+      months: ds.monthlyData.months,
+      data: Array.from(ds.monthlyData.data.entries()),
+      sheetName: ds.monthlyData.sheetName,
+      headerRowIdx: ds.monthlyData.headerRowIdx
+    }
+  };
+}
+
+function deserializeDataset(serialized) {
+  return {
+    id: serialized.id,
+    name: serialized.name,
+    monthlyData: {
+      months: serialized.monthlyData.months,
+      data: new Map(serialized.monthlyData.data),
+      sheetName: serialized.monthlyData.sheetName,
+      headerRowIdx: serialized.monthlyData.headerRowIdx
+    },
+    resultsHistory: [],
+    currentStepIdx: 0
+  };
+}
+
+function saveDatasets() {
+  try {
+    const arr = state.datasets.map(serializeDataset);
+    saveStorage({
+      datasets: arr,
+      activeDatasetId: state.activeDatasetId,
+      compareDatasetIds: state.compareDatasetIds,
+      viewMode: state.viewMode,
+      currentTab: state.currentTab,
+      dsIdCounter: state.dsIdCounter
+    });
+  } catch (err) {
+    console.warn('saveDatasets failed:', err);
+  }
+}
+
+function loadSavedDatasets() {
+  const d = loadStorage();
+  if (Array.isArray(d.datasets) && d.datasets.length > 0) {
+    state.datasets = d.datasets.map(deserializeDataset);
+    state.activeDatasetId = d.activeDatasetId && state.datasets.find(x => x.id === d.activeDatasetId) ? d.activeDatasetId : state.datasets[0].id;
+    state.compareDatasetIds = Array.isArray(d.compareDatasetIds) ? d.compareDatasetIds.filter(id => state.datasets.find(x => x.id === id)) : [];
+    if (d.viewMode && ['single','compare','diff'].includes(d.viewMode)) state.viewMode = d.viewMode;
+    if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
+    if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
+    renderDatasetList();
+    renderPreview();
+    toast(t('auto_loaded', { n: state.datasets.length }), 'success');
+  }
+}
+
+function loadSavedMaster() {
+  const d = loadStorage();
+  if (!d.master) return;
+  state.master = d.master;
+  $('masterStatus').innerHTML = `✓ saved — ${d.master.parts.length} parts`;
+  $('masterZone').classList.add('has-file');
+}
+
+// ===== Snapshot Export / Load =====
+function serializeResult(r) {
+  // Strip non-serializable: partMap (Map). Keep everything else.
+  return {
+    byProcess: r.byProcess,
+    months: r.months,
+    matched: r.matched,
+    unmatched: r.unmatched,
+    alerts: r.alerts,
+    settings: r.settings,
+    stepIdx: r.stepIdx,
+    chainExceeded: r.chainExceeded
+  };
+}
+
+function deserializeResult(s) {
+  // partMap not needed for read-only snapshot viewing
+  return { ...s, partMap: new Map() };
+}
+
+function buildSnapshotPayload(authorName) {
+  return {
+    version: '2.0',
+    createdAt: new Date().toISOString(),
+    author: authorName || '',
+    master: state.master,
+    datasets: state.datasets.map(ds => ({
+      id: ds.id,
+      name: ds.name,
+      monthlyData: {
+        months: ds.monthlyData.months,
+        data: Array.from(ds.monthlyData.data.entries()),
+        sheetName: ds.monthlyData.sheetName,
+        headerRowIdx: ds.monthlyData.headerRowIdx
+      },
+      resultsHistory: (ds.resultsHistory || []).map(serializeResult),
+      currentStepIdx: ds.currentStepIdx
+    })),
+    activeDatasetId: state.activeDatasetId,
+    compareDatasetIds: state.compareDatasetIds,
+    viewMode: state.viewMode,
+    currentTab: state.currentTab,
+    settings: readSettings(),
+    monthOverrides: state.monthOverrides,
+    labelOverrides: state.labelOverrides,
+    ctOverrides: state.ctOverrides || [],
+    notes: state.notes || [],
+    lang: state.lang
+  };
+}
+
+function exportSnapshot() {
+  if (!state.master || state.datasets.length === 0) {
+    toast(t('snapshot_no_data'), 'error');
+    return;
+  }
+  // Compute ALL steps for ALL datasets — viewer can browse freely
+  const setting = readSettings();
+  for (const ds of state.datasets) {
+    const newHistory = [];
+    for (let i = 0; i < STEP_TARGETS.length; i++) {
+      newHistory.push(calculateForStep(state.master.parts, ds.monthlyData, setting, i));
+    }
+    ds.resultsHistory = newHistory;
+    if (ds.currentStepIdx >= newHistory.length) ds.currentStepIdx = newHistory.length - 1;
+  }
+
+  const author = prompt(t('enter_author_name'), '') || '';
+  const payload = buildSnapshotPayload(author);
+  const dataJson = JSON.stringify(payload);
+
+  // Use the ORIGINAL html template (fetched from current document but cleaned).
+  // We rebuild from scratch using the loaded HTML source — this guarantees no DOM mutation leaks.
+  // Strategy: clone <html>, then strip mutations by replacing body innerHTML with the original markup we know.
+  // Simpler approach: serialize current document but reset all input values, all dynamic style attributes, etc.
+
+  // Deep clone the document
+  const clonedHtml = document.documentElement.cloneNode(true);
+
+  // 1. Reset all input values to their defaultValue (HTML markup defaults)
+  clonedHtml.querySelectorAll('input').forEach(inp => {
+    if (inp.type === 'checkbox' || inp.type === 'radio') {
+      if (inp.defaultChecked) inp.setAttribute('checked', ''); else inp.removeAttribute('checked');
+    } else {
+      inp.setAttribute('value', inp.defaultValue || '');
+    }
+  });
+  // Reset selects to defaultSelected
+  clonedHtml.querySelectorAll('select').forEach(sel => {
+    Array.from(sel.options).forEach(opt => {
+      if (opt.defaultSelected) opt.setAttribute('selected', ''); else opt.removeAttribute('selected');
+    });
+  });
+
+  // 2. Remove inline display styles that were toggled at runtime (sections shown/hidden)
+  // Only target sections + dynamic banners — keep inline styles on header (they're original)
+  const dynamicIds = ['previewSection', 'settingsSection', 'resultsSection', 'alertsSection', 'snapshotBanner', 'uploadBadge', 'relabelBox'];
+  dynamicIds.forEach(id => {
+    const el = clonedHtml.querySelector('#' + id);
+    if (el) el.style.display = '';
+  });
+
+  // 3. Clear dynamically populated containers (they'll be re-rendered from data)
+  const clearIds = ['datasetList', 'calendarGrid', 'tableContainer', 'lineFilter', 'stepHistory', 'dsChips', 'alertList', 'unmatchedList', 'snapshotMetaText', 'rangeFrom', 'rangeTo'];
+  clearIds.forEach(id => {
+    const el = clonedHtml.querySelector('#' + id);
+    if (el) el.innerHTML = '';
+  });
+
+  // 4. Remove the live <canvas> (Chart.js render) — fresh canvas will be created on load
+  const oldCanvas = clonedHtml.querySelector('#resultChart');
+  if (oldCanvas) {
+    const newCanvas = clonedHtml.ownerDocument.createElement('canvas');
+    newCanvas.id = 'resultChart';
+    oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+  }
+
+  // 5. Reset 'active' classes on tab/view-toggle (will be re-applied on init)
+  clonedHtml.querySelectorAll('.lang-btn.active, #viewToggle button.active').forEach(el => el.classList.remove('active'));
+  // Re-add default active for English + Single view (Lathe will be set by renderProcessTabs after data loads)
+  const defLang = clonedHtml.querySelector('.lang-btn[data-lang="en"]'); if (defLang) defLang.classList.add('active');
+  const defView = clonedHtml.querySelector('#viewToggle button[data-view="single"]'); if (defView) defView.classList.add('active');
+  // Process tabs container — empty out (renderProcessTabs will rebuild from master.processList)
+  const tabsEl = clonedHtml.querySelector('#processTabs');
+  if (tabsEl) tabsEl.innerHTML = '';
+
+  // 6. Remove any existing snapshot script (nested export protection)
+  const oldSnap = clonedHtml.querySelector('#__snapshot__');
+  if (oldSnap) oldSnap.remove();
+  // Remove notes layer (will be re-rendered by renderNotes() on load)
+  const oldNotes = clonedHtml.querySelector('#notesLayer');
+  if (oldNotes) oldNotes.remove();
+  // Reset text ribbon (no active class — it's hidden in snapshot mode anyway)
+  const oldRibbon = clonedHtml.querySelector('#textRibbon');
+  if (oldRibbon) oldRibbon.classList.remove('active');
+
+  // 7. Inject fresh snapshot script tag with our data
+  const closeTag = '<' + '/script>';
+  const safeJson = dataJson.split(closeTag).join('<' + '\\/script>');
+  const head = clonedHtml.querySelector('head');
+  if (head) {
+    const scriptEl = clonedHtml.ownerDocument.createElement('script');
+    scriptEl.id = '__snapshot__';
+    scriptEl.type = 'application/json';
+    scriptEl.textContent = safeJson;
+    head.appendChild(scriptEl);
+  }
+
+  const finalHtml = '<!DOCTYPE html>\n' + clonedHtml.outerHTML;
+  const blob = new Blob([finalHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `CapacityPlanning_Snapshot_${dateStr}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  toast(t('snapshot_exported'), 'success');
+}
+
+function loadSnapshotIfPresent() {
+  const el = document.getElementById('__snapshot__');
+  if (!el) return false;
+  try {
+    const data = JSON.parse(el.textContent);
+    state.isSnapshot = true;
+    state.snapshotMeta = { author: data.author || '', createdAt: data.createdAt };
+
+    // Restore data
+    state.master = data.master;
+    state.datasets = (data.datasets || []).map(ds => ({
+      id: ds.id,
+      name: ds.name,
+      monthlyData: {
+        months: ds.monthlyData.months,
+        data: new Map(ds.monthlyData.data),
+        sheetName: ds.monthlyData.sheetName,
+        headerRowIdx: ds.monthlyData.headerRowIdx
+      },
+      resultsHistory: (ds.resultsHistory || []).map(deserializeResult),
+      currentStepIdx: ds.currentStepIdx || 0
+    }));
+    state.activeDatasetId = data.activeDatasetId || (state.datasets[0]?.id || null);
+    state.compareDatasetIds = data.compareDatasetIds || [];
+    state.viewMode = data.viewMode || 'single';
+    state.currentTab = data.currentTab || 'Lathe';
+    state.monthOverrides = data.monthOverrides || {};
+    state.labelOverrides = data.labelOverrides || {};
+    state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];
+    state.notes = Array.isArray(data.notes) ? data.notes : [];
+    migrateNoteTails();
+    if (data.lang) state.lang = data.lang;
+
+    // Apply settings to inputs
+    if (data.settings) {
+      if (data.settings.hrsPerShift) $('hrsPerShift').value = data.settings.hrsPerShift;
+      if (data.settings.shifts) $('shifts').value = data.settings.shifts;
+      if (data.settings.defaultWD) $('defaultWD').value = data.settings.defaultWD;
+    }
+    return true;
+  } catch (err) {
+    console.error('Failed to load snapshot:', err);
+    return false;
+  }
+}
+
+function applySnapshotMode() {
+  // Show banner
+  $('snapshotBanner').style.display = 'flex';
+  const meta = state.snapshotMeta;
+  const dateStr = meta.createdAt ? new Date(meta.createdAt).toLocaleDateString() : '';
+  let metaHtml = t('snapshot_meta', { date: dateStr, n: state.datasets.length });
+  if (meta.author) metaHtml += ` • ${t('snapshot_author_label')} <strong>${meta.author}</strong>`;
+  $('snapshotMetaText').innerHTML = metaHtml;
+
+  // Hide top-right buttons that change/destroy data
+  ['exportSnapshotBtn', 'addNoteBtn', 'clearDatasetsBtn', 'clearAllBtn'].forEach(id => {
+    const el = $(id); if (el) el.style.display = 'none';
+  });
+  // Hide ribbon (no editing)
+  const rib = $('textRibbon'); if (rib) rib.style.display = 'none';
+
+  // Hide upload section entirely (no add/replace files allowed)
+  document.querySelectorAll('.section').forEach(sec => {
+    const h = sec.querySelector('h2 [data-i18n]');
+    if (h && h.dataset.i18n === 'sec_upload') sec.style.display = 'none';
+  });
+
+  // Hide Settings section — viewer cannot tweak hrs/shifts/WD
+  // (results are pre-computed snapshot; tweaking would invalidate them)
+  $('settingsSection').style.display = 'none';
+
+  // Hide preview section (already shown in compact form via banner)
+  $('previewSection').style.display = 'none';
+
+  // Hide Balance row in results section (no more interactive balance)
+  const balanceRow = $('balanceRow'); if (balanceRow) balanceRow.style.display = 'none';
+
+  // Hide add-dataset zone (in case dataset section partially visible)
+  const addZone = $('addDatasetZone'); if (addZone) addZone.style.display = 'none';
+
+  // Hide dataset remove buttons + lock name editing
+  // Apply once after renderDatasetList renders
+  const lockDatasetUI = () => {
+    document.querySelectorAll('.dataset-name-input').forEach(el => { el.disabled = true; el.style.background = 'transparent'; });
+    document.querySelectorAll('.dataset-remove').forEach(el => el.style.display = 'none');
+  };
+  // Run once now, and patch renderDatasetList to call us afterward
+  lockDatasetUI();
+  const _origRenderDatasetList = renderDatasetList;
+  window.renderDatasetList = function() {
+    _origRenderDatasetList.apply(this, arguments);
+    lockDatasetUI();
+  };
+}
+
+// Override saves in snapshot mode (no-op via early-return inside saveStorage itself)
+
+// ===== Template downloads =====
+function downloadMasterTemplate() {
+  const wb = XLSX.utils.book_new();
+  // README
+  const readmeData = [
+    ['Master Data Matrix Template — v2.0'],
+    [],
+    ['3 sheets per process: "Matrix - Lathe", "Matrix - Rolling", "Matrix - IHA"'],
+    ['1 row per (Part × Process). Same Part No. can appear in multiple sheets.'],
+    [],
+    ['Column layout:'],
+    ['  A: Part No.    — TG part number'],
+    ['  B: Part Name'],
+    ['  C: Model'],
+    ['  D: OA          — Operational Availability (default 0.85)'],
+    ['  E: Fluct       — Fluctuation factor (default 1.0)'],
+    ['  F-G:  Pri/CT for Line 1'],
+    ['  H-I:  Pri/CT for Line 2'],
+    ['  J-K:  Pri/CT for Line 3'],
+    ['  L-M:  Pri/CT for Line 4'],
+    ['  N-O:  Pri/CT for Line 5'],
+    ['  P-Q:  Pri/CT for Line 6'],
+    ['  R-S:  Pri/CT for Line 7'],
+    ['  T-U:  Pri/CT for Line 8'],
+    [],
+    ['Pri = priority (1=primary, 2,3,...= backups). Empty = cannot run.'],
+    ['CT = cycle time in seconds per piece.'],
+    ['Hours = (qty × CT / 3600) / OA × Fluct'],
+    [],
+    ['Optional sheet "CT_Changes" — step-function CT updates over time:'],
+    ['  Columns: Part No. | Process | Line | From | New CT'],
+    ['  "From" = month label (e.g. "Jun 2027" or date cell)'],
+    ['  Effect: From that month onwards, use New CT instead of Matrix base CT.'],
+    ['  Multiple rows per (Part × Line) allowed — most-recent change wins.']
+  ];
+  const wsR = XLSX.utils.aoa_to_sheet(readmeData);
+  XLSX.utils.book_append_sheet(wb, wsR, 'README');
+
+  const LINE_NAMES = ['Line 1','Line 2','Line 3','Line 4','Line 5','Line 6','Line 7','Line 8'];
+  const samples = {
+    'Lathe': [
+      ['PART-002','Sample Part B','Model-B',0.85,1.0,'','','','','','','','','','',1,34.2,'','','',''],
+      ['PART-001','Sample Part A','Model-A',0.85,1.0,1,28.5,2,30.0,'','','','','','','','','','','','','']
+    ],
+    'Rolling': [['PART-001','Sample Part A','Model-A',0.85,1.0,'','','','','','',1,40.0,'','','','','','','','','']],
+    'IHA': [['PART-001','Sample Part A','Model-A',0.85,1.0,'','','','','','','','','','','','','',1,40.0,'','']]
+  };
+  for (const proc of PROCESSES) {
+    const header1 = ['Part No.','Part Name','Model','OA','Fluct'];
+    for (const ln of LINE_NAMES) { header1.push(ln); header1.push(''); }
+    const header2 = ['','','','',''];
+    for (let i = 0; i < 8; i++) { header2.push('Pri'); header2.push('C/T'); }
+    const data = [header1, header2, ...(samples[proc] || [])];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    // Merges for line headers
+    if (!ws['!merges']) ws['!merges'] = [];
+    for (let i = 0; i < 8; i++) {
+      const c = 5 + i * 2;
+      ws['!merges'].push({ s: { r: 0, c }, e: { r: 0, c: c + 1 } });
+    }
+    XLSX.utils.book_append_sheet(wb, ws, `Matrix - ${proc}`);
+  }
+  // Lines_Ref
+  const refData = [['Process', 'Line']];
+  for (const p of PROCESSES) for (const ln of LINE_NAMES) refData.push([p, ln]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(refData), 'Lines_Ref');
+
+  // CT_Changes (optional sheet — step-function CT updates)
+  const ctData = [
+    ['Part No.', 'Process', 'Line', 'From', 'New CT'],
+    ['PART-001', 'Lathe', 'Line 1', 'Jun 2027', 25.0],
+    ['PART-001', 'Lathe', 'Line 1', 'Jan 2028', 22.5],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ctData), 'CT_Changes');
+
+  XLSX.writeFile(wb, 'Matrix_Master_Template.xlsx');
+}
+
+function downloadMonthlyTemplate() {
+  const wb = XLSX.utils.book_new();
+  const readmeData = [
+    ['Monthly Requirement Template — v2.0'],
+    [],
+    ['Sheet name should contain "monthly", "req", or "demand"'],
+    [],
+    ['Required header (any row in first 20 rows):'],
+    ['  • Column with text "Part No." (or "PRTNO")'],
+    ['  • Right-side columns = monthly demand'],
+    [],
+    ['Month label formats accepted:'],
+    ['  • Apr 2026 / Apr 26 / Apr\'26'],
+    ['  • Date cells (auto-detect)'],
+    ['  • 2026-04 / 2026/4'],
+    [],
+    ['Part numbers must start with "TG"'],
+    [],
+    ['For Compare/Diff feature: keep months and part list consistent across files.'],
+    ['Suggested filename: YYYYMM_Label_v#.xlsx (e.g. 202604_Apr_v1.xlsx)']
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(readmeData), 'README');
+
+  const months = ['Apr 2026','May 2026','Jun 2026','Jul 2026','Aug 2026','Sep 2026'];
+  const data = [['Part No.', ...months]];
+  data.push(['TG021211-2080', 12000, 11500, 13000, 12800, 12200, 11800]);
+  data.push(['PART-001', 8500, 9000, 8800, 9200, 8600, 9100]);
+  data.push(['PART-002', 5200, 5100, 5400, 5300, 5500, 5200]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Monthly_Req');
+
+  XLSX.writeFile(wb, 'Monthly_Req_Template.xlsx');
+}
+
+// ===== Events & Init =====
+function setupCollapsibleSections() {
+  const sectionIds = ['uploadSection', 'previewSection', 'settingsSection', 'resultsSection', 'alertsSection'];
+  const stored = loadStorage();
+  const collapsed = stored.collapsedSections || {};
+  for (const id of sectionIds) {
+    const sec = document.getElementById(id);
+    if (!sec) continue;
+    const h2 = sec.querySelector('h2');
+    if (!h2) continue;
+    if (h2.querySelector('.collapse-toggle')) continue; // already added
+    const btn = document.createElement('span');
+    btn.className = 'collapse-toggle';
+    btn.textContent = '▼';
+    btn.title = 'Toggle';
+    h2.appendChild(btn);
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      sec.classList.toggle('collapsed');
+      const cur = loadStorage().collapsedSections || {};
+      cur[id] = sec.classList.contains('collapsed');
+      saveStorage({ collapsedSections: cur });
+    });
+    // Apply saved state
+    if (collapsed[id]) sec.classList.add('collapsed');
+  }
+}
+
+function setupEvents() {
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderCalendarGrid(); };
+  });
+
+  $('calculateBtn').onclick = () => {
+    if (!state.master || state.datasets.length === 0) { toast(t('must_upload_first'), 'error'); return; }
+    const setting = readSettings();
+    for (const ds of state.datasets) {
+      const result = calculateForStep(state.master.parts, ds.monthlyData, setting, 0);
+      ds.resultsHistory = [result];
+      ds.currentStepIdx = 0;
+    }
+    if (!state.activeDatasetId) state.activeDatasetId = state.datasets[0].id;
+    state.hiddenLines.clear();
+    // pick a tab with data
+    const result = getCurrentResult();
+    if (result) for (const proc of getProcesses()) if (result.byProcess[proc].lines.length > 0) { state.currentTab = proc; break; }
+    renderResults();
+    toast(t('calc_done'), 'success');
+    $('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  $('balanceBtn').onclick = () => {
+    const ds = getActiveDataset();
+    if (!ds) return;
+    const nextStepIdx = ds.currentStepIdx + 1;
+    if (nextStepIdx >= STEP_TARGETS.length) return;
+    const setting = ds.resultsHistory[0].settings;
+    const result = calculateForStep(state.master.parts, ds.monthlyData, setting, nextStepIdx);
+    // Truncate forward history if user revisited prior step
+    ds.resultsHistory = ds.resultsHistory.slice(0, ds.currentStepIdx + 1);
+    ds.resultsHistory.push(result);
+    ds.currentStepIdx = ds.resultsHistory.length - 1;
+    renderResults();
+    toast(t('balance_done', { step: getStepLabel(nextStepIdx) }), 'success');
+  };
+
+  $('saveSettingsBtn').onclick = () => { saveStorage({ settings: readSettings() }); toast(t('settings_saved'), 'success'); };
+
+  $('clearAllBtn').onclick = () => {
+    if (!confirm(t('confirm_clear_all'))) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  };
+
+  $('clearDatasetsBtn').onclick = () => {
+    if (!confirm(t('confirm_clear_datasets'))) return;
+    state.datasets = [];
+    state.activeDatasetId = null;
+    state.compareDatasetIds = [];
+    state.viewMode = 'single';
+    state.dsIdCounter = 0;
+    state.hiddenLines.clear();
+    saveDatasets();
+    location.reload();
+  };
+
+  // Process tab clicks are wired in renderProcessTabs() since tabs are dynamic
+
+  document.querySelectorAll('#viewToggle button').forEach(b => {
+    b.onclick = () => {
+      state.viewMode = b.dataset.view;
+      // For compare/diff: prefill compareDatasetIds
+      if (state.viewMode !== 'single' && state.compareDatasetIds.length === 0 && state.datasets.length > 0) {
+        state.compareDatasetIds = state.datasets.slice(0, state.viewMode === 'diff' ? 2 : Math.min(3, state.datasets.length)).map(d => d.id);
+      }
+      saveDatasets();
+      renderResults();
+    };
+  });
+
+  ['show417','show447','show497','showMaxCap','chartMode','showTrend','showLineInAxis'].forEach(id => {
+    $(id).onchange = () => { if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderChart(); renderChartLegendMini(); } };
+  });
+
+  ['rangeFrom','rangeTo'].forEach(id => {
+    $(id).onchange = () => {
+      if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderTableArea(); renderChart(); }
+    };
+  });
+
+  ['hrsPerShift','shifts','defaultWD'].forEach(id => {
+    $(id).onchange = () => {
+      if (state.datasets.some(d => d.resultsHistory.length > 0)) {
+        const s = readSettings();
+        // Recompute all results with new settings (reuse step indices)
+        for (const ds of state.datasets) {
+          const newHist = [];
+          const maxIdx = Math.max(0, ...ds.resultsHistory.map((_, i) => i));
+          for (let i = 0; i <= maxIdx; i++) newHist.push(calculateForStep(state.master.parts, ds.monthlyData, s, i));
+          ds.resultsHistory = newHist;
+          if (ds.currentStepIdx >= newHist.length) ds.currentStepIdx = newHist.length - 1;
+        }
+        renderResults();
+      }
+    };
+  });
+
+  $('fillDefaultBtn').onclick = () => {
+    if (state.datasets.length === 0) { toast(t('monthly_required'), 'error'); return; }
+    const wd = parseInt($('defaultWD').value) || 22;
+    const allMonths = new Set();
+    for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
+    for (const m of allMonths) state.monthOverrides[m] = { wd };
+    renderCalendarGrid();
+    toast(t('fill_defaults_done_wd', { wd }), 'success');
+  };
+
+  $('clearMonthBtn').onclick = () => {
+    state.monthOverrides = {};
+    renderCalendarGrid();
+    toast(t('overrides_cleared'), 'success');
+  };
+
+  $('autoLabelBtn').onclick = () => {
+    if (state.datasets.length === 0) { toast(t('monthly_required'), 'error'); return; }
+    const startMonth = parseInt($('anchorMonth').value);
+    const startYear = parseInt($('anchorYear').value);
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    state.labelOverrides = {};
+    // Use union of all months — sequential from anchor
+    const allMonths = new Set();
+    for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
+    Array.from(allMonths).forEach((m, i) => {
+      const total = startMonth + i;
+      const year = startYear + Math.floor(total / 12);
+      const monthIdx = total % 12;
+      state.labelOverrides[m] = `${monthNames[monthIdx]} ${year}`;
+    });
+    saveStorage({ labelOverrides: state.labelOverrides });
+    renderCalendarGrid();
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
+    toast(t('labels_applied', { anchor: `${monthNames[startMonth]} ${startYear}` }), 'success');
+  };
+
+  $('resetLabelBtn').onclick = () => {
+    state.labelOverrides = {};
+    saveStorage({ labelOverrides: {} });
+    renderCalendarGrid();
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
+    toast(t('labels_reset'), 'success');
+  };
+
+  $('dlMasterTpl').onclick = (e) => { e.preventDefault(); downloadMasterTemplate(); };
+  $('dlMonthlyTpl').onclick = (e) => { e.preventDefault(); downloadMonthlyTemplate(); };
+
+  $('exportSnapshotBtn').onclick = () => exportSnapshot();
+  $('addNoteBtn').onclick = () => addNote();
+
+  // Text Ribbon button handlers
+  const ribbon = $('textRibbon');
+  if (ribbon) {
+    // Prevent ribbon clicks from blurring contenteditable
+    ribbon.addEventListener('mousedown', e => { if (e.target.closest('.rib-btn, .rib-color-swatch')) e.preventDefault(); });
+
+    ribbon.querySelectorAll('.rib-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!focusedNoteId) return;
+        const note = state.notes.find(n => n.id === focusedNoteId);
+        if (!note) return;
+        const cmd = btn.dataset.cmd;
+        const action = btn.dataset.action;
+        if (cmd) {
+          // Re-focus content first
+          const contentEl = document.querySelector(`.text-box[data-id="${focusedNoteId}"] .text-box-content`);
+          if (contentEl) contentEl.focus();
+          document.execCommand(cmd, false, null);
+          if (contentEl) updateNote(focusedNoteId, { html: contentEl.innerHTML });
+          updateRibbonState();
+        } else if (action === 'font-smaller' || action === 'font-larger') {
+          const delta = action === 'font-larger' ? 1 : -1;
+          const newSize = Math.max(9, Math.min(28, (note.fontSize || 13) + delta));
+          updateNote(focusedNoteId, { fontSize: newSize });
+          const contentEl = document.querySelector(`.text-box[data-id="${focusedNoteId}"] .text-box-content`);
+          if (contentEl) contentEl.style.fontSize = newSize + 'px';
+        } else if (action === 'toggle-tail') {
+          updateNote(focusedNoteId, { showTail: !note.showTail });
+          renderTails();
+          updateRibbonState();
+        } else if (action === 'delete') {
+          removeNote(focusedNoteId);
+        }
+      });
+    });
+
+    ribbon.querySelectorAll('.rib-color-swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        if (!focusedNoteId) return;
+        const bg = sw.dataset.bg;
+        updateNote(focusedNoteId, { bgColor: bg });
+        const contentEl = document.querySelector(`.text-box[data-id="${focusedNoteId}"] .text-box-content`);
+        if (contentEl) contentEl.style.background = bg;
+        renderTails();
+        updateRibbonState();
+      });
+    });
+  }
+
+  // Click outside any text-box / ribbon → deselect
+  document.addEventListener('mousedown', e => {
+    if (e.target.closest('.text-box, .text-ribbon, #notesTails, #addNoteBtn')) return;
+    if (focusedNoteId) deselectAll();
+  });
+
+  // Update ribbon state on selection change inside note content
+  document.addEventListener('selectionchange', () => {
+    if (focusedNoteId) updateRibbonState();
+  });
+
+  // CT Overrides handlers
+  $('ctoPart').onchange = repopulateCtoProcLine;
+  $('ctoProc').onchange = repopulateCtoProcLine;
+  $('ctoAddBtn').onclick = () => {
+    const partNo = $('ctoPart').value;
+    const proc = $('ctoProc').value;
+    const line = $('ctoLine').value;
+    const fromMonth = $('ctoFrom').value;
+    const ct = parseFloat($('ctoCT').value);
+    if (!partNo || !proc || !line || !fromMonth || !(ct > 0)) {
+      toast(t('ct_invalid'), 'error'); return;
+    }
+    state.ctOverrides = state.ctOverrides || [];
+    state.ctOverrides.push({ partNo, process: proc, line, fromMonth, ct });
+    saveStorage({ ctOverrides: state.ctOverrides });
+    $('ctoCT').value = '';
+    renderCtOverrides();
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) recomputeAllSteps();
+    toast(t('ct_added'), 'success');
+  };
+  $('ctoClearBtn').onclick = () => {
+    if (!confirm(t('ct_confirm_clear'))) return;
+    state.ctOverrides = [];
+    saveStorage({ ctOverrides: [] });
+    renderCtOverrides();
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) recomputeAllSteps();
+  };
+}
+
+function init() {
+  setupEvents();
+  setupUpload();
+  setupCollapsibleSections();
+
+  // Try snapshot mode first
+  const isSnapshot = loadSnapshotIfPresent();
+
+  if (isSnapshot) {
+    // Apply UI mode FIRST (banner, hide upload/settings) — must happen before any render
+    applySnapshotMode();
+    applyLanguage();
+    try {
+      renderDatasetList();
+      renderCalendarGrid();
+      renderResults();
+      renderNotes();
+    } catch (err) {
+      console.error('Snapshot render error:', err);
+    }
+  } else {
+    applySavedSettings();
+    applyLanguage();
+    loadSavedMaster();
+    loadSavedDatasets();
+    loadSavedNotes();
+  }
+
+  // Restore visual state for view toggle (process tabs are rendered dynamically by renderProcessTabs)
+  document.querySelectorAll('#viewToggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === state.viewMode);
+  });
+
+  // Sticky header — toggle compact mode when scrolled
+  const header = document.querySelector('.app-header');
+  let lastCompact = false;
+  function updateHeaderHeight() {
+    if (!header) return;
+    document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+  }
+  window.addEventListener('scroll', () => {
+    if (!header) return;
+    const should = window.scrollY > 60;
+    if (should !== lastCompact) {
+      header.classList.toggle('compact', should);
+      lastCompact = should;
+      // Wait for transition before measuring
+      setTimeout(updateHeaderHeight, 200);
+    }
+  }, { passive: true });
+  updateHeaderHeight();
+  window.addEventListener('resize', () => {
+    updateHeaderHeight();
+    if (state.notes && state.notes.length > 0) renderTails();
+  });
+}
+
+init();
+</script>
+</body>
+</html>

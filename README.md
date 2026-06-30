@@ -1,0 +1,151 @@
+# Capacity Planning Tool
+
+A single-file HTML application for production capacity planning. Compares monthly demand against line capacity across multiple production processes, with smart load balancing across alternate lines.
+
+**Live demo:** Open `index.html` directly in your browser — no installation required.
+
+---
+
+## Features
+
+- **Single-file deployment** — pure HTML + CSS + JavaScript, no build step, no server required
+- **Multi-process support** — define any number of production processes via Excel sheet names (`Matrix - Lathe`, `Matrix - Rolling`, etc.)
+- **Multi-dataset comparison** — load up to 5 monthly requirement datasets and compare side-by-side
+- **Smart Balance algorithm** — automatically redistributes load to alternate lines (priority 2, 3, ...) when primary lines exceed capacity targets
+- **Step-based progression** — Step 0 (initial) → 417h → 447h → 497h → MaxCap targets, with chain-push depth up to 5
+- **CT step function** — cycle times can change over time via Excel `CT_Changes` sheet or in-app overrides
+- **Snapshot export** — share results as self-contained read-only HTML with embedded data
+- **Sticky notes (PPT-style text boxes)** — annotate the dashboard with optional arrow pointers
+- **Tri-lingual UI** — English / Thai / Japanese
+- **Persistent state** — uploaded files, settings, and notes saved to `localStorage`
+
+---
+
+## Quick start
+
+1. Open `index.html` in a modern browser (Chrome, Edge, Firefox, Safari)
+2. Click **Download Master Template** in the upload section to get a sample Excel file
+3. Click **Download Monthly Template** for a sample monthly requirement file
+4. Upload both files via drag-and-drop
+5. Click **Calculate** to generate initial allocation
+6. Click **Balance** repeatedly to progress through capacity steps
+
+---
+
+## Excel format
+
+### Master file
+
+Contains one sheet per production process, named `Matrix - <ProcessName>`. The process name appears as a tab in the Results section.
+
+| Column | Meaning |
+|---|---|
+| A | Part No. |
+| B | Part Name |
+| C | Model |
+| D | OA (Operational Availability, e.g. 0.85) |
+| E | Fluctuation factor (e.g. 1.0) |
+| F-G | Pri (priority) and CT (cycle time, seconds) for Line 1 |
+| H-I | Pri/CT for Line 2 |
+| ... | (continue for up to 8 lines) |
+
+**Priority numbering:** lower number = preferred line. A part with `Pri=1` on Line 1 starts there. If Line 1 is overloaded, Smart Balance pushes the part to its `Pri=2` line.
+
+### Optional `CT_Changes` sheet
+
+For cycle times that change over time (process improvement, equipment upgrade):
+
+| Part No. | Process | Line | From | New CT |
+|---|---|---|---|---|
+| PART-001 | Lathe | Line 1 | Jun 2027 | 25.0 |
+| PART-001 | Lathe | Line 1 | Jan 2028 | 22.5 |
+
+Step-function semantics: from "From" month onwards, the new CT applies until the next change.
+
+### Monthly Requirement file
+
+A wide-format table with parts in rows and months in columns:
+
+| PRTNO | Apr 2027 | May 2027 | Jun 2027 | ... |
+|---|---|---|---|---|
+| PART-001 | 8500 | 9000 | 8800 | ... |
+| PART-002 | 5200 | 5100 | 5400 | ... |
+
+Header rows can include `PRTNO` or `Part No.` — the parser auto-detects the header row within the first 15 rows.
+
+---
+
+## Formula reference
+
+**Hours per part per month per line:**
+```
+hours = (qty × CT / 3600) / OA × Fluctuation
+```
+
+**Monthly capacity (Max Cap):**
+```
+Max Cap = (WD + HD) × (hrs_per_shift + 2.5) × shifts
+```
+- WD = working days (user input per month)
+- HD = holidays = days_in_month − WD (auto)
+- 2.5 = overtime hours per shift (fixed)
+
+**Default capacity targets:**
+
+| Step | Hours | Meaning |
+|---|---|---|
+| 417 | (21 × 9.94) × 2 | Normal month, 21 working days, 2 shifts |
+| 447 | 417 + (2 × 7.44 × 2) | + 2 holidays with light overtime |
+| 497 | 417 + (4 × 9.94 × 2) | + 4 holidays with heavy overtime |
+| MaxCap | (WD+HD) × (hrs+OT) × shifts | Maximum theoretical capacity |
+
+---
+
+## Architecture
+
+| Layer | Notes |
+|---|---|
+| Parsing | XLSX (CDN) — auto-detects sheet names matching `Matrix - *` pattern |
+| Calculation | Pure JavaScript, runs in-browser. Recursive chain-push limited to depth 5. |
+| Charts | Chart.js (CDN), with custom plugin for hierarchical X-axis labels (month / year / line) |
+| State | `state` object kept in memory; persisted to `localStorage` (~5MB limit, plenty) |
+| Internationalization | Inline i18n dictionary, 3 languages, all UI text mapped to keys |
+
+---
+
+## Customization
+
+The HTML is one self-contained file — open it in any editor to modify. Key constants near the top of the `<script>` block:
+
+```javascript
+const LINE_NAMES = ['Line 1', 'Line 2', ...];     // default line names in template generator
+const PROCESSES = ['Lathe', 'Rolling', 'IHA'];     // default process names (overridden by Master sheets)
+const STEP_TARGETS = [null, 417, 447, 497, null];  // capacity targets per step
+const MAX_CHAIN_DEPTH = 5;                          // chain-push recursion limit
+const DATASET_COLORS = [...];                       // colors for dataset comparison
+```
+
+For deeper customization, the codebase is organized into clearly-labeled sections (Parsers, Calculation, Smart Balance, Rendering, etc.) — search for `// =====` to navigate.
+
+---
+
+## Browser compatibility
+
+Tested in:
+- Chrome / Edge 100+
+- Firefox 100+
+- Safari 15+
+
+Requires `localStorage`, ES2020 syntax, and Chart.js compatible canvas support.
+
+---
+
+## License
+
+[MIT](LICENSE) — use freely, modify freely, no warranty.
+
+---
+
+## Contributing
+
+Pull requests welcome. For larger changes, please open an issue first to discuss.
