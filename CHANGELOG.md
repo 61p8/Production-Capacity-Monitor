@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
   compression). Everything is real-scale — pick mm / cm / m / inch and every number reconverts;
   zoom in/out adjusts the on-screen scale. Layouts persist to localStorage and into snapshots.
   (Linking layout objects to production lines will come later.)
+- **Layout navigation & smart snap.** The canvas now pans (middle-drag) and zooms freely
+  (mouse wheel around the cursor, a zoom slider, or **Fit** to frame everything) instead of fixed
+  pixels + scrollbars. Left-drag empty space marquee-selects; Ctrl/Shift-click adds to the
+  selection. A **Snap** toggle aligns object edges & centres while drawing, moving and resizing,
+  with on-canvas guide lines.
 
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,

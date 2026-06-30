@@ -254,10 +254,12 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .lay-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5F5E5A; }
 .lay-field select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; font-family: inherit; }
 .lay-zoom { display: flex; align-items: center; gap: 6px; }
+.lay-zoom input[type=range] { width: 90px; accent-color: #1D9E75; }
 .lay-scale { font-size: 12px; color: #5F5E5A; min-width: 96px; text-align: center; }
+.layout-toolbar .btn-small.active { background: #1D9E75; color: white; border-color: #1D9E75; }
 .layout-body { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
-.layout-canvas-wrap { flex: 1; min-width: 320px; border: 1px solid #B4B2A9; border-radius: 6px; overflow: auto; background: #FCFCFA; height: 560px; }
-#layoutSvg { display: block; }
+.layout-canvas-wrap { flex: 1; min-width: 320px; border: 1px solid #B4B2A9; border-radius: 6px; overflow: hidden; background: #FCFCFA; height: 560px; }
+#layoutSvg { display: block; touch-action: none; }
 #layoutSvg text { font-family: inherit; pointer-events: none; user-select: none; }
 .layout-props { width: 232px; background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 12px; font-size: 13px; }
 .layout-props h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: #5F5E5A; margin-bottom: 10px; }
@@ -565,9 +567,13 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       </label>
       <span class="lay-zoom">
         <button class="btn-small" id="layZoomOut" type="button">−</button>
-        <span id="layScaleLabel" class="lay-scale"></span>
+        <input type="range" id="layZoomSlider" min="0" max="100" value="50" title="Zoom">
         <button class="btn-small" id="layZoomIn" type="button">+</button>
+        <span id="layScaleLabel" class="lay-scale"></span>
+        <button class="btn-small" id="layFitBtn" type="button" data-i18n="lay_fit">Fit</button>
       </span>
+      <span class="lay-sep"></span>
+      <button class="btn-small" id="laySnapBtn" type="button">Snap</button>
       <span class="lay-sep"></span>
       <button class="btn-small" id="layUnionBtn" type="button" data-i18n="lay_union">Union / Merge</button>
       <button class="btn-small" id="layIntersectBtn" type="button" data-i18n="lay_intersect">Intersect</button>
@@ -600,7 +606,8 @@ const I18N = {
     lay_union:'Union / Merge', lay_intersect:'Intersect', lay_delete:'Delete', lay_clear:'Clear all',
     lay_props:'Properties', lay_no_sel:'Nothing selected', lay_multi_sel:'{n} objects selected', lay_label:'Label',
     lay_need2:'Select at least 2 objects', lay_no_overlap:'Objects do not overlap', lay_clear_confirm:'Clear the whole layout?',
-    lay_help:'Pick the Rectangle tool and drag on the canvas to draw. Select objects to move/resize, set type, or combine two with Union/Intersect. Sizes are real-scale — switch the Unit to convert every number.',
+    lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
+    lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
     dl_master_tpl:'Download Master template', dl_monthly_tpl:'Download Monthly template',
@@ -670,7 +677,8 @@ const I18N = {
     lay_union:'รวม (Union)', lay_intersect:'ตัดร่วม (Intersect)', lay_delete:'ลบ', lay_clear:'ล้างทั้งหมด',
     lay_props:'คุณสมบัติ', lay_no_sel:'ยังไม่ได้เลือก', lay_multi_sel:'เลือกไว้ {n} ชิ้น', lay_label:'ชื่อ',
     lay_need2:'เลือกอย่างน้อย 2 ชิ้น', lay_no_overlap:'วัตถุไม่ได้ซ้อนทับกัน', lay_clear_confirm:'ล้างผังทั้งหมด?',
-    lay_help:'เลือกเครื่องมือสี่เหลี่ยมแล้วลากบนพื้นที่เพื่อวาด • เลือกวัตถุเพื่อย้าย/ปรับขนาด ตั้งประเภท หรือรวม 2 ชิ้นด้วย Union/Intersect • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
+    lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
+    lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
     dl_master_tpl:'ดาวน์โหลด Template Master', dl_monthly_tpl:'ดาวน์โหลด Template Monthly',
@@ -740,7 +748,8 @@ const I18N = {
     lay_union:'結合 (Union)', lay_intersect:'交差 (Intersect)', lay_delete:'削除', lay_clear:'全消去',
     lay_props:'プロパティ', lay_no_sel:'未選択', lay_multi_sel:'{n} 個選択中', lay_label:'ラベル',
     lay_need2:'2個以上選択してください', lay_no_overlap:'重なっていません', lay_clear_confirm:'レイアウトを全消去しますか？',
-    lay_help:'矩形ツールを選びキャンバスをドラッグして描画。オブジェクトを選択して移動/リサイズ、種類設定、またはUnion/Intersectで2つを結合。サイズは実寸 — 単位を切替えると数値が変換されます。',
+    lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
+    lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
     dl_master_tpl:'マスターテンプレートDL', dl_monthly_tpl:'月次テンプレートDL',
@@ -867,7 +876,7 @@ const state = {
   notes: [],
   stepConfigs: DEFAULT_STEP_CONFIGS.map(c => ({ ...c })),
   maxCapOT: 2.5,
-  layout: { objects: [], unit: 'm', pxPerMm: 0.03, nextId: 1, selected: [], tool: 'select' },
+  layout: { objects: [], unit: 'm', pxPerMm: 0.03, panX: 30, panY: 30, snap: true, nextId: 1, selected: [], tool: 'select' },
   dsIdCounter: 0
 };
 
@@ -1130,9 +1139,13 @@ function applyLayoutData(ld) {
   state.layout.objects = Array.isArray(ld.objects) ? ld.objects : [];
   if (ld.unit && LAY_UNIT_MM[ld.unit]) state.layout.unit = ld.unit;
   if (typeof ld.pxPerMm === 'number' && ld.pxPerMm > 0) state.layout.pxPerMm = ld.pxPerMm;
+  if (typeof ld.panX === 'number') state.layout.panX = ld.panX;
+  if (typeof ld.panY === 'number') state.layout.panY = ld.panY;
+  if (typeof ld.snap === 'boolean') state.layout.snap = ld.snap;
   if (typeof ld.nextId === 'number') state.layout.nextId = ld.nextId;
   state.layout.selected = [];
   const us = $('layUnit'); if (us) us.value = state.layout.unit;
+  layUpdateSnapBtn();
 }
 
 function calculateMaxCap(setting, monthLabel) {
@@ -3570,7 +3583,7 @@ function buildSnapshotPayload(authorName) {
     labelOverrides: state.labelOverrides,
     ctOverrides: state.ctOverrides || [],
     notes: state.notes || [],
-    layout: { objects: state.layout.objects, unit: state.layout.unit, pxPerMm: state.layout.pxPerMm, nextId: state.layout.nextId },
+    layout: layPayload(),
     lang: state.lang
   };
 }
@@ -4224,115 +4237,193 @@ function layOutline(rects) {
   return loops;
 }
 
+function mm2sx(x) { const L = layCur(); return x * L.pxPerMm + L.panX; }
+function mm2sy(y) { const L = layCur(); return y * L.pxPerMm + L.panY; }
+function layGridStep() {
+  const s = layCur().pxPerMm;
+  for (const c of [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000]) if (c * s >= 18) return c;
+  return 100000;
+}
+
 function layRender() {
-  const svg = $('layoutSvg');
-  if (!svg) return;
-  const L = layCur();
-  const W = layMm2px(LAY_AREA_MM.w), H = layMm2px(LAY_AREA_MM.h);
+  const svg = $('layoutSvg'); if (!svg) return;
+  const wrap = $('layCanvasWrap'), L = layCur();
+  const W = wrap.clientWidth || 900, H = wrap.clientHeight || 560;
   svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   while (svg.firstChild) svg.removeChild(svg.firstChild);
-  const grid = layEl('g', {});
-  for (let x = 0; x <= LAY_AREA_MM.w; x += 1000) {
-    const px = layMm2px(x);
-    grid.appendChild(layEl('line', { x1: px, y1: 0, x2: px, y2: H, stroke: x % 5000 === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1 }));
-  }
-  for (let y = 0; y <= LAY_AREA_MM.h; y += 1000) {
-    const py = layMm2px(y);
-    grid.appendChild(layEl('line', { x1: 0, y1: py, x2: W, y2: py, stroke: y % 5000 === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1 }));
-  }
-  svg.appendChild(grid);
+  const g = layEl('g', { transform: `translate(${L.panX},${L.panY}) scale(${L.pxPerMm})` });
+  const minX = (0 - L.panX) / L.pxPerMm, maxX = (W - L.panX) / L.pxPerMm;
+  const minY = (0 - L.panY) / L.pxPerMm, maxY = (H - L.panY) / L.pxPerMm;
+  const step = layGridStep();
+  for (let x = Math.floor(minX / step) * step; x <= maxX; x += step)
+    g.appendChild(layEl('line', { x1: x, y1: minY, x2: x, y2: maxY, stroke: x % (step * 5) === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+  for (let y = Math.floor(minY / step) * step; y <= maxY; y += step)
+    g.appendChild(layEl('line', { x1: minX, y1: y, x2: maxX, y2: y, stroke: y % (step * 5) === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+  const fontMm = 12 / L.pxPerMm;
   for (const obj of L.objects) {
     const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
     const sel = L.selected.includes(obj.id);
     let d = '';
-    for (const loop of layOutline(obj.rects)) {
-      d += 'M' + loop.map(p => `${layMm2px(p[0])},${layMm2px(p[1])}`).join('L') + 'Z';
-    }
-    const path = layEl('path', { d, fill: st.fill, 'fill-opacity': 0.78, stroke: sel ? '#E24B4A' : st.stroke, 'stroke-width': sel ? 2.5 : 1.5, 'fill-rule': 'evenodd' });
+    for (const loop of layOutline(obj.rects)) d += 'M' + loop.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
+    const path = layEl('path', { d, fill: st.fill, 'fill-opacity': 0.78, stroke: sel ? '#E24B4A' : st.stroke, 'stroke-width': sel ? 2.5 : 1.5, 'fill-rule': 'evenodd', 'vector-effect': 'non-scaling-stroke' });
     path.style.cursor = 'move';
     path.addEventListener('mousedown', e => layShapeDown(e, obj.id));
-    svg.appendChild(path);
+    g.appendChild(path);
     const bb = layBBox(obj.rects);
-    const txt = layEl('text', { x: layMm2px(bb.x + bb.w / 2), y: layMm2px(bb.y + bb.h / 2), 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': 12, fill: '#2C2C2A' });
+    const txt = layEl('text', { x: bb.x + bb.w / 2, y: bb.y + bb.h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': fontMm, fill: '#2C2C2A' });
     const dim = `${layFmt(bb.w)}×${layFmt(bb.h)} ${L.unit}`;
     txt.textContent = obj.label ? `${obj.label} · ${dim}` : dim;
-    svg.appendChild(txt);
+    g.appendChild(txt);
+  }
+  svg.appendChild(g);
+  // overlay (screen coords)
+  if (layDrag && layDrag.guide) {
+    const gd = layDrag.guide;
+    if (gd.gx != null) svg.appendChild(layEl('line', { x1: mm2sx(gd.gx), y1: 0, x2: mm2sx(gd.gx), y2: H, stroke: '#E24B4A', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+    if (gd.gy != null) svg.appendChild(layEl('line', { x1: 0, y1: mm2sy(gd.gy), x2: W, y2: mm2sy(gd.gy), stroke: '#E24B4A', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
   }
   if (L.selected.length === 1) {
     const obj = layObj(L.selected[0]);
     if (obj && obj.rects.length === 1) {
       const r = obj.rects[0];
-      const handle = layEl('rect', { x: layMm2px(r.x + r.w) - 5, y: layMm2px(r.y + r.h) - 5, width: 10, height: 10, fill: 'white', stroke: '#E24B4A', 'stroke-width': 1.5 });
+      const handle = layEl('rect', { x: mm2sx(r.x + r.w) - 5, y: mm2sy(r.y + r.h) - 5, width: 10, height: 10, fill: 'white', stroke: '#E24B4A', 'stroke-width': 1.5 });
       handle.style.cursor = 'nwse-resize';
       handle.addEventListener('mousedown', e => layHandleDown(e, obj.id));
       svg.appendChild(handle);
     }
   }
-  layUpdateScaleLabel();
-  layRenderProps();
+  if (layDrag && layDrag.mode === 'draw') layDrawPreview();
+  if (layDrag && layDrag.mode === 'marquee') layDrawMarquee();
+  layUpdateScaleLabel(); layUpdateZoomSlider(); layRenderProps();
 }
 
 function laySvgPt(e) {
-  const r = $('layoutSvg').getBoundingClientRect();
-  return { x: layPx2mm(e.clientX - r.left), y: layPx2mm(e.clientY - r.top) };
+  const r = $('layoutSvg').getBoundingClientRect(), L = layCur();
+  return { x: (e.clientX - r.left - L.panX) / L.pxPerMm, y: (e.clientY - r.top - L.panY) / L.pxPerMm };
 }
+function layIsShape(e) { return e.target.tagName === 'path' || (e.target.tagName === 'rect' && e.target.id !== 'layPreview' && e.target.id !== 'layMarquee'); }
+function layMulti(e) { return e.ctrlKey || e.metaKey || e.shiftKey; }
 function laySvgDown(e) {
-  if (e.target.tagName === 'path' || (e.target.tagName === 'rect' && e.target.id !== 'layPreview')) return;
-  const L = layCur(), p = laySvgPt(e);
-  if (L.tool === 'rect') { layDrag = { mode: 'draw', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; layDrawPreview(); }
-  else { L.selected = []; layRender(); }
+  const L = layCur();
+  if (e.button === 1) { e.preventDefault(); layDrag = { mode: 'pan', sx: e.clientX, sy: e.clientY, panX: L.panX, panY: L.panY }; return; }
+  if (e.button !== 0 || layIsShape(e)) return;
+  const p = laySvgPt(e);
+  if (L.tool === 'rect') { layDrag = { mode: 'draw', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; }
+  else {
+    const base = layMulti(e) ? L.selected.slice() : [];
+    L.selected = base.slice();
+    layDrag = { mode: 'marquee', x0: p.x, y0: p.y, x1: p.x, y1: p.y, base };
+  }
+  layRender();
 }
 function layShapeDown(e, id) {
+  if (e.button !== 0) return; // let middle-drag (pan) bubble to the svg handler
   e.stopPropagation();
   const L = layCur();
   if (L.tool !== 'select') return;
-  if (e.shiftKey) { L.selected = L.selected.includes(id) ? L.selected.filter(x => x !== id) : L.selected.concat(id); }
+  if (layMulti(e)) L.selected = L.selected.includes(id) ? L.selected.filter(x => x !== id) : L.selected.concat(id);
   else if (!L.selected.includes(id)) L.selected = [id];
-  const p = laySvgPt(e);
-  layDrag = { mode: 'move', startX: p.x, startY: p.y, orig: L.selected.map(sid => ({ id: sid, rects: layObj(sid).rects.map(r => ({ ...r })) })) };
+  const p = laySvgPt(e), ids = L.selected.slice();
+  layDrag = { mode: 'move', startX: p.x, startY: p.y, ids, bb: layBBox(ids.flatMap(i => layObj(i).rects)), orig: ids.map(sid => ({ id: sid, rects: layObj(sid).rects.map(r => ({ ...r })) })) };
   layRender();
 }
 function layHandleDown(e, id) {
+  if (e.button !== 0) return;
   e.stopPropagation();
   layDrag = { mode: 'resize', id, orig: { ...layObj(id).rects[0] } };
 }
 function layDocMove(e) {
   if (!layDrag) return;
-  const p = laySvgPt(e);
-  if (layDrag.mode === 'draw') { layDrag.x1 = p.x; layDrag.y1 = p.y; layDrawPreview(); }
-  else if (layDrag.mode === 'move') {
-    const dx = p.x - layDrag.startX, dy = p.y - layDrag.startY;
+  const L = layCur();
+  if (layDrag.mode === 'pan') {
+    L.panX = layDrag.panX + (e.clientX - layDrag.sx);
+    L.panY = layDrag.panY + (e.clientY - layDrag.sy);
+    layRender(); return;
+  }
+  const p = laySvgPt(e), thr = 8 / L.pxPerMm;
+  if (layDrag.mode === 'draw') {
+    let ex = p.x, ey = p.y;
+    const sx = laySnapVal(ex, laySnapXs([]), thr); if (sx != null) ex = sx;
+    const sy = laySnapVal(ey, laySnapYs([]), thr); if (sy != null) ey = sy;
+    layDrag.x1 = ex; layDrag.y1 = ey; layDrag.guide = { gx: sx, gy: sy }; layRender();
+  } else if (layDrag.mode === 'move') {
+    let dx = p.x - layDrag.startX, dy = p.y - layDrag.startY;
+    const sn = laySnapMove({ x: layDrag.bb.x + dx, y: layDrag.bb.y + dy, w: layDrag.bb.w, h: layDrag.bb.h }, layDrag.ids);
+    dx += sn.dx; dy += sn.dy;
     for (const o of layDrag.orig) { const obj = layObj(o.id); if (obj) obj.rects = o.rects.map(r => ({ x: r.x + dx, y: r.y + dy, w: r.w, h: r.h })); }
-    layRender();
+    layDrag.guide = { gx: sn.gx, gy: sn.gy }; layRender();
   } else if (layDrag.mode === 'resize') {
-    const obj = layObj(layDrag.id), o = layDrag.orig;
-    obj.rects[0] = { x: o.x, y: o.y, w: Math.max(50, p.x - o.x), h: Math.max(50, p.y - o.y) };
+    const o = layDrag.orig;
+    let ex = p.x, ey = p.y;
+    const sx = laySnapVal(ex, laySnapXs([layDrag.id]), thr); if (sx != null) ex = sx;
+    const sy = laySnapVal(ey, laySnapYs([layDrag.id]), thr); if (sy != null) ey = sy;
+    layObj(layDrag.id).rects[0] = { x: o.x, y: o.y, w: Math.max(50, ex - o.x), h: Math.max(50, ey - o.y) };
+    layDrag.guide = { gx: sx, gy: sy }; layRender();
+  } else if (layDrag.mode === 'marquee') {
+    layDrag.x1 = p.x; layDrag.y1 = p.y;
+    const mx0 = Math.min(layDrag.x0, layDrag.x1), my0 = Math.min(layDrag.y0, layDrag.y1);
+    const mx1 = Math.max(layDrag.x0, layDrag.x1), my1 = Math.max(layDrag.y0, layDrag.y1);
+    const hit = L.objects.filter(o => { const b = layBBox(o.rects); return !(b.x > mx1 || b.x + b.w < mx0 || b.y > my1 || b.y + b.h < my0); }).map(o => o.id);
+    L.selected = Array.from(new Set(layDrag.base.concat(hit)));
     layRender();
   }
 }
 function layDocUp() {
   if (!layDrag) return;
-  if (layDrag.mode === 'draw') {
-    layRemovePreview();
+  const mode = layDrag.mode;
+  if (mode === 'draw') {
     const x = Math.min(layDrag.x0, layDrag.x1), y = Math.min(layDrag.y0, layDrag.y1);
     const w = Math.abs(layDrag.x1 - layDrag.x0), h = Math.abs(layDrag.y1 - layDrag.y0);
     if (w > 100 && h > 100) {
       const L = layCur();
       const obj = { id: L.nextId++, type: $('layType').value, label: '', rects: [{ x, y, w, h }] };
-      L.objects.push(obj); L.selected = [obj.id];
-      laySetTool('select');
+      L.objects.push(obj); L.selected = [obj.id]; laySetTool('select');
     }
   }
-  layDrag = null; laySave(); layRender();
+  layDrag = null; layRemovePreview();
+  if (mode === 'pan' || mode === 'marquee') laySaveView(); else laySave();
+  layRender();
 }
 function layDrawPreview() {
-  const svg = $('layoutSvg'); if (!svg || !layDrag) return;
+  const svg = $('layoutSvg'); if (!svg || !layDrag || layDrag.mode !== 'draw') return;
   layRemovePreview();
   const x = Math.min(layDrag.x0, layDrag.x1), y = Math.min(layDrag.y0, layDrag.y1);
   const w = Math.abs(layDrag.x1 - layDrag.x0), h = Math.abs(layDrag.y1 - layDrag.y0);
-  svg.appendChild(layEl('rect', { id: 'layPreview', x: layMm2px(x), y: layMm2px(y), width: layMm2px(w), height: layMm2px(h), fill: 'rgba(29,158,117,0.15)', stroke: '#1D9E75', 'stroke-dasharray': '4 3', 'stroke-width': 1.5 }));
+  svg.appendChild(layEl('rect', { id: 'layPreview', x: mm2sx(x), y: mm2sy(y), width: w * layCur().pxPerMm, height: h * layCur().pxPerMm, fill: 'rgba(29,158,117,0.15)', stroke: '#1D9E75', 'stroke-dasharray': '4 3', 'stroke-width': 1.5 }));
 }
-function layRemovePreview() { const p = document.getElementById('layPreview'); if (p) p.remove(); }
+function layDrawMarquee() {
+  const svg = $('layoutSvg'); if (!svg || !layDrag || layDrag.mode !== 'marquee') return;
+  const x = Math.min(layDrag.x0, layDrag.x1), y = Math.min(layDrag.y0, layDrag.y1);
+  const w = Math.abs(layDrag.x1 - layDrag.x0), h = Math.abs(layDrag.y1 - layDrag.y0);
+  svg.appendChild(layEl('rect', { id: 'layMarquee', x: mm2sx(x), y: mm2sy(y), width: w * layCur().pxPerMm, height: h * layCur().pxPerMm, fill: 'rgba(24,95,165,0.10)', stroke: '#185FA5', 'stroke-dasharray': '4 3', 'stroke-width': 1 }));
+}
+function layRemovePreview() { ['layPreview', 'layMarquee'].forEach(id => { const p = document.getElementById(id); if (p) p.remove(); }); }
+function layWheel(e) {
+  e.preventDefault();
+  const L = layCur(), r = $('layoutSvg').getBoundingClientRect();
+  const cx = e.clientX - r.left, cy = e.clientY - r.top;
+  const mmx = (cx - L.panX) / L.pxPerMm, mmy = (cy - L.panY) / L.pxPerMm;
+  L.pxPerMm = Math.max(0.002, Math.min(2, L.pxPerMm * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+  L.panX = cx - mmx * L.pxPerMm; L.panY = cy - mmy * L.pxPerMm;
+  laySaveView(); layRender();
+}
+// ----- snapping (edges & centres of other objects, within an 8px threshold) -----
+function laySnapXs(excl) { const out = []; for (const o of layCur().objects) { if (excl.includes(o.id)) continue; const b = layBBox(o.rects); out.push(b.x, b.x + b.w, b.x + b.w / 2); } return out; }
+function laySnapYs(excl) { const out = []; for (const o of layCur().objects) { if (excl.includes(o.id)) continue; const b = layBBox(o.rects); out.push(b.y, b.y + b.h, b.y + b.h / 2); } return out; }
+function laySnapVal(val, cands, thr) {
+  if (!layCur().snap) return null;
+  let best = null, bd = thr;
+  for (const c of cands) { const d = Math.abs(c - val); if (d <= bd) { bd = d; best = c; } }
+  return best;
+}
+function laySnapMove(bb, excl) {
+  if (!layCur().snap) return { dx: 0, dy: 0, gx: null, gy: null };
+  const thr = 8 / layCur().pxPerMm, xs = laySnapXs(excl), ys = laySnapYs(excl);
+  let dx = 0, gx = null, dy = 0, gy = null;
+  for (const e of [bb.x, bb.x + bb.w, bb.x + bb.w / 2]) { const s = laySnapVal(e, xs, thr); if (s != null) { dx = s - e; gx = s; break; } }
+  for (const e of [bb.y, bb.y + bb.h, bb.y + bb.h / 2]) { const s = laySnapVal(e, ys, thr); if (s != null) { dy = s - e; gy = s; break; } }
+  return { dx, dy, gx, gy };
+}
 
 function layRenderProps() {
   const box = $('layoutProps'); if (!box) return;
@@ -4403,25 +4494,65 @@ function layUpdateScaleLabel() {
   const L = layCur(), el = $('layScaleLabel'); if (!el) return;
   el.textContent = `1 ${L.unit} = ${Math.round(LAY_UNIT_MM[L.unit] * L.pxPerMm * 10) / 10} px`;
 }
-function layZoom(f) { const L = layCur(); L.pxPerMm = Math.max(0.005, Math.min(0.3, L.pxPerMm * f)); laySave(); layRender(); }
-function laySave() {
+const LAY_ZMIN = 0.002, LAY_ZMAX = 2;
+function layZoomAt(factor, cx, cy) {
   const L = layCur();
-  saveStorage({ layout: { objects: L.objects, unit: L.unit, pxPerMm: L.pxPerMm, nextId: L.nextId } });
+  const mmx = (cx - L.panX) / L.pxPerMm, mmy = (cy - L.panY) / L.pxPerMm;
+  L.pxPerMm = Math.max(LAY_ZMIN, Math.min(LAY_ZMAX, L.pxPerMm * factor));
+  L.panX = cx - mmx * L.pxPerMm; L.panY = cy - mmy * L.pxPerMm;
+  laySaveView(); layRender();
 }
+function layZoom(f) { const wrap = $('layCanvasWrap'); layZoomAt(f, (wrap.clientWidth || 900) / 2, (wrap.clientHeight || 560) / 2); }
+function layUpdateZoomSlider() {
+  const sl = $('layZoomSlider'); if (!sl) return;
+  const v = Math.log(layCur().pxPerMm / LAY_ZMIN) / Math.log(LAY_ZMAX / LAY_ZMIN) * 100;
+  sl.value = Math.max(0, Math.min(100, v));
+}
+function laySliderZoom() {
+  const sl = $('layZoomSlider'); if (!sl) return;
+  layCur().pxPerMm = LAY_ZMIN * Math.pow(LAY_ZMAX / LAY_ZMIN, sl.value / 100);
+  laySaveView(); layRender();
+}
+function layFit() {
+  const L = layCur(), wrap = $('layCanvasWrap');
+  const W = wrap.clientWidth || 900, H = wrap.clientHeight || 560, m = 40;
+  const bb = L.objects.length ? layBBox(L.objects.flatMap(o => o.rects)) : { x: 0, y: 0, w: 20000, h: 12000 };
+  L.pxPerMm = Math.max(LAY_ZMIN, Math.min(LAY_ZMAX, Math.min((W - 2 * m) / Math.max(1, bb.w), (H - 2 * m) / Math.max(1, bb.h))));
+  L.panX = (W - bb.w * L.pxPerMm) / 2 - bb.x * L.pxPerMm;
+  L.panY = (H - bb.h * L.pxPerMm) / 2 - bb.y * L.pxPerMm;
+  laySaveView(); layRender();
+}
+function laySnapToggle() { layCur().snap = !layCur().snap; laySaveView(); layUpdateSnapBtn(); }
+function layUpdateSnapBtn() {
+  const b = $('laySnapBtn'); if (!b) return;
+  b.textContent = layCur().snap ? t('lay_snap_on') : t('lay_snap_off');
+  b.classList.toggle('active', layCur().snap);
+}
+function layPayload() { const L = layCur(); return { objects: L.objects, unit: L.unit, pxPerMm: L.pxPerMm, panX: L.panX, panY: L.panY, snap: L.snap, nextId: L.nextId }; }
+function laySave() { saveStorage({ layout: layPayload() }); }
+function laySaveView() { saveStorage({ layout: layPayload() }); }
+let layInited = false;
 function layInit() {
-  const svg = $('layoutSvg'); if (!svg) return;
+  const svg = $('layoutSvg'); if (!svg || layInited) return;
+  layInited = true;
   svg.addEventListener('mousedown', laySvgDown);
+  svg.addEventListener('wheel', layWheel, { passive: false });
+  svg.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('mousemove', layDocMove);
   document.addEventListener('mouseup', layDocUp);
   document.querySelectorAll('.lay-tool').forEach(b => b.onclick = () => laySetTool(b.dataset.laytool));
   $('layUnit').onchange = () => { layCur().unit = $('layUnit').value; laySave(); layRender(); };
   $('layZoomIn').onclick = () => layZoom(1.25);
   $('layZoomOut').onclick = () => layZoom(0.8);
+  $('layZoomSlider').oninput = laySliderZoom;
+  $('layFitBtn').onclick = layFit;
+  $('laySnapBtn').onclick = laySnapToggle;
   $('layUnionBtn').onclick = layUnion;
   $('layIntersectBtn').onclick = layIntersect;
   $('layDeleteBtn').onclick = layDelete;
   $('layClearBtn').onclick = layClear;
   $('layUnit').value = layCur().unit;
+  layUpdateSnapBtn();
 }
 
 function init() {
