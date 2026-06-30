@@ -18,8 +18,9 @@ All notable changes to this project will be documented in this file.
 - **Slimmer Settings.** Global inputs reduced to Hours/shift + Shifts. Removed the now-redundant
   "OT (fixed)" and "Default WD" fields and the per-month WD/HD calendar grid (per-month WD had no
   effect on Max Cap, which counts every day of the month). Month re-labeling is kept.
-- **Chart range defaults to the current month** (instead of all months) with a new
-  "Auto (this month)" button, so long datasets no longer render every month by default.
+- **Chart range defaults to the current month** (instead of all months), so long datasets no
+  longer render every month by default. The Start→End range plus a "This month" shortcut now live
+  in Settings → Month labels &amp; graph range (works before Calculate too).
 
 ## [2.04] — Initial public release
 

@@ -374,11 +374,11 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 
     <div style="margin-top:18px; padding-top:14px; border-top:1px solid #E5E3DB;">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-        <strong style="font-size:13px;" data-i18n="month_labels">Month labels</strong>
+        <strong style="font-size:13px;" data-i18n="month_labels">Month labels &amp; graph range</strong>
       </div>
       <div class="relabel-box" id="relabelBox" style="display:none">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <span style="font-size:12px;" data-i18n="start_from">start from</span>
+          <span style="font-size:12px; min-width:96px; color:#5F5E5A;" data-i18n="first_column">First column =</span>
           <select id="anchorMonth">
             <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
             <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
@@ -386,11 +386,17 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
             <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
           </select>
           <input type="number" id="anchorYear" value="2026" min="2020" max="2040" style="width:70px">
-          <button class="btn-small" id="anchorNowBtn" type="button" data-i18n="this_month">This month</button>
           <button class="btn-small" id="autoLabelBtn" type="button" data-i18n="apply_sequential">Apply sequential</button>
           <button class="btn-small" id="resetLabelBtn" type="button" data-i18n="reset_labels">Reset to original</button>
         </div>
-        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">Names the data columns sequentially (Jan 2026, Feb 2026…) for the chart axis. Pick which graph months to show with the Range selector above the chart.</div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">
+          <span style="font-size:12px; min-width:96px; color:#5F5E5A;" data-i18n="graph_show">Show on chart</span>
+          <select id="rangeFrom"></select>
+          <span>→</span>
+          <select id="rangeTo"></select>
+          <button class="btn-small" id="rangeAutoBtn" type="button" data-i18n="this_month">This month</button>
+        </div>
+        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">First row names the data columns sequentially (Jan 2026, Feb 2026…). Second row picks which months show on the chart — "This month" starts at the current month.</div>
       </div>
     </div>
 
@@ -461,11 +467,6 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <option value="byPart" data-i18n="chart_by_part">Stacked by Part</option>
         <option value="byLine" data-i18n="chart_by_line">By Line (totals)</option>
       </select>
-      <span style="font-weight:500" data-i18n="month_range">Range:</span>
-      <select id="rangeFrom"></select>
-      <span>→</span>
-      <select id="rangeTo"></select>
-      <button class="btn-small" id="rangeAutoBtn" type="button" data-i18n="range_auto">Auto (this month)</button>
     </div>
 
     <div class="chart-legend-mini" id="chartLegendMini">
@@ -549,8 +550,9 @@ const I18N = {
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
     cap_steps_help:'Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.',
     step_wd:'Work days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
-    auto:'auto', per_month:'per month', month_labels:'Month labels', this_month:'This month', range_auto:'Auto (this month)',
-    month_labels_help:'Names the data columns sequentially (Jan 2026, Feb 2026…) for the chart axis. Pick which graph months to show with the Range selector above the chart.',
+    auto:'auto', per_month:'per month', month_labels:'Month labels & graph range', this_month:'This month', range_auto:'Auto (this month)',
+    first_column:'First column =', graph_show:'Show on chart',
+    month_labels_help:'First row names the data columns sequentially (Jan 2026, Feb 2026…). Second row picks which months show on the chart — "This month" starts at the current month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
@@ -611,8 +613,9 @@ const I18N = {
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
     cap_steps_help:'เป้าหมายแต่ละขั้น = [ วันทำงาน×(ชม./กะ + OT) + วันหยุด×(ชม./กะ + OT วันหยุด) ] × กะ — ปรับค่าเพื่อเลื่อนตำแหน่งเส้น threshold',
     step_wd:'วันทำงาน', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
-    auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
-    month_labels_help:'ตั้งชื่อคอลัมน์ข้อมูลแบบเรียงลำดับ (Jan 2026, Feb 2026…) สำหรับแกนกราฟ • เลือกช่วงเดือนที่จะแสดงได้ที่ Range เหนือกราฟ',
+    auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน & ช่วงกราฟ', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
+    first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ',
+    month_labels_help:'แถวแรกตั้งชื่อคอลัมน์เรียงลำดับ (Jan 2026, Feb 2026…) • แถวสองเลือกเดือนที่จะแสดงบนกราฟ — "เดือนนี้" เริ่มที่เดือนปัจจุบัน',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
@@ -673,8 +676,9 @@ const I18N = {
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
     cap_steps_help:'各ステップ目標 = [ 稼働日×(時間/シフト + OT) + 休日×(時間/シフト + 休日OT) ] × シフト数。値を調整してしきい値線の位置を設定。',
     step_wd:'稼働日', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
-    auto:'auto', per_month:'月別', month_labels:'月ラベル', this_month:'今月', range_auto:'Auto (今月)',
-    month_labels_help:'データ列を連番で命名（Jan 2026, Feb 2026…）してグラフ軸に使用。表示する月はグラフ上部のRangeで選択。',
+    auto:'auto', per_month:'月別', month_labels:'月ラベル & グラフ範囲', this_month:'今月', range_auto:'Auto (今月)',
+    first_column:'最初の列 =', graph_show:'グラフ表示',
+    month_labels_help:'1行目はデータ列を連番命名（Jan 2026, Feb 2026…）。2行目はグラフ表示月を選択 — 「今月」は今月開始。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
@@ -1637,8 +1641,9 @@ function findCurrentMonthKey(months) {
 function populateRangeSelectors() {
   const ds = getActiveDataset();
   const result = getCurrentResult();
-  if (!result) return;
-  const months = result.months;
+  // Works before Calculate too — fall back to the active dataset's month columns.
+  const months = result ? result.months : (ds ? ds.monthlyData.months : null);
+  if (!months || !months.length) return;
   const fromS = $('rangeFrom'), toS = $('rangeTo');
   const opts = months.map(m => `<option value="${m}">${getDisplayLabel(m)}</option>`).join('');
   const sig = months.join(',') + '|' + state.lang + '|' + JSON.stringify(state.labelOverrides);
@@ -1655,15 +1660,15 @@ function populateRangeSelectors() {
   }
 }
 
-// "Auto (this month)" — start at the current calendar month, end at the last month.
+// "This month" — start at the current calendar month, end at the last month.
 function applyAutoRange() {
+  const ds = getActiveDataset();
   const result = getCurrentResult();
-  if (!result) return;
-  const months = result.months;
+  const months = result ? result.months : (ds ? ds.monthlyData.months : null);
+  if (!months || !months.length) return;
   $('rangeFrom').value = findCurrentMonthKey(months) || months[0];
   $('rangeTo').value = months[months.length - 1];
-  renderTableArea();
-  renderChart();
+  if (result) { renderTableArea(); renderChart(); }
 }
 
 function getRangeMonths() {
@@ -2639,6 +2644,7 @@ function renderPreview() {
       $('uploadBadge').style.display = '';
     }
     renderStepConfigs();
+    populateRangeSelectors();
     renderCalendarGrid();
     renderCtOverrides();
   }
@@ -3811,12 +3817,6 @@ function setupEvents() {
   });
 
   $('rangeAutoBtn').onclick = () => applyAutoRange();
-
-  $('anchorNowBtn').onclick = () => {
-    const now = new Date();
-    $('anchorMonth').value = String(now.getMonth());
-    $('anchorYear').value = String(now.getFullYear());
-  };
 
   $('autoLabelBtn').onclick = () => {
     if (state.datasets.length === 0) { toast(t('monthly_required'), 'error'); return; }
