@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **Configurable capacity steps.** The fixed 417 / 447 / 497 hour targets are now derived from
+  editable per-step inputs (working days, OT/shift on normal days, holidays worked, OT/shift on
+  holidays) via `[ WD×(hrs/shift+OT) + HD×(hrs/shift+Holiday OT) ] × shifts`. Steps can be added or
+  removed in **Settings → Capacity steps**, making the tool usable across factories with different
+  shift/OT structures. Shipped defaults reproduce the original 417 / 447 / 497 targets.
+- Threshold chart lines and their toolbar toggles are now generated per configured step.
+- `stepConfigs` is persisted to `localStorage` and embedded in exported snapshots.
+
 ## [2.04] — Initial public release
 
 ### Core

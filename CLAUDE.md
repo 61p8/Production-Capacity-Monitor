@@ -34,7 +34,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 | Section | Purpose |
 |---|---|
-| State + Constants | `state` object, `PROCESSES`, `LINE_NAMES`, `STEP_TARGETS`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
+| State + Constants | `state` object (incl. `state.stepConfigs`), `PROCESSES`, `LINE_NAMES`, `DEFAULT_STEP_CONFIGS`, `STEP_LINE_STYLES`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
 | I18N | `I18N.en` / `I18N.th` / `I18N.jp` dictionaries — **all keys must exist in all three** |
 | Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, hatch pattern cache |
 | CT Step Function | `getEffectiveCT()` resolves CT in priority order: App override → Excel CT_Changes → Matrix base |
@@ -57,7 +57,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 3. **`saveStorage()` is a no-op in snapshot mode.** Anything that mutates state in snapshot mode must check `state.isSnapshot` first. The snapshot file is meant to be a frozen view.
 
-4. **Threshold lines in Chart.js need unique stack names.** A bug in v1.3 caused threshold lines to stack on top of bars when they shared a stack. Each threshold line dataset uses its own `stack` value like `'threshold-417'`, `'threshold-447'`, etc. Don't merge them.
+4. **Threshold lines in Chart.js need unique stack names.** A bug in v1.3 caused threshold lines to stack on top of bars when they shared a stack. Each step threshold line uses a per-step `stack` of `'th_step<idx>'` (and Max Cap uses `'th_mc'`) — unique even when two steps compute the same hour value. Don't merge them or key the stack off the (possibly duplicate) hour label.
 
 5. **Run `node --check` after every batch of script edits.** The whole app is one inline script — a syntax error anywhere breaks everything. Workflow:
    ```bash
@@ -89,12 +89,22 @@ Monthly max capacity:
          2.5 = fixed overtime hours per shift
 ```
 
-Step targets (constants in code):
-- Step 0 = Initial (no balance applied)
-- Step 1 = 417h (21 × 9.94 × 2 shifts, normal month)
-- Step 2 = 447h (+ 2 holidays with light OT)
-- Step 3 = 497h (+ 4 holidays with heavy OT)
-- Step 4 = MaxCap (per-month from settings)
+Step targets are **user-configurable** (not hardcoded). `state.stepConfigs` holds one entry per
+middle step `{ wd, otNormal, hdWorked, otHoliday }`; `getStepDefs()` wraps them with a leading
+Initial step and a trailing Max Cap step. Each middle step's hour threshold:
+```
+  threshold = [ WD × (hrs_per_shift + otNormal) + HD × (hrs_per_shift + otHoliday) ] × shifts
+  (computeStepThreshold)
+```
+- Step 0 = Initial (no balance applied; overflow compared against the first configured step)
+- Steps 1..N = computed from `state.stepConfigs` (edited in Settings → Capacity steps; add/remove allowed)
+- Final step = MaxCap (per-month from settings)
+
+`DEFAULT_STEP_CONFIGS` seeds three steps that reproduce the legacy 417 / 447 / 497 targets at
+`hrs_per_shift = 7.44`, `shifts = 2`. `stepConfigs` is persisted via `readSettings()` (storage +
+snapshot) and restored in `applySavedSettings()` / `loadSnapshotIfPresent()`. Threshold chart lines
+and their toolbar toggles are generated dynamically (`getStepThresholds()`, `renderStepToggles()`);
+each line keeps a unique `stack: 'th_step<idx>'` (see invariant #4).
 
 ---
 

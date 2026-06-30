@@ -12,7 +12,7 @@ A single-file HTML application for production capacity planning. Compares monthl
 - **Multi-process support** — define any number of production processes via Excel sheet names (`Matrix - Lathe`, `Matrix - Rolling`, etc.)
 - **Multi-dataset comparison** — load up to 5 monthly requirement datasets and compare side-by-side
 - **Smart Balance algorithm** — automatically redistributes load to alternate lines (priority 2, 3, ...) when primary lines exceed capacity targets
-- **Step-based progression** — Step 0 (initial) → 417h → 447h → 497h → MaxCap targets, with chain-push depth up to 5
+- **Step-based progression** — Step 0 (initial) → configurable OT-driven targets → MaxCap, with chain-push depth up to 5. Add/remove steps and tune each target from working-day/holiday OT in Settings.
 - **CT step function** — cycle times can change over time via Excel `CT_Changes` sheet or in-app overrides
 - **Snapshot export** — share results as self-contained read-only HTML with embedded data
 - **Sticky notes (PPT-style text boxes)** — annotate the dashboard with optional arrow pointers
@@ -90,14 +90,26 @@ Max Cap = (WD + HD) × (hrs_per_shift + 2.5) × shifts
 - HD = holidays = days_in_month − WD (auto)
 - 2.5 = overtime hours per shift (fixed)
 
-**Default capacity targets:**
+**Capacity step targets (configurable):**
 
-| Step | Hours | Meaning |
-|---|---|---|
-| 417 | (21 × 9.94) × 2 | Normal month, 21 working days, 2 shifts |
-| 447 | 417 + (2 × 7.44 × 2) | + 2 holidays with light overtime |
-| 497 | 417 + (4 × 9.94 × 2) | + 4 holidays with heavy overtime |
-| MaxCap | (WD+HD) × (hrs+OT) × shifts | Maximum theoretical capacity |
+Each step's hour threshold is derived from a formula you control in **Settings → Capacity steps**:
+```
+Step target = [ WD × (hrs_per_shift + OT_normal) + HD × (hrs_per_shift + OT_holiday) ] × shifts
+```
+- WD = normal working days for that step
+- OT_normal = overtime hours per shift on a normal working day
+- HD = holiday days actually worked
+- OT_holiday = overtime hours per shift on a worked holiday (on top of a full normal shift)
+
+Steps can be added or removed freely; the final step is always per-month **Max Cap**. The shipped
+defaults reproduce the original 417 / 447 / 497 targets at `hrs_per_shift = 7.44`, `shifts = 2`:
+
+| Step | WD | OT_normal | HD | OT_holiday | Target |
+|---|---|---|---|---|---|
+| 1 | 21 | 2.5 | 0 | 0   | 417 |
+| 2 | 21 | 2.5 | 2 | 0   | 447 |
+| 3 | 21 | 2.5 | 4 | 2.5 | 497 |
+| MaxCap | — | — | — | — | (WD+HD) × (hrs+OT) × shifts |
 
 ---
 
@@ -120,7 +132,7 @@ The HTML is one self-contained file — open it in any editor to modify. Key con
 ```javascript
 const LINE_NAMES = ['Line 1', 'Line 2', ...];     // default line names in template generator
 const PROCESSES = ['Lathe', 'Rolling', 'IHA'];     // default process names (overridden by Master sheets)
-const STEP_TARGETS = [null, 417, 447, 497, null];  // capacity targets per step
+const DEFAULT_STEP_CONFIGS = [...];                 // seed step targets (editable in Settings UI)
 const MAX_CHAIN_DEPTH = 5;                          // chain-push recursion limit
 const DATASET_COLORS = [...];                       // colors for dataset comparison
 ```
