@@ -12,6 +12,14 @@ All notable changes to this project will be documented in this file.
   shift/OT structures. Shipped defaults reproduce the original 417 / 447 / 497 targets.
 - Threshold chart lines and their toolbar toggles are now generated per configured step.
 - `stepConfigs` is persisted to `localStorage` and embedded in exported snapshots.
+- **Max Cap OT is now editable.** Max Cap appears as the final row of the steps table with an
+  editable OT/shift field; `MaxCap = days_in_month × (hrs/shift + Max Cap OT) × shifts` (every day
+  worked). The old fixed `2.5` OT field is gone.
+- **Slimmer Settings.** Global inputs reduced to Hours/shift + Shifts. Removed the now-redundant
+  "OT (fixed)" and "Default WD" fields and the per-month WD/HD calendar grid (per-month WD had no
+  effect on Max Cap, which counts every day of the month). Month re-labeling is kept.
+- **Chart range defaults to the current month** (instead of all months) with a new
+  "Auto (this month)" button, so long datasets no longer render every month by default.
 
 ## [2.04] — Initial public release
 

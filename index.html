@@ -97,6 +97,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .step-config-table input:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
 .step-config-table input:disabled { background: #F5F4F0; color: #5F5E5A; }
 .step-config-table .step-threshold-val { white-space: nowrap; color: #185FA5; }
+.step-config-table tr.maxcap-row td { border-top: 1px solid #E5E3DB; font-weight: 500; color: #A32D2D; }
+.step-config-table tr.maxcap-row .step-threshold-val { color: #A32D2D; font-weight: 400; }
+.step-config-table .step-auto { color: #B4B2A9; font-size: 12px; }
 .relabel-box { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
 .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
 .cal-item { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 5px; padding: 8px 10px; }
@@ -346,14 +349,10 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 
   <div class="section" id="settingsSection" style="display:none">
     <h2><span class="step-num">3</span><span data-i18n="sec_settings">Settings</span></h2>
-    <div class="settings-grid">
+    <div class="settings-grid" style="max-width:320px;">
       <div class="setting-item">
         <label data-i18n="hrs_per_shift">Hours per shift</label>
         <input type="number" id="hrsPerShift" value="7.44" step="0.01" min="0" max="12">
-      </div>
-      <div class="setting-item">
-        <label data-i18n="ot_hrs">OT hours/shift (fixed)</label>
-        <input type="number" id="otHours" value="2.5" step="0.01" disabled>
       </div>
       <div class="setting-item">
         <label data-i18n="shifts">Shifts</label>
@@ -361,10 +360,6 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
           <option value="1" data-i18n="shift_1">1 shift</option>
           <option value="2" selected data-i18n="shift_2">2 shifts</option>
         </select>
-      </div>
-      <div class="setting-item">
-        <label data-i18n="default_wd">Default WD</label>
-        <input type="number" id="defaultWD" value="22" step="1" min="0" max="31">
       </div>
     </div>
 
@@ -379,14 +374,10 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 
     <div style="margin-top:18px; padding-top:14px; border-top:1px solid #E5E3DB;">
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap;">
-        <strong style="font-size:13px;" data-i18n="month_config">Per-month config — Label / WD / HD</strong>
-        <button class="btn-small" id="fillDefaultBtn" type="button" data-i18n="fill_defaults">Fill defaults</button>
-        <button class="btn-small" id="clearMonthBtn" type="button" data-i18n="clear_overrides">Clear overrides</button>
+        <strong style="font-size:13px;" data-i18n="month_labels">Month labels</strong>
       </div>
-
       <div class="relabel-box" id="relabelBox" style="display:none">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <strong style="font-size:12px; color:#5F5E5A;" data-i18n="auto_label">Auto-label months:</strong>
           <span style="font-size:12px;" data-i18n="start_from">start from</span>
           <select id="anchorMonth">
             <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
@@ -395,17 +386,11 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
             <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
           </select>
           <input type="number" id="anchorYear" value="2026" min="2020" max="2040" style="width:70px">
+          <button class="btn-small" id="anchorNowBtn" type="button" data-i18n="this_month">This month</button>
           <button class="btn-small" id="autoLabelBtn" type="button" data-i18n="apply_sequential">Apply sequential</button>
           <button class="btn-small" id="resetLabelBtn" type="button" data-i18n="reset_labels">Reset to original</button>
         </div>
-        <div class="help-text" style="margin-top:6px" data-i18n="auto_label_help">Pick the month/year of the first column → system labels remaining columns sequentially</div>
-      </div>
-
-      <div class="help-text" style="margin-top:0" data-i18n="month_help">Edit each month label directly • WD = Working Day, HD = Holiday • Empty = use default above</div>
-      <div class="calendar-grid" id="calendarGrid">
-        <div class="empty-state" style="grid-column: 1 / -1; padding: 18px;">
-          <div style="font-size: 13px;" data-i18n="upload_first">📅 Upload Monthly Req. first → fields will appear</div>
-        </div>
+        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">Names the data columns sequentially (Jan 2026, Feb 2026…) for the chart axis. Pick which graph months to show with the Range selector above the chart.</div>
       </div>
     </div>
 
@@ -480,6 +465,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <select id="rangeFrom"></select>
       <span>→</span>
       <select id="rangeTo"></select>
+      <button class="btn-small" id="rangeAutoBtn" type="button" data-i18n="range_auto">Auto (this month)</button>
     </div>
 
     <div class="chart-legend-mini" id="chartLegendMini">
@@ -563,6 +549,8 @@ const I18N = {
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
     cap_steps_help:'Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.',
     step_wd:'Work days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
+    auto:'auto', per_month:'per month', month_labels:'Month labels', this_month:'This month', range_auto:'Auto (this month)',
+    month_labels_help:'Names the data columns sequentially (Jan 2026, Feb 2026…) for the chart axis. Pick which graph months to show with the Range selector above the chart.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
@@ -623,6 +611,8 @@ const I18N = {
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
     cap_steps_help:'เป้าหมายแต่ละขั้น = [ วันทำงาน×(ชม./กะ + OT) + วันหยุด×(ชม./กะ + OT วันหยุด) ] × กะ — ปรับค่าเพื่อเลื่อนตำแหน่งเส้น threshold',
     step_wd:'วันทำงาน', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
+    auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
+    month_labels_help:'ตั้งชื่อคอลัมน์ข้อมูลแบบเรียงลำดับ (Jan 2026, Feb 2026…) สำหรับแกนกราฟ • เลือกช่วงเดือนที่จะแสดงได้ที่ Range เหนือกราฟ',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
@@ -683,6 +673,8 @@ const I18N = {
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
     cap_steps_help:'各ステップ目標 = [ 稼働日×(時間/シフト + OT) + 休日×(時間/シフト + 休日OT) ] × シフト数。値を調整してしきい値線の位置を設定。',
     step_wd:'稼働日', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
+    auto:'auto', per_month:'月別', month_labels:'月ラベル', this_month:'今月', range_auto:'Auto (今月)',
+    month_labels_help:'データ列を連番で命名（Jan 2026, Feb 2026…）してグラフ軸に使用。表示する月はグラフ上部のRangeで選択。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
@@ -755,6 +747,7 @@ const state = {
   ctOverrides: [],
   notes: [],
   stepConfigs: DEFAULT_STEP_CONFIGS.map(c => ({ ...c })),
+  maxCapOT: 2.5,
   dsIdCounter: 0
 };
 
@@ -988,9 +981,8 @@ function parseMonthly(wb) {
 function readSettings() {
   return {
     hrsPerShift: parseFloat($('hrsPerShift').value) || 7.44,
-    otHours: 2.5,
+    maxCapOT: state.maxCapOT,
     shifts: parseInt($('shifts').value) || 2,
-    defaultWD: parseInt($('defaultWD').value) || 22,
     stepConfigs: state.stepConfigs.map(c => ({ ...c })),
     monthOverrides: state.monthOverrides
   };
@@ -1003,7 +995,7 @@ function applySavedSettings() {
     const s = d.settings;
     if (s.hrsPerShift) $('hrsPerShift').value = s.hrsPerShift;
     if (s.shifts) $('shifts').value = s.shifts;
-    if (s.defaultWD) $('defaultWD').value = s.defaultWD;
+    if (typeof s.maxCapOT === 'number') state.maxCapOT = s.maxCapOT;
     if (Array.isArray(s.stepConfigs) && s.stepConfigs.length) state.stepConfigs = s.stepConfigs.map(c => ({ ...c }));
     state.monthOverrides = s.monthOverrides || {};
   }
@@ -1012,12 +1004,10 @@ function applySavedSettings() {
 }
 
 function calculateMaxCap(setting, monthLabel) {
-  const ov = setting.monthOverrides[monthLabel] || {};
-  const wd = (ov.wd != null) ? ov.wd : setting.defaultWD;
+  // Max Cap = every day in the month worked at (hrs/shift + Max Cap OT) × shifts.
   const info = getMonthInfo(monthLabel);
   const totalDays = info.valid ? info.days : 30;
-  const hd = Math.max(0, totalDays - wd);
-  return (wd + hd) * (setting.hrsPerShift + setting.otHours) * setting.shifts;
+  return totalDays * (setting.hrsPerShift + (setting.maxCapOT || 0)) * setting.shifts;
 }
 
 // Build the live step sequence from state.stepConfigs.
@@ -1633,6 +1623,17 @@ function getCurrentResult(ds) {
   return ds.resultsHistory[ds.currentStepIdx];
 }
 
+// Month key whose display label resolves to the real current calendar month, else null.
+function findCurrentMonthKey(months) {
+  const now = new Date();
+  const cy = now.getFullYear(), cm = now.getMonth();
+  for (const m of months) {
+    const p = parseMonthYearFromLabel(getDisplayLabel(m)) || parseMonthYearFromLabel(m);
+    if (p && p.year === cy && p.monthIdx === cm) return m;
+  }
+  return null;
+}
+
 function populateRangeSelectors() {
   const ds = getActiveDataset();
   const result = getCurrentResult();
@@ -1645,11 +1646,24 @@ function populateRangeSelectors() {
     const prevFrom = fromS.value, prevTo = toS.value;
     fromS.innerHTML = opts;
     toS.innerHTML = opts;
-    fromS.value = months.includes(prevFrom) ? prevFrom : months[0];
-    toS.value = months.includes(prevTo) ? prevTo : months[Math.min(months.length - 1, 11)];
+    // Default the start to the current month when present, so the chart isn't dragged
+    // back across many past months; keep the user's prior pick if still valid.
+    fromS.value = months.includes(prevFrom) ? prevFrom : (findCurrentMonthKey(months) || months[0]);
+    toS.value = months.includes(prevTo) ? prevTo : months[months.length - 1];
     fromS.dataset.sig = sig;
     toS.dataset.sig = sig;
   }
+}
+
+// "Auto (this month)" — start at the current calendar month, end at the last month.
+function applyAutoRange() {
+  const result = getCurrentResult();
+  if (!result) return;
+  const months = result.months;
+  $('rangeFrom').value = findCurrentMonthKey(months) || months[0];
+  $('rangeTo').value = months[months.length - 1];
+  renderTableArea();
+  renderChart();
 }
 
 function getRangeMonths() {
@@ -2050,6 +2064,16 @@ function renderStepConfigs() {
       `<td>${ro ? '' : `<button class="btn-small" data-remove="${i}" type="button" title="${t('step_threshold')}">✕</button>`}</td>` +
       `</tr>`;
   });
+  // Final Max Cap row — every day worked; WD auto from month, only OT editable.
+  html += `<tr class="maxcap-row">` +
+    `<td>${t('step_maxcap')}</td>` +
+    `<td><span class="step-auto">${t('auto')}</span></td>` +
+    `<td><input type="number" min="0" step="0.1" value="${state.maxCapOT}" data-maxcap="1"${dis}></td>` +
+    `<td><span class="step-auto">—</span></td>` +
+    `<td><span class="step-auto">—</span></td>` +
+    `<td class="step-threshold-val"><em>${t('per_month')}</em></td>` +
+    `<td></td>` +
+    `</tr>`;
   html += `</tbody></table>`;
   box.innerHTML = html;
   if (ro) return;
@@ -2061,6 +2085,13 @@ function renderStepConfigs() {
       onStepConfigsChanged(false);
     });
   });
+  const mcInp = box.querySelector('input[data-maxcap]');
+  if (mcInp) mcInp.addEventListener('change', () => {
+    let v = parseFloat(mcInp.value);
+    if (isNaN(v) || v < 0) v = 0;
+    state.maxCapOT = v;
+    onStepConfigsChanged(false);
+  });
   box.querySelectorAll('button[data-remove]').forEach(btn => {
     btn.addEventListener('click', () => {
       if (state.stepConfigs.length <= 1) { toast(t('step_min_one'), 'error'); return; }
@@ -2070,18 +2101,26 @@ function renderStepConfigs() {
   });
 }
 
-// Called after any step-config edit. structural=true when steps were added/removed.
-function onStepConfigsChanged(structural) {
-  if (!state.isSnapshot) saveStorage({ settings: readSettings() });
-  if (structural) {
-    const maxIdx = getStepDefs().length - 1;
-    for (const ds of state.datasets) {
-      if (ds.currentStepIdx > maxIdx) ds.currentStepIdx = maxIdx;
-      if (ds.resultsHistory && ds.resultsHistory.length > maxIdx + 1) {
-        ds.resultsHistory = ds.resultsHistory.slice(0, maxIdx + 1);
-      }
-    }
+// Recompute every already-computed step for every dataset with current settings,
+// clamping to the (possibly changed) number of steps. No-op in snapshot mode.
+function recomputeExistingResults() {
+  if (state.isSnapshot || !state.master) return;
+  const s = readSettings();
+  const lastIdx = getStepDefs().length - 1;
+  for (const ds of state.datasets) {
+    if (!ds.resultsHistory || ds.resultsHistory.length === 0) continue;
+    const upto = Math.min(ds.resultsHistory.length - 1, lastIdx);
+    const newHist = [];
+    for (let i = 0; i <= upto; i++) newHist.push(calculateForStep(state.master.parts, ds.monthlyData, s, i));
+    ds.resultsHistory = newHist;
+    if (ds.currentStepIdx > upto) ds.currentStepIdx = upto;
   }
+}
+
+// Called after any step-config / Max Cap OT edit (and on hrs/shift & shifts changes).
+function onStepConfigsChanged() {
+  if (!state.isSnapshot) saveStorage({ settings: readSettings() });
+  recomputeExistingResults();
   renderStepConfigs();
   renderStepToggles();
   if (getCurrentResult()) renderResults();
@@ -2606,9 +2645,10 @@ function renderPreview() {
 }
 
 
-// ===== Calendar grid =====
+// ===== Calendar grid (per-month WD/HD removed; kept as no-op for legacy callers) =====
 function renderCalendarGrid() {
   const g = $('calendarGrid');
+  if (!g) return;
   const active = getActiveDataset();
   if (!active) {
     g.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 18px;"><div style="font-size: 13px;">${t('upload_first')}</div></div>`;
@@ -3372,7 +3412,7 @@ function exportSnapshot() {
   });
 
   // 3. Clear dynamically populated containers (they'll be re-rendered from data)
-  const clearIds = ['datasetList', 'calendarGrid', 'tableContainer', 'lineFilter', 'stepHistory', 'dsChips', 'alertList', 'unmatchedList', 'snapshotMetaText', 'rangeFrom', 'rangeTo'];
+  const clearIds = ['datasetList', 'tableContainer', 'lineFilter', 'stepHistory', 'dsChips', 'alertList', 'unmatchedList', 'snapshotMetaText', 'rangeFrom', 'rangeTo', 'stepConfigTable', 'stepToggles'];
   clearIds.forEach(id => {
     const el = clonedHtml.querySelector('#' + id);
     if (el) el.innerHTML = '';
@@ -3469,7 +3509,7 @@ function loadSnapshotIfPresent() {
     if (data.settings) {
       if (data.settings.hrsPerShift) $('hrsPerShift').value = data.settings.hrsPerShift;
       if (data.settings.shifts) $('shifts').value = data.settings.shifts;
-      if (data.settings.defaultWD) $('defaultWD').value = data.settings.defaultWD;
+      if (typeof data.settings.maxCapOT === 'number') state.maxCapOT = data.settings.maxCapOT;
       if (Array.isArray(data.settings.stepConfigs) && data.settings.stepConfigs.length) {
         state.stepConfigs = data.settings.stepConfigs.map(c => ({ ...c }));
       }
@@ -3673,6 +3713,11 @@ function setupCollapsibleSections() {
 }
 
 function setupEvents() {
+  // Default the month-label anchor to the current month/year.
+  const _now = new Date();
+  if ($('anchorMonth')) $('anchorMonth').value = String(_now.getMonth());
+  if ($('anchorYear')) $('anchorYear').value = String(_now.getFullYear());
+
   document.querySelectorAll('.lang-btn').forEach(b => {
     b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderCalendarGrid(); };
   });
@@ -3715,14 +3760,8 @@ function setupEvents() {
   $('addStepBtn').onclick = () => {
     const last = state.stepConfigs[state.stepConfigs.length - 1];
     state.stepConfigs.push(last ? { ...last } : { wd: 21, otNormal: 2.5, hdWorked: 0, otHoliday: 0 });
-    onStepConfigsChanged(true);
+    onStepConfigsChanged();
   };
-
-  // hrs/shift & shifts feed the step threshold formula — refresh displayed targets on change.
-  ['hrsPerShift', 'shifts'].forEach(id => {
-    const el = $(id);
-    if (el) el.addEventListener('change', () => { renderStepConfigs(); renderStepToggles(); });
-  });
 
   $('clearAllBtn').onclick = () => {
     if (!confirm(t('confirm_clear_all'))) return;
@@ -3766,37 +3805,17 @@ function setupEvents() {
     };
   });
 
-  ['hrsPerShift','shifts','defaultWD'].forEach(id => {
-    $(id).onchange = () => {
-      if (state.datasets.some(d => d.resultsHistory.length > 0)) {
-        const s = readSettings();
-        // Recompute all results with new settings (reuse step indices)
-        for (const ds of state.datasets) {
-          const newHist = [];
-          const maxIdx = Math.max(0, ...ds.resultsHistory.map((_, i) => i));
-          for (let i = 0; i <= maxIdx; i++) newHist.push(calculateForStep(state.master.parts, ds.monthlyData, s, i));
-          ds.resultsHistory = newHist;
-          if (ds.currentStepIdx >= newHist.length) ds.currentStepIdx = newHist.length - 1;
-        }
-        renderResults();
-      }
-    };
+  // hrs/shift & shifts feed both the step thresholds and Max Cap — refresh + recompute.
+  ['hrsPerShift','shifts'].forEach(id => {
+    $(id).onchange = () => onStepConfigsChanged();
   });
 
-  $('fillDefaultBtn').onclick = () => {
-    if (state.datasets.length === 0) { toast(t('monthly_required'), 'error'); return; }
-    const wd = parseInt($('defaultWD').value) || 22;
-    const allMonths = new Set();
-    for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
-    for (const m of allMonths) state.monthOverrides[m] = { wd };
-    renderCalendarGrid();
-    toast(t('fill_defaults_done_wd', { wd }), 'success');
-  };
+  $('rangeAutoBtn').onclick = () => applyAutoRange();
 
-  $('clearMonthBtn').onclick = () => {
-    state.monthOverrides = {};
-    renderCalendarGrid();
-    toast(t('overrides_cleared'), 'success');
+  $('anchorNowBtn').onclick = () => {
+    const now = new Date();
+    $('anchorMonth').value = String(now.getMonth());
+    $('anchorYear').value = String(now.getFullYear());
   };
 
   $('autoLabelBtn').onclick = () => {

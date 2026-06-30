@@ -84,11 +84,10 @@ hours = (qty × CT / 3600) / OA × Fluctuation
 
 **Monthly capacity (Max Cap):**
 ```
-Max Cap = (WD + HD) × (hrs_per_shift + 2.5) × shifts
+Max Cap = days_in_month × (hrs_per_shift + Max Cap OT) × shifts
 ```
-- WD = working days (user input per month)
-- HD = holidays = days_in_month − WD (auto)
-- 2.5 = overtime hours per shift (fixed)
+- days_in_month = every calendar day worked (pulled automatically from the month)
+- Max Cap OT = overtime hours per shift, editable in the Max Cap row of **Settings → Capacity steps**
 
 **Capacity step targets (configurable):**
 
@@ -109,7 +108,7 @@ defaults reproduce the original 417 / 447 / 497 targets at `hrs_per_shift = 7.44
 | 1 | 21 | 2.5 | 0 | 0   | 417 |
 | 2 | 21 | 2.5 | 2 | 0   | 447 |
 | 3 | 21 | 2.5 | 4 | 2.5 | 497 |
-| MaxCap | — | — | — | — | (WD+HD) × (hrs+OT) × shifts |
+| MaxCap | auto | (Max Cap OT) | — | — | days_in_month × (hrs + Max Cap OT) × shifts |
 
 ---
 

@@ -34,7 +34,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 | Section | Purpose |
 |---|---|
-| State + Constants | `state` object (incl. `state.stepConfigs`), `PROCESSES`, `LINE_NAMES`, `DEFAULT_STEP_CONFIGS`, `STEP_LINE_STYLES`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
+| State + Constants | `state` object (incl. `state.stepConfigs`, `state.maxCapOT`), `PROCESSES`, `LINE_NAMES`, `DEFAULT_STEP_CONFIGS`, `STEP_LINE_STYLES`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
 | I18N | `I18N.en` / `I18N.th` / `I18N.jp` dictionaries — **all keys must exist in all three** |
 | Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, hatch pattern cache |
 | CT Step Function | `getEffectiveCT()` resolves CT in priority order: App override → Excel CT_Changes → Matrix base |
@@ -83,10 +83,9 @@ Hours per part per month per line:
   hours = (qty × CT / 3600) / OA × Fluctuation
 
 Monthly max capacity:
-  MaxCap = (WD + HD) × (hrs_per_shift + 2.5) × shifts
-  where  WD = working days (user input per month)
-         HD = days_in_month − WD (auto)
-         2.5 = fixed overtime hours per shift
+  MaxCap = days_in_month × (hrs_per_shift + maxCapOT) × shifts
+  where  days_in_month = every calendar day worked (auto from the month)
+         maxCapOT = state.maxCapOT, editable in the Max Cap row of the steps table
 ```
 
 Step targets are **user-configurable** (not hardcoded). `state.stepConfigs` holds one entry per
