@@ -100,6 +100,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .step-config-table tr.maxcap-row td { border-top: 1px solid #E5E3DB; font-weight: 500; color: #A32D2D; }
 .step-config-table tr.maxcap-row .step-threshold-val { color: #A32D2D; font-weight: 400; }
 .step-config-table .step-auto { color: #B4B2A9; font-size: 12px; }
+.month-label-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 10px; }
+.month-label-list .ml-item { display: flex; align-items: center; gap: 6px; }
+.month-label-list .ml-idx { font-size: 11px; color: #B4B2A9; min-width: 16px; text-align: right; }
+.month-label-list .ml-input { flex: 1; min-width: 0; border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; font-family: inherit; }
+.month-label-list .ml-input:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
 .relabel-box { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
 .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
 .cal-item { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 5px; padding: 8px 10px; }
@@ -396,7 +401,8 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
           <select id="rangeTo"></select>
           <button class="btn-small" id="rangeAutoBtn" type="button" data-i18n="this_month">This month</button>
         </div>
-        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">First row names the data columns sequentially (Jan 2026, Feb 2026…). Second row picks which months show on the chart — "This month" starts at the current month.</div>
+        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">Type any label per column below, or use "Apply sequential" to auto-fill from a start month. Second row picks which months show on the chart.</div>
+        <div class="month-label-list" id="monthLabelList"></div>
       </div>
     </div>
 
@@ -552,7 +558,7 @@ const I18N = {
     step_wd:'Work days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
     auto:'auto', per_month:'per month', month_labels:'Month labels & graph range', this_month:'This month', range_auto:'Auto (this month)',
     first_column:'First column =', graph_show:'Show on chart',
-    month_labels_help:'First row names the data columns sequentially (Jan 2026, Feb 2026…). Second row picks which months show on the chart — "This month" starts at the current month.',
+    month_labels_help:'Type any label per column below, or use "Apply sequential" to auto-fill from a start month. Second row picks which months show on the chart.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
@@ -615,7 +621,7 @@ const I18N = {
     step_wd:'วันทำงาน', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
     auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน & ช่วงกราฟ', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
     first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ',
-    month_labels_help:'แถวแรกตั้งชื่อคอลัมน์เรียงลำดับ (Jan 2026, Feb 2026…) • แถวสองเลือกเดือนที่จะแสดงบนกราฟ — "เดือนนี้" เริ่มที่เดือนปัจจุบัน',
+    month_labels_help:'พิมพ์ชื่อเดือนได้อิสระในแต่ละช่องด้านล่าง หรือกด "Apply sequential" เพื่อเติมอัตโนมัติจากเดือนเริ่มต้น • แถวสองเลือกเดือนที่จะแสดงบนกราฟ',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
@@ -678,7 +684,7 @@ const I18N = {
     step_wd:'稼働日', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
     auto:'auto', per_month:'月別', month_labels:'月ラベル & グラフ範囲', this_month:'今月', range_auto:'Auto (今月)',
     first_column:'最初の列 =', graph_show:'グラフ表示',
-    month_labels_help:'1行目はデータ列を連番命名（Jan 2026, Feb 2026…）。2行目はグラフ表示月を選択 — 「今月」は今月開始。',
+    month_labels_help:'下の各列に自由にラベルを入力、または「Apply sequential」で開始月から自動入力。2行目はグラフ表示月を選択。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
@@ -1671,6 +1677,33 @@ function applyAutoRange() {
   if (result) { renderTableArea(); renderChart(); }
 }
 
+// Free-text label editor — one input per data column. Type anything.
+function renderMonthLabels() {
+  const box = $('monthLabelList');
+  if (!box) return;
+  if (state.isSnapshot) { box.innerHTML = ''; return; }
+  const ds = getActiveDataset();
+  const result = getCurrentResult();
+  const months = result ? result.months : (ds ? ds.monthlyData.months : null);
+  if (!months || !months.length) { box.innerHTML = ''; return; }
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  box.innerHTML = months.map((m, i) =>
+    `<div class="ml-item"><span class="ml-idx">${i + 1}</span>` +
+    `<input type="text" class="ml-input" data-month="${esc(m)}" value="${esc(state.labelOverrides[m] || m)}"></div>`
+  ).join('');
+  box.querySelectorAll('input.ml-input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const mon = inp.dataset.month;
+      const v = inp.value.trim();
+      if (v && v !== mon) state.labelOverrides[mon] = v;
+      else delete state.labelOverrides[mon];
+      saveStorage({ labelOverrides: state.labelOverrides });
+      populateRangeSelectors();
+      if (state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) renderResults();
+    });
+  });
+}
+
 function getRangeMonths() {
   const result = getCurrentResult();
   if (!result) return [];
@@ -2645,7 +2678,7 @@ function renderPreview() {
     }
     renderStepConfigs();
     populateRangeSelectors();
-    renderCalendarGrid();
+    renderMonthLabels();
     renderCtOverrides();
   }
 }
@@ -3834,7 +3867,8 @@ function setupEvents() {
       state.labelOverrides[m] = `${monthNames[monthIdx]} ${year}`;
     });
     saveStorage({ labelOverrides: state.labelOverrides });
-    renderCalendarGrid();
+    renderMonthLabels();
+    populateRangeSelectors();
     if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
     toast(t('labels_applied', { anchor: `${monthNames[startMonth]} ${startYear}` }), 'success');
   };
@@ -3842,7 +3876,8 @@ function setupEvents() {
   $('resetLabelBtn').onclick = () => {
     state.labelOverrides = {};
     saveStorage({ labelOverrides: {} });
-    renderCalendarGrid();
+    renderMonthLabels();
+    populateRangeSelectors();
     if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
     toast(t('labels_reset'), 'success');
   };
