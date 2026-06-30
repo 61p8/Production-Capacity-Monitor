@@ -549,6 +549,9 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <button class="lay-tool" data-laytool="rect" type="button" title="Draw rectangle"><span data-i18n="lay_rect">▭ Rectangle</span></button>
       </div>
       <span class="lay-sep"></span>
+      <button class="btn-small" id="layUndoBtn" type="button" title="Undo (Ctrl+Z)">↶</button>
+      <button class="btn-small" id="layRedoBtn" type="button" title="Redo (Ctrl+Y)">↷</button>
+      <span class="lay-sep"></span>
       <label class="lay-field"><span data-i18n="lay_type">Type</span>
         <select id="layType">
           <option value="area" data-i18n="lay_type_area">Area</option>
@@ -580,6 +583,11 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <span class="lay-sep"></span>
       <button class="btn-small" id="layDeleteBtn" type="button" data-i18n="lay_delete">Delete</button>
       <button class="btn-small" id="layClearBtn" type="button" data-i18n="lay_clear">Clear all</button>
+      <span class="lay-sep"></span>
+      <button class="btn-small" id="laySaveFileBtn" type="button" data-i18n="lay_save">💾 Save</button>
+      <button class="btn-small" id="layLoadFileBtn" type="button" data-i18n="lay_load">📂 Load</button>
+      <button class="btn-small" id="layExportSvgBtn" type="button" data-i18n="lay_export_svg">SVG</button>
+      <input type="file" id="layLoadInput" accept="application/json,.json" style="display:none">
     </div>
     <div class="layout-body">
       <div class="layout-canvas-wrap" id="layCanvasWrap">
@@ -607,6 +615,7 @@ const I18N = {
     lay_props:'Properties', lay_no_sel:'Nothing selected', lay_multi_sel:'{n} objects selected', lay_label:'Label',
     lay_need2:'Select at least 2 objects', lay_no_overlap:'Objects do not overlap', lay_clear_confirm:'Clear the whole layout?',
     lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
+    lay_save:'💾 Save', lay_load:'📂 Load', lay_export_svg:'SVG', lay_loaded:'Layout loaded', lay_load_err:'Could not read the file', lay_empty_export:'Nothing to export',
     lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
@@ -678,6 +687,7 @@ const I18N = {
     lay_props:'คุณสมบัติ', lay_no_sel:'ยังไม่ได้เลือก', lay_multi_sel:'เลือกไว้ {n} ชิ้น', lay_label:'ชื่อ',
     lay_need2:'เลือกอย่างน้อย 2 ชิ้น', lay_no_overlap:'วัตถุไม่ได้ซ้อนทับกัน', lay_clear_confirm:'ล้างผังทั้งหมด?',
     lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
+    lay_save:'💾 เซฟไฟล์', lay_load:'📂 โหลด', lay_export_svg:'SVG', lay_loaded:'โหลดผังแล้ว', lay_load_err:'อ่านไฟล์ไม่ได้', lay_empty_export:'ไม่มีอะไรให้ส่งออก',
     lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
@@ -749,6 +759,7 @@ const I18N = {
     lay_props:'プロパティ', lay_no_sel:'未選択', lay_multi_sel:'{n} 個選択中', lay_label:'ラベル',
     lay_need2:'2個以上選択してください', lay_no_overlap:'重なっていません', lay_clear_confirm:'レイアウトを全消去しますか？',
     lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
+    lay_save:'💾 保存', lay_load:'📂 読込', lay_export_svg:'SVG', lay_loaded:'レイアウトを読込みました', lay_load_err:'ファイルを読めません', lay_empty_export:'エクスポート対象なし',
     lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
@@ -1146,6 +1157,7 @@ function applyLayoutData(ld) {
   state.layout.selected = [];
   const us = $('layUnit'); if (us) us.value = state.layout.unit;
   layUpdateSnapBtn();
+  layResetHistory();
 }
 
 function calculateMaxCap(setting, monthLabel) {
@@ -4270,10 +4282,17 @@ function layRender() {
     path.addEventListener('mousedown', e => layShapeDown(e, obj.id));
     g.appendChild(path);
     const bb = layBBox(obj.rects);
-    const txt = layEl('text', { x: bb.x + bb.w / 2, y: bb.y + bb.h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': fontMm, fill: '#2C2C2A' });
-    const dim = `${layFmt(bb.w)}×${layFmt(bb.h)} ${L.unit}`;
-    txt.textContent = obj.label ? `${obj.label} · ${dim}` : dim;
-    g.appendChild(txt);
+    if (obj.label) {
+      const nameTxt = layEl('text', { x: bb.x + bb.w / 2, y: bb.y + bb.h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': fontMm, fill: '#2C2C2A' });
+      nameTxt.textContent = obj.label; g.appendChild(nameTxt);
+    }
+    // dimension labels along the edges (W on the top edge, H on the left edge)
+    const df = fontMm * 0.85;
+    const wTxt = layEl('text', { x: bb.x + bb.w / 2, y: bb.y + df * 1.1, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': df, fill: '#5F5E5A' });
+    wTxt.textContent = `${layFmt(bb.w)} ${L.unit}`; g.appendChild(wTxt);
+    const hcx = bb.x + df * 1.1, hcy = bb.y + bb.h / 2;
+    const hTxt = layEl('text', { x: hcx, y: hcy, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': df, fill: '#5F5E5A', transform: `rotate(-90 ${hcx} ${hcy})` });
+    hTxt.textContent = `${layFmt(bb.h)} ${L.unit}`; g.appendChild(hTxt);
   }
   svg.appendChild(g);
   // overlay (screen coords)
@@ -4381,7 +4400,8 @@ function layDocUp() {
     }
   }
   layDrag = null; layRemovePreview();
-  if (mode === 'pan' || mode === 'marquee') laySaveView(); else laySave();
+  if (mode === 'pan' || mode === 'marquee') laySaveView();
+  else { laySave(); layRecord(); }
   layRender();
 }
 function layDrawPreview() {
@@ -4441,12 +4461,12 @@ function layRenderProps() {
     `<div class="lp-row"><label>Y (${u})</label><input id="lpY" type="number" step="0.01" value="${layMmToU(bb.y)}"${dis}></div>` +
     `<div class="lp-row"><label>W (${u})</label><input id="lpW" type="number" step="0.01" value="${layMmToU(bb.w)}"${dis}></div>` +
     `<div class="lp-row"><label>H (${u})</label><input id="lpH" type="number" step="0.01" value="${layMmToU(bb.h)}"${dis}></div>`;
-  $('lpType').onchange = () => { obj.type = $('lpType').value; laySave(); layRender(); };
-  $('lpLabel').onchange = () => { obj.label = $('lpLabel').value; laySave(); layRender(); };
+  $('lpType').onchange = () => { obj.type = $('lpType').value; laySave(); layRecord(); layRender(); };
+  $('lpLabel').onchange = () => { obj.label = $('lpLabel').value; laySave(); layRecord(); layRender(); };
   if (single) {
     const apply = () => {
       obj.rects[0] = { x: layUToMm($('lpX').value), y: layUToMm($('lpY').value), w: Math.max(50, layUToMm($('lpW').value)), h: Math.max(50, layUToMm($('lpH').value)) };
-      laySave(); layRender();
+      laySave(); layRecord(); layRender();
     };
     ['lpX', 'lpY', 'lpW', 'lpH'].forEach(id => $(id).onchange = apply);
   }
@@ -4457,7 +4477,7 @@ function layUnion() {
   if (sel.length < 2) { toast(t('lay_need2'), 'error'); return; }
   const obj = { id: L.nextId++, type: sel[0].type, label: sel[0].label || '', rects: sel.flatMap(o => o.rects.map(r => ({ ...r }))) };
   L.objects = L.objects.filter(o => !L.selected.includes(o.id)).concat(obj);
-  L.selected = [obj.id]; laySave(); layRender();
+  L.selected = [obj.id]; laySave(); layRecord(); layRender();
 }
 function layIntersect() {
   const L = layCur(), sel = L.selected.map(layObj).filter(Boolean);
@@ -4475,16 +4495,16 @@ function layIntersect() {
   if (!acc.length) { toast(t('lay_no_overlap'), 'error'); return; }
   const obj = { id: L.nextId++, type: sel[0].type, label: sel[0].label || '', rects: acc };
   L.objects = L.objects.filter(o => !L.selected.includes(o.id)).concat(obj);
-  L.selected = [obj.id]; laySave(); layRender();
+  L.selected = [obj.id]; laySave(); layRecord(); layRender();
 }
 function layDelete() {
   const L = layCur(); if (!L.selected.length) return;
   L.objects = L.objects.filter(o => !L.selected.includes(o.id));
-  L.selected = []; laySave(); layRender();
+  L.selected = []; laySave(); layRecord(); layRender();
 }
 function layClear() {
   if (!confirm(t('lay_clear_confirm'))) return;
-  const L = layCur(); L.objects = []; L.selected = []; laySave(); layRender();
+  const L = layCur(); L.objects = []; L.selected = []; laySave(); layRecord(); layRender();
 }
 function laySetTool(tool) {
   layCur().tool = tool;
@@ -4531,6 +4551,115 @@ function layUpdateSnapBtn() {
 function layPayload() { const L = layCur(); return { objects: L.objects, unit: L.unit, pxPerMm: L.pxPerMm, panX: L.panX, panY: L.panY, snap: L.snap, nextId: L.nextId }; }
 function laySave() { saveStorage({ layout: layPayload() }); }
 function laySaveView() { saveStorage({ layout: layPayload() }); }
+
+// ----- undo / redo history (transient, per session) -----
+let layHist = [], layPtr = -1, layClip = [];
+function laySerialize() { return JSON.stringify(layCur().objects); }
+function layResetHistory() { layHist = [laySerialize()]; layPtr = 0; }
+function layRecord() {
+  const s = laySerialize();
+  if (layHist[layPtr] === s) return;
+  layHist = layHist.slice(0, layPtr + 1);
+  layHist.push(s); layPtr = layHist.length - 1;
+  if (layHist.length > 60) { layHist.shift(); layPtr--; }
+}
+function layRestore() {
+  const L = layCur();
+  L.objects = JSON.parse(layHist[layPtr] || '[]');
+  L.selected = L.selected.filter(id => layObj(id));
+  laySave(); layRender();
+}
+function layUndo() { if (layPtr > 0) { layPtr--; layRestore(); } }
+function layRedo() { if (layPtr < layHist.length - 1) { layPtr++; layRestore(); } }
+
+// ----- clipboard -----
+function layCopy() { layClip = layCur().selected.map(id => layObj(id)).filter(Boolean).map(o => JSON.parse(JSON.stringify(o))); }
+function layCut() { if (layCur().selected.length) { layCopy(); layDelete(); } }
+function layPaste() {
+  if (!layClip.length) return;
+  const L = layCur(), off = 600, ids = [];
+  for (const c of layClip) {
+    const o = { id: L.nextId++, type: c.type, label: c.label, rects: c.rects.map(r => ({ x: r.x + off, y: r.y + off, w: r.w, h: r.h })) };
+    L.objects.push(o); ids.push(o.id);
+  }
+  L.selected = ids; laySave(); layRecord(); layRender();
+}
+function laySelectAll() { const L = layCur(); L.selected = L.objects.map(o => o.id); layRender(); }
+function layDuplicate() { if (layCur().selected.length) { layCopy(); layPaste(); } }
+function layNudge(dx, dy) {
+  const L = layCur(); if (!L.selected.length) return;
+  for (const id of L.selected) { const o = layObj(id); o.rects = o.rects.map(r => ({ x: r.x + dx, y: r.y + dy, w: r.w, h: r.h })); }
+  laySave(); layRecord(); layRender();
+}
+function layKey(e) {
+  const panel = document.querySelector('.tab-panel[data-panel="layout"]');
+  if (!panel || !panel.classList.contains('active')) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea' || e.target.isContentEditable) return;
+  const ctrl = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
+  if (ctrl && key === 'z') { e.preventDefault(); e.shiftKey ? layRedo() : layUndo(); }
+  else if (ctrl && key === 'y') { e.preventDefault(); layRedo(); }
+  else if (ctrl && key === 'c') { e.preventDefault(); layCopy(); }
+  else if (ctrl && key === 'x') { e.preventDefault(); layCut(); }
+  else if (ctrl && key === 'v') { e.preventDefault(); layPaste(); }
+  else if (ctrl && key === 'a') { e.preventDefault(); laySelectAll(); }
+  else if (ctrl && key === 'd') { e.preventDefault(); layDuplicate(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); layDelete(); }
+  else if (e.key === 'Escape') { layCur().selected = []; layRender(); }
+  else if (e.key.indexOf('Arrow') === 0) {
+    e.preventDefault();
+    const d = e.shiftKey ? 1000 : 100;
+    const mv = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[e.key];
+    if (mv) layNudge(mv[0], mv[1]);
+  }
+}
+
+// ----- file save / load / export -----
+function layDownload(name, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+function laySaveFile() {
+  layDownload('factory-layout.json', JSON.stringify({ app: 'capacity-layout', version: 1, layout: layPayload() }, null, 2), 'application/json');
+}
+function layLoadFile(file) {
+  if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const parsed = JSON.parse(rd.result);
+      applyLayoutData(parsed.layout || parsed);
+      layResetHistory(); laySave(); layRender();
+      toast(t('lay_loaded'), 'success');
+    } catch (err) { toast(t('lay_load_err'), 'error'); }
+  };
+  rd.readAsText(file);
+}
+function layExportSvg() {
+  const L = layCur();
+  if (!L.objects.length) { toast(t('lay_empty_export'), 'error'); return; }
+  const bb = layBBox(L.objects.flatMap(o => o.rects));
+  const pad = Math.max(bb.w, bb.h) * 0.05 + 500;
+  const vx = bb.x - pad, vy = bb.y - pad, vw = bb.w + 2 * pad, vh = bb.h + 2 * pad;
+  const sw = Math.max(vw, vh) / 450, fs = Math.max(vw, vh) / 48;
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  let body = '';
+  for (const obj of L.objects) {
+    const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
+    let d = '';
+    for (const loop of layOutline(obj.rects)) d += 'M' + loop.map(p => `${p[0]} ${p[1]}`).join(' L ') + ' Z';
+    const b = layBBox(obj.rects);
+    body += `<path d="${d}" fill="${st.fill}" fill-opacity="0.78" stroke="${st.stroke}" stroke-width="${sw}" fill-rule="evenodd"/>`;
+    if (obj.label) body += `<text x="${b.x + b.w / 2}" y="${b.y + b.h / 2}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle" fill="#2C2C2A" font-family="sans-serif">${esc(obj.label)}</text>`;
+    body += `<text x="${b.x + b.w / 2}" y="${b.y + fs}" font-size="${fs * 0.85}" text-anchor="middle" fill="#5F5E5A" font-family="sans-serif">${layFmt(b.w)} ${L.unit}</text>`;
+    body += `<text x="${b.x + fs}" y="${b.y + b.h / 2}" font-size="${fs * 0.85}" text-anchor="middle" fill="#5F5E5A" font-family="sans-serif" transform="rotate(-90 ${b.x + fs} ${b.y + b.h / 2})">${layFmt(b.h)} ${L.unit}</text>`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="1000"><rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>${body}</svg>`;
+  layDownload('factory-layout.svg', svg, 'image/svg+xml');
+}
 let layInited = false;
 function layInit() {
   const svg = $('layoutSvg'); if (!svg || layInited) return;
@@ -4551,8 +4680,16 @@ function layInit() {
   $('layIntersectBtn').onclick = layIntersect;
   $('layDeleteBtn').onclick = layDelete;
   $('layClearBtn').onclick = layClear;
+  $('layUndoBtn').onclick = layUndo;
+  $('layRedoBtn').onclick = layRedo;
+  $('laySaveFileBtn').onclick = laySaveFile;
+  $('layLoadFileBtn').onclick = () => $('layLoadInput').click();
+  $('layLoadInput').onchange = e => { if (e.target.files[0]) layLoadFile(e.target.files[0]); e.target.value = ''; };
+  $('layExportSvgBtn').onclick = layExportSvg;
+  document.addEventListener('keydown', layKey);
   $('layUnit').value = layCur().unit;
   layUpdateSnapBtn();
+  layResetHistory();
 }
 
 function init() {

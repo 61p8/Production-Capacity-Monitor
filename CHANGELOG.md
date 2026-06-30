@@ -16,6 +16,12 @@ All notable changes to this project will be documented in this file.
   pixels + scrollbars. Left-drag empty space marquee-selects; Ctrl/Shift-click adds to the
   selection. A **Snap** toggle aligns object edges & centres while drawing, moving and resizing,
   with on-canvas guide lines.
+- **Layout keyboard shortcuts, file save/load, edge dimensions.** Delete/Backspace, Ctrl+Z/Y
+  (undo/redo), Ctrl+C/X/V (copy/cut/paste), Ctrl+A (select all), Ctrl+D (duplicate), Esc
+  (deselect) and arrow-key nudging all work when the Layout tab is focused. Save/Load a layout as a
+  `.json` file (full round-trip) and Export the drawing as an `.svg` image. Each object's width and
+  height are now labelled along its top and left edges (instead of the centre) so it's clear which
+  number is which axis.
 
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
