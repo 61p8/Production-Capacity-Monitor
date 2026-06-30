@@ -100,6 +100,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .step-config-table tr.maxcap-row td { border-top: 1px solid #E5E3DB; font-weight: 500; color: #A32D2D; }
 .step-config-table tr.maxcap-row .step-threshold-val { color: #A32D2D; font-weight: 400; }
 .step-config-table .step-auto { color: #B4B2A9; font-size: 12px; }
+.relabel-box select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; font-family: inherit; }
+.relabel-box select:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
 .month-label-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 10px; }
 .month-label-list .ml-item { display: flex; align-items: center; gap: 6px; }
 .month-label-list .ml-idx { font-size: 11px; color: #B4B2A9; min-width: 16px; text-align: right; }
@@ -383,26 +385,28 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       </div>
       <div class="relabel-box" id="relabelBox" style="display:none">
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <span style="font-size:12px; min-width:96px; color:#5F5E5A;" data-i18n="first_column">First column =</span>
-          <select id="anchorMonth">
+          <span style="font-size:12px; color:#5F5E5A; font-weight:500;" data-i18n="range_start">Start</span>
+          <select id="startMonth">
             <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
             <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
             <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
             <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
           </select>
-          <input type="number" id="anchorYear" value="2026" min="2020" max="2040" style="width:70px">
-          <button class="btn-small" id="autoLabelBtn" type="button" data-i18n="apply_sequential">Apply sequential</button>
-          <button class="btn-small" id="resetLabelBtn" type="button" data-i18n="reset_labels">Reset to original</button>
+          <select id="startYear"></select>
+          <span style="font-size:12px; color:#5F5E5A; font-weight:500; margin-left:8px;" data-i18n="range_end">End</span>
+          <select id="endMonth">
+            <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
+            <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
+            <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+            <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
+          </select>
+          <select id="endYear"></select>
+          <button class="btn-small" id="rangeThisMonthBtn" type="button" data-i18n="this_month">This month</button>
+          <button class="btn-small" id="rangeResetBtn" type="button" data-i18n="reset_labels">Reset to original</button>
         </div>
-        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">
-          <span style="font-size:12px; min-width:96px; color:#5F5E5A;" data-i18n="graph_show">Show on chart</span>
-          <select id="rangeFrom"></select>
-          <span>→</span>
-          <select id="rangeTo"></select>
-          <button class="btn-small" id="rangeAutoBtn" type="button" data-i18n="this_month">This month</button>
-        </div>
-        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">Type any label per column below, or use "Apply sequential" to auto-fill from a start month. Second row picks which months show on the chart.</div>
-        <div class="month-label-list" id="monthLabelList"></div>
+        <div class="help-text" style="margin-top:6px" data-i18n="month_labels_help">Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.</div>
+        <select id="rangeFrom" style="display:none"></select>
+        <select id="rangeTo" style="display:none"></select>
       </div>
     </div>
 
@@ -557,8 +561,8 @@ const I18N = {
     cap_steps_help:'Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.',
     step_wd:'Work days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
     auto:'auto', per_month:'per month', month_labels:'Month labels & graph range', this_month:'This month', range_auto:'Auto (this month)',
-    first_column:'First column =', graph_show:'Show on chart',
-    month_labels_help:'Type any label per column below, or use "Apply sequential" to auto-fill from a start month. Second row picks which months show on the chart.',
+    first_column:'First column =', graph_show:'Show on chart', range_start:'Start', range_end:'End',
+    month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
@@ -620,8 +624,8 @@ const I18N = {
     cap_steps_help:'เป้าหมายแต่ละขั้น = [ วันทำงาน×(ชม./กะ + OT) + วันหยุด×(ชม./กะ + OT วันหยุด) ] × กะ — ปรับค่าเพื่อเลื่อนตำแหน่งเส้น threshold',
     step_wd:'วันทำงาน', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
     auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน & ช่วงกราฟ', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
-    first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ',
-    month_labels_help:'พิมพ์ชื่อเดือนได้อิสระในแต่ละช่องด้านล่าง หรือกด "Apply sequential" เพื่อเติมอัตโนมัติจากเดือนเริ่มต้น • แถวสองเลือกเดือนที่จะแสดงบนกราฟ',
+    first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ', range_start:'เริ่ม', range_end:'ถึง',
+    month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
@@ -683,8 +687,8 @@ const I18N = {
     cap_steps_help:'各ステップ目標 = [ 稼働日×(時間/シフト + OT) + 休日×(時間/シフト + 休日OT) ] × シフト数。値を調整してしきい値線の位置を設定。',
     step_wd:'稼働日', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
     auto:'auto', per_month:'月別', month_labels:'月ラベル & グラフ範囲', this_month:'今月', range_auto:'Auto (今月)',
-    first_column:'最初の列 =', graph_show:'グラフ表示',
-    month_labels_help:'下の各列に自由にラベルを入力、または「Apply sequential」で開始月から自動入力。2行目はグラフ表示月を選択。',
+    first_column:'最初の列 =', graph_show:'グラフ表示', range_start:'開始', range_end:'終了',
+    month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
@@ -1666,42 +1670,88 @@ function populateRangeSelectors() {
   }
 }
 
-// "This month" — start at the current calendar month, end at the last month.
-function applyAutoRange() {
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Fill Start/End year dropdowns around the current year (wide, so future years keep working).
+function setupRangeYearOptions(extraYears) {
+  const sY = $('startYear'), eY = $('endYear');
+  if (!sY || !eY) return;
+  const cy = new Date().getFullYear();
+  const years = new Set();
+  for (let y = cy - 4; y <= cy + 10; y++) years.add(y);
+  (extraYears || []).forEach(y => { if (y) years.add(y); });
+  const opts = Array.from(years).sort((a, b) => a - b).map(y => `<option value="${y}">${y}</option>`).join('');
+  const ps = sY.value, pe = eY.value;
+  sY.innerHTML = opts; eY.innerHTML = opts;
+  if (ps) sY.value = ps;
+  if (pe) eY.value = pe;
+}
+
+// Reflect current labels/range into the Start/End dropdowns (no side effects).
+function syncRangeControlsFromState() {
   const ds = getActiveDataset();
   const result = getCurrentResult();
   const months = result ? result.months : (ds ? ds.monthlyData.months : null);
   if (!months || !months.length) return;
-  $('rangeFrom').value = findCurrentMonthKey(months) || months[0];
-  $('rangeTo').value = months[months.length - 1];
-  if (result) { renderTableArea(); renderChart(); }
+  const now = new Date();
+  let sM = now.getMonth(), sY = now.getFullYear();
+  const p0 = parseMonthYearFromLabel(state.labelOverrides[months[0]] || months[0]);
+  if (p0) { sM = p0.monthIdx; sY = p0.year; }
+  let endKey = months.includes($('rangeTo').value) ? $('rangeTo').value : months[months.length - 1];
+  let eM, eY;
+  const pe = parseMonthYearFromLabel(state.labelOverrides[endKey] || endKey);
+  if (pe) { eM = pe.monthIdx; eY = pe.year; }
+  else { const tot = sM + months.indexOf(endKey); eY = sY + Math.floor(tot / 12); eM = ((tot % 12) + 12) % 12; }
+  setupRangeYearOptions([sY, eY]);
+  $('startMonth').value = String(sM); $('startYear').value = String(sY);
+  $('endMonth').value = String(eM); $('endYear').value = String(eY);
 }
 
-// Free-text label editor — one input per data column. Type anything.
-function renderMonthLabels() {
-  const box = $('monthLabelList');
-  if (!box) return;
-  if (state.isSnapshot) { box.innerHTML = ''; return; }
+// Apply Start/End: label columns sequentially from Start, set the visible window to Start..End.
+function applyMonthRange() {
   const ds = getActiveDataset();
   const result = getCurrentResult();
   const months = result ? result.months : (ds ? ds.monthlyData.months : null);
-  if (!months || !months.length) { box.innerHTML = ''; return; }
-  const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  box.innerHTML = months.map((m, i) =>
-    `<div class="ml-item"><span class="ml-idx">${i + 1}</span>` +
-    `<input type="text" class="ml-input" data-month="${esc(m)}" value="${esc(state.labelOverrides[m] || m)}"></div>`
-  ).join('');
-  box.querySelectorAll('input.ml-input').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const mon = inp.dataset.month;
-      const v = inp.value.trim();
-      if (v && v !== mon) state.labelOverrides[mon] = v;
-      else delete state.labelOverrides[mon];
-      saveStorage({ labelOverrides: state.labelOverrides });
-      populateRangeSelectors();
-      if (state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) renderResults();
-    });
+  if (!months || !months.length) return;
+  const sM = parseInt($('startMonth').value), sY = parseInt($('startYear').value);
+  const eM = parseInt($('endMonth').value), eY = parseInt($('endYear').value);
+  state.labelOverrides = {};
+  months.forEach((m, i) => {
+    const tot = sM + i;
+    state.labelOverrides[m] = `${MONTH_NAMES[((tot % 12) + 12) % 12]} ${sY + Math.floor(tot / 12)}`;
   });
+  const endOffset = (eY * 12 + eM) - (sY * 12 + sM);
+  const endIdx = (endOffset >= 0 && endOffset < months.length) ? endOffset : months.length - 1;
+  saveStorage({ labelOverrides: state.labelOverrides });
+  populateRangeSelectors();
+  $('rangeFrom').value = months[0];
+  $('rangeTo').value = months[endIdx];
+  if (state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) renderResults();
+}
+
+// "This month" — snap Start to the current calendar month (End unchanged), then apply.
+function rangeStartThisMonth() {
+  const now = new Date();
+  setupRangeYearOptions([now.getFullYear()]);
+  $('startMonth').value = String(now.getMonth());
+  $('startYear').value = String(now.getFullYear());
+  applyMonthRange();
+}
+
+// "Reset to original" — restore the original Excel labels and full range.
+function rangeResetOriginal() {
+  state.labelOverrides = {};
+  saveStorage({ labelOverrides: {} });
+  const ds = getActiveDataset();
+  const result = getCurrentResult();
+  const months = result ? result.months : (ds ? ds.monthlyData.months : null);
+  if (months && months.length) {
+    populateRangeSelectors();
+    $('rangeFrom').value = months[0];
+    $('rangeTo').value = months[months.length - 1];
+  }
+  syncRangeControlsFromState();
+  if (state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) renderResults();
 }
 
 function getRangeMonths() {
@@ -2678,7 +2728,7 @@ function renderPreview() {
     }
     renderStepConfigs();
     populateRangeSelectors();
-    renderMonthLabels();
+    syncRangeControlsFromState();
     renderCtOverrides();
   }
 }
@@ -3752,10 +3802,13 @@ function setupCollapsibleSections() {
 }
 
 function setupEvents() {
-  // Default the month-label anchor to the current month/year.
+  // Start/End year dropdowns + sensible current-month defaults.
+  setupRangeYearOptions();
   const _now = new Date();
-  if ($('anchorMonth')) $('anchorMonth').value = String(_now.getMonth());
-  if ($('anchorYear')) $('anchorYear').value = String(_now.getFullYear());
+  if ($('startMonth')) $('startMonth').value = String(_now.getMonth());
+  if ($('startYear')) $('startYear').value = String(_now.getFullYear());
+  if ($('endMonth')) $('endMonth').value = String(_now.getMonth());
+  if ($('endYear')) $('endYear').value = String(_now.getFullYear());
 
   document.querySelectorAll('.lang-btn').forEach(b => {
     b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderCalendarGrid(); };
@@ -3849,38 +3902,12 @@ function setupEvents() {
     $(id).onchange = () => onStepConfigsChanged();
   });
 
-  $('rangeAutoBtn').onclick = () => applyAutoRange();
+  ['startMonth','startYear','endMonth','endYear'].forEach(id => {
+    $(id).onchange = () => applyMonthRange();
+  });
 
-  $('autoLabelBtn').onclick = () => {
-    if (state.datasets.length === 0) { toast(t('monthly_required'), 'error'); return; }
-    const startMonth = parseInt($('anchorMonth').value);
-    const startYear = parseInt($('anchorYear').value);
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    state.labelOverrides = {};
-    // Use union of all months — sequential from anchor
-    const allMonths = new Set();
-    for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
-    Array.from(allMonths).forEach((m, i) => {
-      const total = startMonth + i;
-      const year = startYear + Math.floor(total / 12);
-      const monthIdx = total % 12;
-      state.labelOverrides[m] = `${monthNames[monthIdx]} ${year}`;
-    });
-    saveStorage({ labelOverrides: state.labelOverrides });
-    renderMonthLabels();
-    populateRangeSelectors();
-    if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
-    toast(t('labels_applied', { anchor: `${monthNames[startMonth]} ${startYear}` }), 'success');
-  };
-
-  $('resetLabelBtn').onclick = () => {
-    state.labelOverrides = {};
-    saveStorage({ labelOverrides: {} });
-    renderMonthLabels();
-    populateRangeSelectors();
-    if (state.datasets.some(d => d.resultsHistory.length > 0)) renderResults();
-    toast(t('labels_reset'), 'success');
-  };
+  $('rangeThisMonthBtn').onclick = () => rangeStartThisMonth();
+  $('rangeResetBtn').onclick = () => rangeResetOriginal();
 
   $('dlMasterTpl').onclick = (e) => { e.preventDefault(); downloadMasterTemplate(); };
   $('dlMonthlyTpl').onclick = (e) => { e.preventDefault(); downloadMonthlyTemplate(); };
