@@ -1,0 +1,211 @@
+# CLAUDE.md
+
+Context and conventions for AI-assisted development on this repository.
+
+---
+
+## Project at a glance
+
+**What:** Single-file browser-based capacity planning tool. Compares monthly production demand against multi-line capacity targets, with iterative load balancing across alternate lines.
+
+**Why single-file:** Zero install, zero build, runs in any modern browser by opening `index.html` directly. The user base is production engineers — most cannot install Node/Python on factory machines. Do not break this property.
+
+**Stack:** HTML + CSS + Vanilla JavaScript (ES2020) + Chart.js (CDN) + SheetJS XLSX (CDN). No bundler, no transpiler, no framework.
+
+---
+
+## File layout
+
+```
+index.html        ← entire app (HTML + CSS + JS in one file, ~3,700 lines)
+README.md         ← end-user docs (features, Excel format, formula)
+CHANGELOG.md      ← versioned change log
+LICENSE           ← MIT
+.gitignore        ← excludes *.xlsx test files and snapshot exports
+```
+
+When adding new files, prefer keeping logic in `index.html`. Only split out if a clear reusable boundary emerges (e.g., a worker script for heavy computation).
+
+---
+
+## Code organization inside `index.html`
+
+The single `<script>` block is structured into clearly-labeled sections. Search for `// =====` to navigate:
+
+| Section | Purpose |
+|---|---|
+| State + Constants | `state` object, `PROCESSES`, `LINE_NAMES`, `STEP_TARGETS`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
+| I18N | `I18N.en` / `I18N.th` / `I18N.jp` dictionaries — **all keys must exist in all three** |
+| Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, hatch pattern cache |
+| CT Step Function | `getEffectiveCT()` resolves CT in priority order: App override → Excel CT_Changes → Matrix base |
+| Chart helpers | `xHierarchyPlugin`, `computeXHierarchy()`, `shouldUseNumericMonths()`, `getMonthOnly()` |
+| Parsers | `parseMaster()` (auto-detects `Matrix - *` sheets), `parseMonthly()` (auto-detects header row) |
+| Calculation: Initial | `calculateInitialAllocation()` — assigns each part to its `Pri=1` line per process |
+| Smart Balance | `calculateForStep()`, `smartBalanceV2()`, `simulateDirectMove()`, `simulateChainPush()`, `limitMoveByHours()` |
+| Rendering | `renderPreview()`, `renderCalendarGrid()`, `renderTableArea()`, `renderChart()`, `renderResults()`, etc. |
+| Text Boxes | `addNote()`, `renderNotes()`, `wireNote()`, `renderTails()` — PPT-style annotations |
+| Snapshot | `exportSnapshot()`, `loadSnapshotIfPresent()`, `applySnapshotMode()`, `buildSnapshotPayload()` |
+| Setup | `setupEvents()`, `setupUpload()`, `setupCollapsibleSections()`, `init()` |
+
+---
+
+## Critical invariants — do not break
+
+1. **Same Part No. = same color across all lines, all charts, all datasets.** Implemented via deterministic HSL hash in `getPartColor()`. Cached in `state.partColors`. Never assign random colors to parts; never override this elsewhere.
+
+2. **i18n keys stay in sync.** Whenever you add user-facing text, add the key to `I18N.en`, `I18N.th`, AND `I18N.jp`. A missing key falls back to the key string itself, which is bad UX.
+
+3. **`saveStorage()` is a no-op in snapshot mode.** Anything that mutates state in snapshot mode must check `state.isSnapshot` first. The snapshot file is meant to be a frozen view.
+
+4. **Threshold lines in Chart.js need unique stack names.** A bug in v1.3 caused threshold lines to stack on top of bars when they shared a stack. Each threshold line dataset uses its own `stack` value like `'threshold-417'`, `'threshold-447'`, etc. Don't merge them.
+
+5. **Run `node --check` after every batch of script edits.** The whole app is one inline script — a syntax error anywhere breaks everything. Workflow:
+   ```bash
+   # Extract inline script and validate
+   python3 -c "
+   import re
+   with open('index.html') as f: html = f.read()
+   m = re.search(r'<script>(?!\s*src)(.+?)</script>', html, re.DOTALL)
+   open('/tmp/check.js', 'w').write(m.group(1))
+   " && node --check /tmp/check.js
+   ```
+
+6. **Process names are dynamic, not hardcoded.** Use `getProcesses()` which returns `state.master.processList || PROCESSES`. The `PROCESSES` constant is only a fallback for the template generator. Never write `for (const proc of PROCESSES)` outside that fallback context.
+
+7. **The Master file's `Matrix - <Name>` sheet naming convention defines processes.** Parser scans for sheets matching `/^Matrix\s*-\s*(.+)$/i`. If you change this convention, update `README.md`, the template generator's instructions sheet, and the i18n error message `parse_error_master` in all three languages.
+
+---
+
+## Core formulas
+
+```
+Hours per part per month per line:
+  hours = (qty × CT / 3600) / OA × Fluctuation
+
+Monthly max capacity:
+  MaxCap = (WD + HD) × (hrs_per_shift + 2.5) × shifts
+  where  WD = working days (user input per month)
+         HD = days_in_month − WD (auto)
+         2.5 = fixed overtime hours per shift
+```
+
+Step targets (constants in code):
+- Step 0 = Initial (no balance applied)
+- Step 1 = 417h (21 × 9.94 × 2 shifts, normal month)
+- Step 2 = 447h (+ 2 holidays with light OT)
+- Step 3 = 497h (+ 4 holidays with heavy OT)
+- Step 4 = MaxCap (per-month from settings)
+
+---
+
+## Smart Balance algorithm (high-level)
+
+For each (process, month) where any line exceeds the current step's target:
+
+1. Identify "donor" lines (over target) and their over-hours.
+2. Identify candidate parts that could move (have a `Pri ≤ current_step_pri` alternate line).
+3. Pick the best move by ranking: `gain DESC → partFlex DESC → chainDepth ASC`.
+4. Try `simulateDirectMove` first — directly shift qty to backup line if it has space.
+5. If backup is also full, try `simulateChainPush` recursively (max depth 5, controlled by `MAX_CHAIN_DEPTH`).
+6. If chain depth exceeds 5, mark `result.chainExceeded = true` and surface a UI warning.
+
+The algorithm uses `getEffectiveCT(part, process, line, month, baseCT)` for all CT lookups so step-function CT changes apply correctly per month.
+
+---
+
+## Adding a new feature — checklist
+
+When adding any user-visible feature:
+
+- [ ] UI element added to `index.html` body
+- [ ] Event handlers wired in `setupEvents()` or a dedicated setup function
+- [ ] State mutations go through helpers that call `saveStorage()` (gated by `!state.isSnapshot`)
+- [ ] i18n keys added to all three dictionaries (`en`, `th`, `jp`)
+- [ ] If snapshot-relevant: serialize in `buildSnapshotPayload()`, deserialize in `loadSnapshotIfPresent()`, hide/disable in `applySnapshotMode()`
+- [ ] If chart-related: re-test all 3 view modes (Single, Compare, Diff) and both chart types (byPart, byLine)
+- [ ] If calculation-related: confirm step-function CT still works (test by adding a row to Excel `CT_Changes` and an App-layer override)
+- [ ] Run `node --check` on extracted script
+- [ ] Manual smoke test: upload sample Master + Monthly, calculate Step 0, click Balance through to Step 4, switch tabs, switch languages, export snapshot, reopen snapshot
+
+---
+
+## Adding a new language
+
+1. Add a new key under `I18N` with the same shape as `en`. Example: `I18N.de = { app_title: '...', ... }`.
+2. Add a language button in the header next to the existing three (look for `data-lang="en"`).
+3. Style the new button consistently.
+4. Update the language fallback chain in `t()` if needed.
+5. Test that switching to the new language updates every visible element with a `data-i18n` attribute.
+
+---
+
+## Adding a new process or line
+
+**Processes** are dynamic — discovered by parsing `Matrix - <Name>` sheet names in the uploaded Master file. To add one, the end user just adds a new sheet to their Excel; no code change required.
+
+**Lines** are also defined per part in the Master file's column structure (`Pri` / `C/T` column pairs). The `LINE_NAMES` constant only affects the template generator.
+
+If you need to support more than 8 lines per process in the template generator, update `LINE_NAMES` and adjust the column ranges in `downloadMasterTemplate()`.
+
+---
+
+## Snapshot mode mental model
+
+A snapshot is the app with embedded data: same HTML file + a `<script id="__snapshot__" type="application/json">` tag injected into `<head>` containing the entire state.
+
+On load, `loadSnapshotIfPresent()` checks for this tag and switches the app into read-only mode by:
+- Setting `state.isSnapshot = true`
+- Hiding upload, settings, and action buttons via `applySnapshotMode()`
+- Skipping `saveStorage()` writes
+- Pre-computing all 5 steps for all datasets at export time, so the recipient can click through steps without recalculation
+
+When changing core behavior, ask: "does this still work correctly when re-opening a snapshot?" If unsure, export a snapshot, close the tab, re-open the file, and verify.
+
+---
+
+## Things to NOT do
+
+- **Don't add a build step.** No webpack, no Vite, no TypeScript, no Tailwind compiler. The whole point is `index.html` is self-contained.
+- **Don't introduce frameworks** (React, Vue, Svelte). The codebase is intentionally vanilla.
+- **Don't use `localStorage` in artifacts intended to ship as snapshots.** Snapshots run from the user's filesystem and the storage scope is per-origin — `file://` works inconsistently across browsers. The snapshot path uses in-memory state only.
+- **Don't change the Excel format without migration.** Existing user files must continue to parse. The parser is forgiving (auto-detects header row, falls back gracefully) — keep it that way.
+- **Don't ship CDN dependencies as a vendored copy without good reason.** CDN is fine; users have internet. Vendoring inflates the file size and complicates audits.
+- **Don't add tracking, analytics, or external API calls.** Tool runs entirely client-side and should stay that way.
+
+---
+
+## Quick commands
+
+```bash
+# Open the app
+open index.html              # macOS
+xdg-open index.html          # Linux
+start index.html             # Windows
+
+# Validate JS syntax
+python3 -c "
+import re
+with open('index.html') as f: html = f.read()
+m = re.search(r'<script>(?!\s*src)(.+?)</script>', html, re.DOTALL)
+open('/tmp/check.js', 'w').write(m.group(1))
+" && node --check /tmp/check.js
+
+# Count lines
+wc -l index.html
+
+# Find a function quickly
+grep -n "^function " index.html
+
+# List all i18n keys
+grep -oE "'[a-z_][a-z0-9_]*:'" index.html | sort -u
+```
+
+---
+
+## When asking the user for clarification
+
+This project's primary developer prefers terse, directive communication. When uncertainty arises:
+- Ask one focused question, not a list of five.
+- Offer 2–3 concrete options, not open-ended exploration.
+- If the change is small and the choice is obvious, just make it — don't ask.
+- If the change affects multiple files or invariants above, ask first.
