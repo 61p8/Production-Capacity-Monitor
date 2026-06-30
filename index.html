@@ -246,6 +246,26 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .main-tabs button:hover:not(.active) { color: #2C2C2A; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
+.layout-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.lay-tools { display: flex; gap: 4px; }
+.lay-tool { padding: 6px 12px; font-size: 13px; font-family: inherit; background: white; border: 1px solid #B4B2A9; border-radius: 5px; cursor: pointer; color: #5F5E5A; }
+.lay-tool.active { background: #1D9E75; color: white; border-color: #1D9E75; }
+.lay-sep { width: 1px; height: 22px; background: #E5E3DB; }
+.lay-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5F5E5A; }
+.lay-field select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; font-family: inherit; }
+.lay-zoom { display: flex; align-items: center; gap: 6px; }
+.lay-scale { font-size: 12px; color: #5F5E5A; min-width: 96px; text-align: center; }
+.layout-body { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.layout-canvas-wrap { flex: 1; min-width: 320px; border: 1px solid #B4B2A9; border-radius: 6px; overflow: auto; background: #FCFCFA; height: 560px; }
+#layoutSvg { display: block; }
+#layoutSvg text { font-family: inherit; pointer-events: none; user-select: none; }
+.layout-props { width: 232px; background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 12px; font-size: 13px; }
+.layout-props h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: #5F5E5A; margin-bottom: 10px; }
+.layout-props .lp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.layout-props label { font-size: 12px; color: #5F5E5A; }
+.layout-props input, .layout-props select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; width: 120px; font-family: inherit; background: white; }
+.layout-props input:focus, .layout-props select:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
+.lay-empty { color: #888780; font-style: italic; }
 </style>
 </head>
 <body>
@@ -302,6 +322,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
   <nav class="main-tabs" id="mainTabs">
     <button data-tab="setup" class="active"><span>⚙️</span><span data-i18n="tab_setup">Setup</span></button>
     <button data-tab="results"><span>📊</span><span data-i18n="tab_results">Results</span></button>
+    <button data-tab="layout"><span>🗺️</span><span data-i18n="tab_layout">Layout</span></button>
   </nav>
 
   <div class="tab-panel active" data-panel="setup">
@@ -516,6 +537,53 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     <div class="alert-list" id="alertList"></div>
   </div>
   </div><!-- /tab-panel results -->
+
+  <div class="tab-panel" data-panel="layout">
+  <div class="section" id="layoutSection">
+    <h2><span class="step-num">🗺️</span><span data-i18n="sec_layout">Factory Layout</span></h2>
+    <div class="layout-toolbar">
+      <div class="lay-tools">
+        <button class="lay-tool active" data-laytool="select" type="button" title="Select"><span data-i18n="lay_select">Select</span></button>
+        <button class="lay-tool" data-laytool="rect" type="button" title="Draw rectangle"><span data-i18n="lay_rect">▭ Rectangle</span></button>
+      </div>
+      <span class="lay-sep"></span>
+      <label class="lay-field"><span data-i18n="lay_type">Type</span>
+        <select id="layType">
+          <option value="area" data-i18n="lay_type_area">Area</option>
+          <option value="walkway" data-i18n="lay_type_walkway">Walkway</option>
+          <option value="line" data-i18n="lay_type_line">Line</option>
+        </select>
+      </label>
+      <span class="lay-sep"></span>
+      <label class="lay-field"><span data-i18n="lay_unit">Unit</span>
+        <select id="layUnit">
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="m" selected>m</option>
+          <option value="inch">inch</option>
+        </select>
+      </label>
+      <span class="lay-zoom">
+        <button class="btn-small" id="layZoomOut" type="button">−</button>
+        <span id="layScaleLabel" class="lay-scale"></span>
+        <button class="btn-small" id="layZoomIn" type="button">+</button>
+      </span>
+      <span class="lay-sep"></span>
+      <button class="btn-small" id="layUnionBtn" type="button" data-i18n="lay_union">Union / Merge</button>
+      <button class="btn-small" id="layIntersectBtn" type="button" data-i18n="lay_intersect">Intersect</button>
+      <span class="lay-sep"></span>
+      <button class="btn-small" id="layDeleteBtn" type="button" data-i18n="lay_delete">Delete</button>
+      <button class="btn-small" id="layClearBtn" type="button" data-i18n="lay_clear">Clear all</button>
+    </div>
+    <div class="layout-body">
+      <div class="layout-canvas-wrap" id="layCanvasWrap">
+        <svg id="layoutSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="layout-props" id="layoutProps"></div>
+    </div>
+    <div class="help-text" data-i18n="lay_help">Pick the Rectangle tool and drag on the canvas to draw. Select objects to move/resize, set their type, or combine two with Union/Intersect. All sizes are real-scale — switch the Unit to convert every number.</div>
+  </div>
+  </div><!-- /tab-panel layout -->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -526,7 +594,13 @@ const I18N = {
   en: {
     app_title:'Capacity Planning Tool', app_subtitle:'Compare line demand vs capacity', clear_all:'Clear all', clear_datasets:'Clear datasets',
     sec_upload:'Upload files', sec_preview:'Verify parsed data', sec_settings:'Settings', sec_results:'Results', sec_alerts:'Overflow alerts',
-    tab_setup:'Setup', tab_results:'Results',
+    tab_setup:'Setup', tab_results:'Results', tab_layout:'Layout',
+    sec_layout:'Factory Layout', lay_select:'Select', lay_rect:'▭ Rectangle', lay_type:'Type',
+    lay_type_area:'Area', lay_type_walkway:'Walkway', lay_type_line:'Line', lay_unit:'Unit',
+    lay_union:'Union / Merge', lay_intersect:'Intersect', lay_delete:'Delete', lay_clear:'Clear all',
+    lay_props:'Properties', lay_no_sel:'Nothing selected', lay_multi_sel:'{n} objects selected', lay_label:'Label',
+    lay_need2:'Select at least 2 objects', lay_no_overlap:'Objects do not overlap', lay_clear_confirm:'Clear the whole layout?',
+    lay_help:'Pick the Rectangle tool and drag on the canvas to draw. Select objects to move/resize, set type, or combine two with Union/Intersect. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
     dl_master_tpl:'Download Master template', dl_monthly_tpl:'Download Monthly template',
@@ -590,7 +664,13 @@ const I18N = {
   th: {
     app_title:'Capacity Planning Tool', app_subtitle:'เช็คความสามารถของไลน์ผลิต — เปรียบเทียบยอดสั่ง vs capacity', clear_all:'ล้างทั้งหมด', clear_datasets:'ล้าง Datasets',
     sec_upload:'อัปโหลดไฟล์', sec_preview:'ตรวจสอบข้อมูลที่อ่านได้', sec_settings:'ตั้งค่า', sec_results:'ผลลัพธ์', sec_alerts:'การล้น',
-    tab_setup:'ตั้งค่า', tab_results:'ผลลัพธ์',
+    tab_setup:'ตั้งค่า', tab_results:'ผลลัพธ์', tab_layout:'เลย์เอาต์',
+    sec_layout:'ผังโรงงาน', lay_select:'เลือก', lay_rect:'▭ สี่เหลี่ยม', lay_type:'ประเภท',
+    lay_type_area:'พื้นที่', lay_type_walkway:'ทางเดิน', lay_type_line:'ไลน์', lay_unit:'หน่วย',
+    lay_union:'รวม (Union)', lay_intersect:'ตัดร่วม (Intersect)', lay_delete:'ลบ', lay_clear:'ล้างทั้งหมด',
+    lay_props:'คุณสมบัติ', lay_no_sel:'ยังไม่ได้เลือก', lay_multi_sel:'เลือกไว้ {n} ชิ้น', lay_label:'ชื่อ',
+    lay_need2:'เลือกอย่างน้อย 2 ชิ้น', lay_no_overlap:'วัตถุไม่ได้ซ้อนทับกัน', lay_clear_confirm:'ล้างผังทั้งหมด?',
+    lay_help:'เลือกเครื่องมือสี่เหลี่ยมแล้วลากบนพื้นที่เพื่อวาด • เลือกวัตถุเพื่อย้าย/ปรับขนาด ตั้งประเภท หรือรวม 2 ชิ้นด้วย Union/Intersect • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
     dl_master_tpl:'ดาวน์โหลด Template Master', dl_monthly_tpl:'ดาวน์โหลด Template Monthly',
@@ -654,7 +734,13 @@ const I18N = {
   jp: {
     app_title:'Capacity Planning Tool', app_subtitle:'ライン能力チェック', clear_all:'全クリア', clear_datasets:'データセットクリア',
     sec_upload:'ファイルアップロード', sec_preview:'解析データ確認', sec_settings:'設定', sec_results:'結果', sec_alerts:'オーバーフロー',
-    tab_setup:'設定', tab_results:'結果',
+    tab_setup:'設定', tab_results:'結果', tab_layout:'レイアウト',
+    sec_layout:'工場レイアウト', lay_select:'選択', lay_rect:'▭ 矩形', lay_type:'種類',
+    lay_type_area:'エリア', lay_type_walkway:'通路', lay_type_line:'ライン', lay_unit:'単位',
+    lay_union:'結合 (Union)', lay_intersect:'交差 (Intersect)', lay_delete:'削除', lay_clear:'全消去',
+    lay_props:'プロパティ', lay_no_sel:'未選択', lay_multi_sel:'{n} 個選択中', lay_label:'ラベル',
+    lay_need2:'2個以上選択してください', lay_no_overlap:'重なっていません', lay_clear_confirm:'レイアウトを全消去しますか？',
+    lay_help:'矩形ツールを選びキャンバスをドラッグして描画。オブジェクトを選択して移動/リサイズ、種類設定、またはUnion/Intersectで2つを結合。サイズは実寸 — 単位を切替えると数値が変換されます。',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
     dl_master_tpl:'マスターテンプレートDL', dl_monthly_tpl:'月次テンプレートDL',
@@ -781,6 +867,7 @@ const state = {
   notes: [],
   stepConfigs: DEFAULT_STEP_CONFIGS.map(c => ({ ...c })),
   maxCapOT: 2.5,
+  layout: { objects: [], unit: 'm', pxPerMm: 0.03, nextId: 1, selected: [], tool: 'select' },
   dsIdCounter: 0
 };
 
@@ -1034,6 +1121,18 @@ function applySavedSettings() {
   }
   if (d.labelOverrides) state.labelOverrides = d.labelOverrides;
   if (Array.isArray(d.ctOverrides)) state.ctOverrides = d.ctOverrides;
+  applyLayoutData(d.layout);
+}
+
+// Restore a persisted/snapshotted layout into state.layout (keeps UI-only fields).
+function applyLayoutData(ld) {
+  if (!ld || typeof ld !== 'object') return;
+  state.layout.objects = Array.isArray(ld.objects) ? ld.objects : [];
+  if (ld.unit && LAY_UNIT_MM[ld.unit]) state.layout.unit = ld.unit;
+  if (typeof ld.pxPerMm === 'number' && ld.pxPerMm > 0) state.layout.pxPerMm = ld.pxPerMm;
+  if (typeof ld.nextId === 'number') state.layout.nextId = ld.nextId;
+  state.layout.selected = [];
+  const us = $('layUnit'); if (us) us.value = state.layout.unit;
 }
 
 function calculateMaxCap(setting, monthLabel) {
@@ -3471,6 +3570,7 @@ function buildSnapshotPayload(authorName) {
     labelOverrides: state.labelOverrides,
     ctOverrides: state.ctOverrides || [],
     notes: state.notes || [],
+    layout: { objects: state.layout.objects, unit: state.layout.unit, pxPerMm: state.layout.pxPerMm, nextId: state.layout.nextId },
     lang: state.lang
   };
 }
@@ -3527,7 +3627,7 @@ function exportSnapshot() {
   });
 
   // 3. Clear dynamically populated containers (they'll be re-rendered from data)
-  const clearIds = ['datasetList', 'tableContainer', 'lineFilter', 'stepHistory', 'dsChips', 'alertList', 'unmatchedList', 'snapshotMetaText', 'rangeFrom', 'rangeTo', 'stepConfigTable', 'stepToggles'];
+  const clearIds = ['datasetList', 'tableContainer', 'lineFilter', 'stepHistory', 'dsChips', 'alertList', 'unmatchedList', 'snapshotMetaText', 'rangeFrom', 'rangeTo', 'stepConfigTable', 'stepToggles', 'layoutSvg'];
   clearIds.forEach(id => {
     const el = clonedHtml.querySelector('#' + id);
     if (el) el.innerHTML = '';
@@ -3617,6 +3717,7 @@ function loadSnapshotIfPresent() {
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];
     state.notes = Array.isArray(data.notes) ? data.notes : [];
+    applyLayoutData(data.layout);
     migrateNoteTails();
     if (data.lang) state.lang = data.lang;
 
@@ -3836,6 +3937,7 @@ function setupCollapsibleSections() {
 function switchTab(name) {
   document.querySelectorAll('#mainTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  if (name === 'layout') layRender();
   if (!state.isSnapshot) saveStorage({ activeTab: name });
 }
 
@@ -4049,11 +4151,285 @@ function setupEvents() {
   };
 }
 
+// ===== Factory Layout editor =====
+const LAY_UNIT_MM = { mm: 1, cm: 10, m: 1000, inch: 25.4 };
+const LAY_TYPE_STYLE = {
+  area:    { fill: '#E6F1FB', stroke: '#185FA5' },
+  walkway: { fill: '#F1EFE8', stroke: '#888780' },
+  line:    { fill: '#EAF3DE', stroke: '#1D9E75' }
+};
+const LAY_AREA_MM = { w: 40000, h: 24000 };   // drawable area (40 m × 24 m)
+const LAY_NS = 'http://www.w3.org/2000/svg';
+let layDrag = null;
+
+function layCur() { return state.layout; }
+function layObj(id) { return layCur().objects.find(o => o.id === id); }
+function layMmToU(mm) { return Math.round((mm / LAY_UNIT_MM[layCur().unit]) * 1000) / 1000; }
+function layUToMm(v) { return (parseFloat(v) || 0) * LAY_UNIT_MM[layCur().unit]; }
+function layMm2px(mm) { return mm * layCur().pxPerMm; }
+function layPx2mm(px) { return px / layCur().pxPerMm; }
+function layFmt(mm) { const v = layMmToU(mm); return (Math.abs(v) >= 100 ? Math.round(v) : v).toString(); }
+function layEl(name, attrs) {
+  const e = document.createElementNS(LAY_NS, name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+function layBBox(rects) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const r of rects) { x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); }
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+// Outline loop(s) of a union of axis-aligned rects (mm) via coordinate compression + edge tracing.
+function layOutline(rects) {
+  if (!rects.length) return [];
+  const xs = Array.from(new Set(rects.flatMap(r => [r.x, r.x + r.w]))).sort((a, b) => a - b);
+  const ys = Array.from(new Set(rects.flatMap(r => [r.y, r.y + r.h]))).sort((a, b) => a - b);
+  const nx = xs.length - 1, ny = ys.length - 1;
+  const covered = (i, j) => {
+    if (i < 0 || j < 0 || i >= nx || j >= ny) return false;
+    const cx = (xs[i] + xs[i + 1]) / 2, cy = (ys[j] + ys[j + 1]) / 2;
+    return rects.some(r => cx > r.x && cx < r.x + r.w && cy > r.y && cy < r.y + r.h);
+  };
+  const k = p => p[0].toFixed(3) + ',' + p[1].toFixed(3);
+  const edges = new Map(), ptOf = {};
+  let total = 0;
+  const add = (a, b) => { const ka = k(a); ptOf[ka] = a; ptOf[k(b)] = b; if (!edges.has(ka)) edges.set(ka, []); edges.get(ka).push(b); total++; };
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+    if (!covered(i, j)) continue;
+    const x0 = xs[i], x1 = xs[i + 1], y0 = ys[j], y1 = ys[j + 1];
+    if (!covered(i, j - 1)) add([x1, y0], [x0, y0]);
+    if (!covered(i, j + 1)) add([x0, y1], [x1, y1]);
+    if (!covered(i - 1, j)) add([x0, y0], [x0, y1]);
+    if (!covered(i + 1, j)) add([x1, y1], [x1, y0]);
+  }
+  const loops = [];
+  let guard = 0;
+  while (total > 0 && guard++ < 100000) {
+    let sk = null;
+    for (const [key, arr] of edges) { if (arr.length) { sk = key; break; } }
+    if (sk == null) break;
+    const start = ptOf[sk];
+    let cur = start;
+    const loop = [];
+    let g2 = 0;
+    do {
+      loop.push(cur);
+      const arr = edges.get(k(cur));
+      if (!arr || !arr.length) break;
+      cur = arr.pop(); total--;
+    } while (k(cur) !== k(start) && g2++ < 100000);
+    if (loop.length >= 3) loops.push(loop);
+  }
+  return loops;
+}
+
+function layRender() {
+  const svg = $('layoutSvg');
+  if (!svg) return;
+  const L = layCur();
+  const W = layMm2px(LAY_AREA_MM.w), H = layMm2px(LAY_AREA_MM.h);
+  svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const grid = layEl('g', {});
+  for (let x = 0; x <= LAY_AREA_MM.w; x += 1000) {
+    const px = layMm2px(x);
+    grid.appendChild(layEl('line', { x1: px, y1: 0, x2: px, y2: H, stroke: x % 5000 === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1 }));
+  }
+  for (let y = 0; y <= LAY_AREA_MM.h; y += 1000) {
+    const py = layMm2px(y);
+    grid.appendChild(layEl('line', { x1: 0, y1: py, x2: W, y2: py, stroke: y % 5000 === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1 }));
+  }
+  svg.appendChild(grid);
+  for (const obj of L.objects) {
+    const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
+    const sel = L.selected.includes(obj.id);
+    let d = '';
+    for (const loop of layOutline(obj.rects)) {
+      d += 'M' + loop.map(p => `${layMm2px(p[0])},${layMm2px(p[1])}`).join('L') + 'Z';
+    }
+    const path = layEl('path', { d, fill: st.fill, 'fill-opacity': 0.78, stroke: sel ? '#E24B4A' : st.stroke, 'stroke-width': sel ? 2.5 : 1.5, 'fill-rule': 'evenodd' });
+    path.style.cursor = 'move';
+    path.addEventListener('mousedown', e => layShapeDown(e, obj.id));
+    svg.appendChild(path);
+    const bb = layBBox(obj.rects);
+    const txt = layEl('text', { x: layMm2px(bb.x + bb.w / 2), y: layMm2px(bb.y + bb.h / 2), 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': 12, fill: '#2C2C2A' });
+    const dim = `${layFmt(bb.w)}×${layFmt(bb.h)} ${L.unit}`;
+    txt.textContent = obj.label ? `${obj.label} · ${dim}` : dim;
+    svg.appendChild(txt);
+  }
+  if (L.selected.length === 1) {
+    const obj = layObj(L.selected[0]);
+    if (obj && obj.rects.length === 1) {
+      const r = obj.rects[0];
+      const handle = layEl('rect', { x: layMm2px(r.x + r.w) - 5, y: layMm2px(r.y + r.h) - 5, width: 10, height: 10, fill: 'white', stroke: '#E24B4A', 'stroke-width': 1.5 });
+      handle.style.cursor = 'nwse-resize';
+      handle.addEventListener('mousedown', e => layHandleDown(e, obj.id));
+      svg.appendChild(handle);
+    }
+  }
+  layUpdateScaleLabel();
+  layRenderProps();
+}
+
+function laySvgPt(e) {
+  const r = $('layoutSvg').getBoundingClientRect();
+  return { x: layPx2mm(e.clientX - r.left), y: layPx2mm(e.clientY - r.top) };
+}
+function laySvgDown(e) {
+  if (e.target.tagName === 'path' || (e.target.tagName === 'rect' && e.target.id !== 'layPreview')) return;
+  const L = layCur(), p = laySvgPt(e);
+  if (L.tool === 'rect') { layDrag = { mode: 'draw', x0: p.x, y0: p.y, x1: p.x, y1: p.y }; layDrawPreview(); }
+  else { L.selected = []; layRender(); }
+}
+function layShapeDown(e, id) {
+  e.stopPropagation();
+  const L = layCur();
+  if (L.tool !== 'select') return;
+  if (e.shiftKey) { L.selected = L.selected.includes(id) ? L.selected.filter(x => x !== id) : L.selected.concat(id); }
+  else if (!L.selected.includes(id)) L.selected = [id];
+  const p = laySvgPt(e);
+  layDrag = { mode: 'move', startX: p.x, startY: p.y, orig: L.selected.map(sid => ({ id: sid, rects: layObj(sid).rects.map(r => ({ ...r })) })) };
+  layRender();
+}
+function layHandleDown(e, id) {
+  e.stopPropagation();
+  layDrag = { mode: 'resize', id, orig: { ...layObj(id).rects[0] } };
+}
+function layDocMove(e) {
+  if (!layDrag) return;
+  const p = laySvgPt(e);
+  if (layDrag.mode === 'draw') { layDrag.x1 = p.x; layDrag.y1 = p.y; layDrawPreview(); }
+  else if (layDrag.mode === 'move') {
+    const dx = p.x - layDrag.startX, dy = p.y - layDrag.startY;
+    for (const o of layDrag.orig) { const obj = layObj(o.id); if (obj) obj.rects = o.rects.map(r => ({ x: r.x + dx, y: r.y + dy, w: r.w, h: r.h })); }
+    layRender();
+  } else if (layDrag.mode === 'resize') {
+    const obj = layObj(layDrag.id), o = layDrag.orig;
+    obj.rects[0] = { x: o.x, y: o.y, w: Math.max(50, p.x - o.x), h: Math.max(50, p.y - o.y) };
+    layRender();
+  }
+}
+function layDocUp() {
+  if (!layDrag) return;
+  if (layDrag.mode === 'draw') {
+    layRemovePreview();
+    const x = Math.min(layDrag.x0, layDrag.x1), y = Math.min(layDrag.y0, layDrag.y1);
+    const w = Math.abs(layDrag.x1 - layDrag.x0), h = Math.abs(layDrag.y1 - layDrag.y0);
+    if (w > 100 && h > 100) {
+      const L = layCur();
+      const obj = { id: L.nextId++, type: $('layType').value, label: '', rects: [{ x, y, w, h }] };
+      L.objects.push(obj); L.selected = [obj.id];
+      laySetTool('select');
+    }
+  }
+  layDrag = null; laySave(); layRender();
+}
+function layDrawPreview() {
+  const svg = $('layoutSvg'); if (!svg || !layDrag) return;
+  layRemovePreview();
+  const x = Math.min(layDrag.x0, layDrag.x1), y = Math.min(layDrag.y0, layDrag.y1);
+  const w = Math.abs(layDrag.x1 - layDrag.x0), h = Math.abs(layDrag.y1 - layDrag.y0);
+  svg.appendChild(layEl('rect', { id: 'layPreview', x: layMm2px(x), y: layMm2px(y), width: layMm2px(w), height: layMm2px(h), fill: 'rgba(29,158,117,0.15)', stroke: '#1D9E75', 'stroke-dasharray': '4 3', 'stroke-width': 1.5 }));
+}
+function layRemovePreview() { const p = document.getElementById('layPreview'); if (p) p.remove(); }
+
+function layRenderProps() {
+  const box = $('layoutProps'); if (!box) return;
+  const L = layCur();
+  if (L.selected.length === 0) { box.innerHTML = `<h4>${t('lay_props')}</h4><div class="lay-empty">${t('lay_no_sel')}</div>`; return; }
+  if (L.selected.length > 1) { box.innerHTML = `<h4>${t('lay_props')}</h4><div>${t('lay_multi_sel', { n: L.selected.length })}</div>`; return; }
+  const obj = layObj(L.selected[0]); if (!obj) { box.innerHTML = ''; return; }
+  const bb = layBBox(obj.rects), single = obj.rects.length === 1, u = L.unit;
+  const dis = single ? '' : ' disabled';
+  box.innerHTML = `<h4>${t('lay_props')}</h4>` +
+    `<div class="lp-row"><label>${t('lay_type')}</label><select id="lpType">` +
+    ['area', 'walkway', 'line'].map(tp => `<option value="${tp}"${obj.type === tp ? ' selected' : ''}>${t('lay_type_' + tp)}</option>`).join('') + `</select></div>` +
+    `<div class="lp-row"><label>${t('lay_label')}</label><input id="lpLabel" type="text" value="${(obj.label || '').replace(/"/g, '&quot;')}"></div>` +
+    `<div class="lp-row"><label>X (${u})</label><input id="lpX" type="number" step="0.01" value="${layMmToU(bb.x)}"${dis}></div>` +
+    `<div class="lp-row"><label>Y (${u})</label><input id="lpY" type="number" step="0.01" value="${layMmToU(bb.y)}"${dis}></div>` +
+    `<div class="lp-row"><label>W (${u})</label><input id="lpW" type="number" step="0.01" value="${layMmToU(bb.w)}"${dis}></div>` +
+    `<div class="lp-row"><label>H (${u})</label><input id="lpH" type="number" step="0.01" value="${layMmToU(bb.h)}"${dis}></div>`;
+  $('lpType').onchange = () => { obj.type = $('lpType').value; laySave(); layRender(); };
+  $('lpLabel').onchange = () => { obj.label = $('lpLabel').value; laySave(); layRender(); };
+  if (single) {
+    const apply = () => {
+      obj.rects[0] = { x: layUToMm($('lpX').value), y: layUToMm($('lpY').value), w: Math.max(50, layUToMm($('lpW').value)), h: Math.max(50, layUToMm($('lpH').value)) };
+      laySave(); layRender();
+    };
+    ['lpX', 'lpY', 'lpW', 'lpH'].forEach(id => $(id).onchange = apply);
+  }
+}
+
+function layUnion() {
+  const L = layCur(), sel = L.selected.map(layObj).filter(Boolean);
+  if (sel.length < 2) { toast(t('lay_need2'), 'error'); return; }
+  const obj = { id: L.nextId++, type: sel[0].type, label: sel[0].label || '', rects: sel.flatMap(o => o.rects.map(r => ({ ...r }))) };
+  L.objects = L.objects.filter(o => !L.selected.includes(o.id)).concat(obj);
+  L.selected = [obj.id]; laySave(); layRender();
+}
+function layIntersect() {
+  const L = layCur(), sel = L.selected.map(layObj).filter(Boolean);
+  if (sel.length < 2) { toast(t('lay_need2'), 'error'); return; }
+  let acc = sel[0].rects.map(r => ({ ...r }));
+  for (let i = 1; i < sel.length; i++) {
+    const next = [];
+    for (const a of acc) for (const b of sel[i].rects) {
+      const x = Math.max(a.x, b.x), y = Math.max(a.y, b.y);
+      const x1 = Math.min(a.x + a.w, b.x + b.w), y1 = Math.min(a.y + a.h, b.y + b.h);
+      if (x1 > x && y1 > y) next.push({ x, y, w: x1 - x, h: y1 - y });
+    }
+    acc = next;
+  }
+  if (!acc.length) { toast(t('lay_no_overlap'), 'error'); return; }
+  const obj = { id: L.nextId++, type: sel[0].type, label: sel[0].label || '', rects: acc };
+  L.objects = L.objects.filter(o => !L.selected.includes(o.id)).concat(obj);
+  L.selected = [obj.id]; laySave(); layRender();
+}
+function layDelete() {
+  const L = layCur(); if (!L.selected.length) return;
+  L.objects = L.objects.filter(o => !L.selected.includes(o.id));
+  L.selected = []; laySave(); layRender();
+}
+function layClear() {
+  if (!confirm(t('lay_clear_confirm'))) return;
+  const L = layCur(); L.objects = []; L.selected = []; laySave(); layRender();
+}
+function laySetTool(tool) {
+  layCur().tool = tool;
+  document.querySelectorAll('.lay-tool').forEach(b => b.classList.toggle('active', b.dataset.laytool === tool));
+}
+function layUpdateScaleLabel() {
+  const L = layCur(), el = $('layScaleLabel'); if (!el) return;
+  el.textContent = `1 ${L.unit} = ${Math.round(LAY_UNIT_MM[L.unit] * L.pxPerMm * 10) / 10} px`;
+}
+function layZoom(f) { const L = layCur(); L.pxPerMm = Math.max(0.005, Math.min(0.3, L.pxPerMm * f)); laySave(); layRender(); }
+function laySave() {
+  const L = layCur();
+  saveStorage({ layout: { objects: L.objects, unit: L.unit, pxPerMm: L.pxPerMm, nextId: L.nextId } });
+}
+function layInit() {
+  const svg = $('layoutSvg'); if (!svg) return;
+  svg.addEventListener('mousedown', laySvgDown);
+  document.addEventListener('mousemove', layDocMove);
+  document.addEventListener('mouseup', layDocUp);
+  document.querySelectorAll('.lay-tool').forEach(b => b.onclick = () => laySetTool(b.dataset.laytool));
+  $('layUnit').onchange = () => { layCur().unit = $('layUnit').value; laySave(); layRender(); };
+  $('layZoomIn').onclick = () => layZoom(1.25);
+  $('layZoomOut').onclick = () => layZoom(0.8);
+  $('layUnionBtn').onclick = layUnion;
+  $('layIntersectBtn').onclick = layIntersect;
+  $('layDeleteBtn').onclick = layDelete;
+  $('layClearBtn').onclick = layClear;
+  $('layUnit').value = layCur().unit;
+}
+
 function init() {
   setupEvents();
   setupUpload();
   setupCollapsibleSections();
   setupTabs();
+  layInit();
 
   // Try snapshot mode first
   const isSnapshot = loadSnapshotIfPresent();

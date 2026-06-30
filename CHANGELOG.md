@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Factory Layout editor (new tab).** Draw a factory layout directly in the app on an SVG canvas:
+  create rectangle objects, type them (Area / Walkway / Line, colour-coded), label them, move/resize,
+  and combine two or more with **Union/Merge** or **Intersect** (rectilinear boolean via coordinate
+  compression). Everything is real-scale — pick mm / cm / m / inch and every number reconverts;
+  zoom in/out adjusts the on-screen scale. Layouts persist to localStorage and into snapshots.
+  (Linking layout objects to production lines will come later.)
+
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
   month labels, Calculate) and a **Results** tab (chart, table, overflow alerts). Calculate jumps
