@@ -22,6 +22,11 @@ All notable changes to this project will be documented in this file.
   `.json` file (full round-trip) and Export the drawing as an `.svg` image. Each object's width and
   height are now labelled along its top and left edges (instead of the centre) so it's clear which
   number is which axis.
+- **Layout grouping, lock & custom styling.** Group/Ungroup objects (Ctrl+G / Ctrl+Shift+G) so they
+  select and move together; Lock an object to fix it in place (move/resize/nudge disabled, shown
+  with a 🔒). Per-object Fill colour, Border colour and Opacity are editable in the properties panel
+  (single or whole selection), with Reset to type defaults. Zoom range widened to roughly
+  1 m = 0.4 px (very large floors) up to 1 mm = 6 px (fine detail).
 
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
