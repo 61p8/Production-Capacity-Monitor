@@ -559,7 +559,7 @@ const I18N = {
     step_initial:'Step 0 — Initial', step_maxcap:'Max Cap', step:'Step',
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
     cap_steps_help:'Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.',
-    step_wd:'Work days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
+    step_wd:'Work days', step_ot_days:'OT days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
     auto:'auto', per_month:'per month', month_labels:'Month labels & graph range', this_month:'This month', range_auto:'Auto (this month)',
     first_column:'First column =', graph_show:'Show on chart', range_start:'Start', range_end:'End',
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
@@ -622,7 +622,7 @@ const I18N = {
     step_initial:'Step 0 — เริ่มต้น', step_maxcap:'Max Cap', step:'ขั้น',
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
     cap_steps_help:'เป้าหมายแต่ละขั้น = [ วันทำงาน×(ชม./กะ + OT) + วันหยุด×(ชม./กะ + OT วันหยุด) ] × กะ — ปรับค่าเพื่อเลื่อนตำแหน่งเส้น threshold',
-    step_wd:'วันทำงาน', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
+    step_wd:'วันทำงาน', step_ot_days:'วัน OT', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
     auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน & ช่วงกราฟ', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
     first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ', range_start:'เริ่ม', range_end:'ถึง',
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
@@ -685,7 +685,7 @@ const I18N = {
     step_initial:'Step 0 — 初期', step_maxcap:'Max Cap', step:'ステップ',
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
     cap_steps_help:'各ステップ目標 = [ 稼働日×(時間/シフト + OT) + 休日×(時間/シフト + 休日OT) ] × シフト数。値を調整してしきい値線の位置を設定。',
-    step_wd:'稼働日', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
+    step_wd:'稼働日', step_ot_days:'OT日数', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
     auto:'auto', per_month:'月別', month_labels:'月ラベル & グラフ範囲', this_month:'今月', range_auto:'Auto (今月)',
     first_column:'最初の列 =', graph_show:'グラフ表示', range_start:'開始', range_end:'終了',
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
@@ -719,12 +719,13 @@ const MAX_CHAIN_DEPTH = 5;
 // Capacity steps — user-configurable (see state.stepConfigs). Step 0 is always Initial
 // (Pri=1, no balancing); the final step is always per-month Max Cap. Each middle step's
 // hour threshold is derived from a formula (see computeStepThreshold):
-//   threshold = [ WD×(hrs/shift + otNormal) + HD×(hrs/shift + otHoliday) ] × shifts
+//   threshold = [ WD×hrs/shift + otDays×otNormal + HD×(hrs/shift + otHoliday) ] × shifts
+//   wd = work days; otDays = how many of those days run OT; otNormal = OT hrs/shift on those days.
 // Defaults below reproduce the legacy 417 / 447 / 497 targets at hrs/shift 7.44 × 2 shifts.
 const DEFAULT_STEP_CONFIGS = [
-  { wd: 21, otNormal: 2.5, hdWorked: 0, otHoliday: 0   },  // → 417
-  { wd: 21, otNormal: 2.5, hdWorked: 2, otHoliday: 0   },  // → 447
-  { wd: 21, otNormal: 2.5, hdWorked: 4, otHoliday: 2.5 }   // → 497
+  { wd: 21, otDays: 21, otNormal: 2.5, hdWorked: 0, otHoliday: 0   },  // → 417
+  { wd: 21, otDays: 21, otNormal: 2.5, hdWorked: 2, otHoliday: 0   },  // → 447
+  { wd: 21, otDays: 21, otNormal: 2.5, hdWorked: 4, otHoliday: 2.5 }   // → 497
 ];
 
 // Dash/colour palette for threshold lines, cycled per step index.
@@ -1034,11 +1035,14 @@ function getStepDefs() {
 }
 
 // Hours threshold for one step config:
-//   [ WD×(hrs/shift + otNormal) + HD×(hrs/shift + otHoliday) ] × shifts
+//   [ WD×hrs/shift + otDays×otNormal + HD×(hrs/shift + otHoliday) ] × shifts
+// otDays = number of work days that run OT (defaults to WD for legacy configs without the field).
 function computeStepThreshold(cfg, setting) {
   if (!cfg) return 0;
   const hp = setting.hrsPerShift, sh = setting.shifts;
-  return ((cfg.wd || 0) * (hp + (cfg.otNormal || 0)) + (cfg.hdWorked || 0) * (hp + (cfg.otHoliday || 0))) * sh;
+  const wd = cfg.wd || 0;
+  const otDays = (cfg.otDays != null) ? cfg.otDays : wd;
+  return (wd * hp + otDays * (cfg.otNormal || 0) + (cfg.hdWorked || 0) * (hp + (cfg.otHoliday || 0))) * sh;
 }
 
 function getStepTarget(stepIdx, setting, monthLabel) {
@@ -2135,6 +2139,7 @@ function renderStepConfigs() {
   let html = `<table class="step-config-table"><thead><tr>` +
     `<th>#</th>` +
     `<th>${t('step_wd')}</th>` +
+    `<th>${t('step_ot_days')}</th>` +
     `<th>${t('step_ot_normal')}</th>` +
     `<th>${t('step_hd')}</th>` +
     `<th>${t('step_ot_holiday')}</th>` +
@@ -2142,9 +2147,11 @@ function renderStepConfigs() {
     `<th></th></tr></thead><tbody>`;
   state.stepConfigs.forEach((c, i) => {
     const val = Math.round(computeStepThreshold(c, setting));
+    const otDays = (c.otDays != null) ? c.otDays : c.wd;
     html += `<tr>` +
       `<td>${i + 1}</td>` +
       `<td><input type="number" min="0" max="31" step="1" value="${c.wd}" data-idx="${i}" data-field="wd"${dis}></td>` +
+      `<td><input type="number" min="0" max="31" step="1" value="${otDays}" data-idx="${i}" data-field="otDays"${dis}></td>` +
       `<td><input type="number" min="0" step="0.1" value="${c.otNormal}" data-idx="${i}" data-field="otNormal"${dis}></td>` +
       `<td><input type="number" min="0" max="31" step="1" value="${c.hdWorked}" data-idx="${i}" data-field="hdWorked"${dis}></td>` +
       `<td><input type="number" min="0" step="0.1" value="${c.otHoliday}" data-idx="${i}" data-field="otHoliday"${dis}></td>` +
@@ -2155,6 +2162,7 @@ function renderStepConfigs() {
   // Final Max Cap row — every day worked; WD auto from month, only OT editable.
   html += `<tr class="maxcap-row">` +
     `<td>${t('step_maxcap')}</td>` +
+    `<td><span class="step-auto">${t('auto')}</span></td>` +
     `<td><span class="step-auto">${t('auto')}</span></td>` +
     `<td><input type="number" min="0" step="0.1" value="${state.maxCapOT}" data-maxcap="1"${dis}></td>` +
     `<td><span class="step-auto">—</span></td>` +
@@ -3851,7 +3859,7 @@ function setupEvents() {
 
   $('addStepBtn').onclick = () => {
     const last = state.stepConfigs[state.stepConfigs.length - 1];
-    state.stepConfigs.push(last ? { ...last } : { wd: 21, otNormal: 2.5, hdWorked: 0, otHoliday: 0 });
+    state.stepConfigs.push(last ? { ...last } : { wd: 21, otDays: 21, otNormal: 2.5, hdWorked: 0, otHoliday: 0 });
     onStepConfigsChanged();
   };
 

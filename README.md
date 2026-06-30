@@ -93,22 +93,23 @@ Max Cap = days_in_month × (hrs_per_shift + Max Cap OT) × shifts
 
 Each step's hour threshold is derived from a formula you control in **Settings → Capacity steps**:
 ```
-Step target = [ WD × (hrs_per_shift + OT_normal) + HD × (hrs_per_shift + OT_holiday) ] × shifts
+Step target = [ WD × hrs_per_shift + OT_days × OT_normal + HD × (hrs_per_shift + OT_holiday) ] × shifts
 ```
 - WD = normal working days for that step
-- OT_normal = overtime hours per shift on a normal working day
+- OT_days = how many of those work days actually run OT
+- OT_normal = overtime hours per shift on an OT day
 - HD = holiday days actually worked
 - OT_holiday = overtime hours per shift on a worked holiday (on top of a full normal shift)
 
 Steps can be added or removed freely; the final step is always per-month **Max Cap**. The shipped
 defaults reproduce the original 417 / 447 / 497 targets at `hrs_per_shift = 7.44`, `shifts = 2`:
 
-| Step | WD | OT_normal | HD | OT_holiday | Target |
-|---|---|---|---|---|---|
-| 1 | 21 | 2.5 | 0 | 0   | 417 |
-| 2 | 21 | 2.5 | 2 | 0   | 447 |
-| 3 | 21 | 2.5 | 4 | 2.5 | 497 |
-| MaxCap | auto | (Max Cap OT) | — | — | days_in_month × (hrs + Max Cap OT) × shifts |
+| Step | WD | OT_days | OT_normal | HD | OT_holiday | Target |
+|---|---|---|---|---|---|---|
+| 1 | 21 | 21 | 2.5 | 0 | 0   | 417 |
+| 2 | 21 | 21 | 2.5 | 2 | 0   | 447 |
+| 3 | 21 | 21 | 2.5 | 4 | 2.5 | 497 |
+| MaxCap | auto | auto | (Max Cap OT) | — | — | days_in_month × (hrs + Max Cap OT) × shifts |
 
 ---
 

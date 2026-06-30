@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- **OT days per step.** Each step now has a separate "OT days" field so OT can be applied to only
+  some of the work days instead of all of them: `target = [ WD×hrs/shift + OT_days×OT_normal +
+  HD×(hrs/shift + Holiday OT) ] × shifts`. Legacy configs without the field fall back to OT_days = WD.
 - **Configurable capacity steps.** The fixed 417 / 447 / 497 hour targets are now derived from
   editable per-step inputs (working days, OT/shift on normal days, holidays worked, OT/shift on
   holidays) via `[ WD×(hrs/shift+OT) + HD×(hrs/shift+Holiday OT) ] × shifts`. Steps can be added or

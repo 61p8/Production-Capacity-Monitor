@@ -89,11 +89,11 @@ Monthly max capacity:
 ```
 
 Step targets are **user-configurable** (not hardcoded). `state.stepConfigs` holds one entry per
-middle step `{ wd, otNormal, hdWorked, otHoliday }`; `getStepDefs()` wraps them with a leading
-Initial step and a trailing Max Cap step. Each middle step's hour threshold:
+middle step `{ wd, otDays, otNormal, hdWorked, otHoliday }`; `getStepDefs()` wraps them with a
+leading Initial step and a trailing Max Cap step. Each middle step's hour threshold:
 ```
-  threshold = [ WD × (hrs_per_shift + otNormal) + HD × (hrs_per_shift + otHoliday) ] × shifts
-  (computeStepThreshold)
+  threshold = [ WD × hrs_per_shift + otDays × otNormal + HD × (hrs_per_shift + otHoliday) ] × shifts
+  (computeStepThreshold; otDays defaults to wd for legacy configs missing the field)
 ```
 - Step 0 = Initial (no balance applied; overflow compared against the first configured step)
 - Steps 1..N = computed from `state.stepConfigs` (edited in Settings → Capacity steps; add/remove allowed)
