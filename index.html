@@ -4976,17 +4976,17 @@ function manEval(pn, line, month, floorVal) {
   if (allocQty <= 0.01) return null;
   const fact = pd.oa * pd.fluct;
   const pHr = getEffectiveCT(pn, proc, line, month, fromCfg.ct) / 3600 / fact;
-  const hoursToRemove = srcHours - floorVal;
+  const cutHrs = Math.min(allocQty * pHr, srcHours - floorVal);  // hours removed from the source line
+  const qty = cutHrs / pHr;                                       // qty moved (same for every target)
+  if (qty <= 0.01) return null;
   const targets = [];
   for (const l of pd.lines) {
     if (l.name === line) continue;
     const bHr = getEffectiveCT(pn, proc, l.name, month, l.ct) / 3600 / fact;
-    const qty = Math.min(allocQty, hoursToRemove / pHr);
-    if (qty <= 0.01) continue;
     targets.push({ name: l.name, curHours: data.hours[l.name] && data.hours[l.name][month] || 0, hrsTo: qty * bHr, qty });
   }
   if (!targets.length) return null;
-  return { key: pn + '|' + line + '|' + month, pn, line, month, floorVal, srcHours, targets };
+  return { key: pn + '|' + line + '|' + month, pn, line, month, floorVal, srcHours, cutHrs, targets };
 }
 function manOnHover(e, els) {
   const chart = state.manualChart; if (!chart) return;
@@ -5067,32 +5067,38 @@ const manOverlayPlugin = {
   afterDatasetsDraw(chart) {
     const h = state.manHover; if (!h || chart !== state.manualChart) return;
     const cols = chart._manCols; if (!cols) return;
-    const { ctx, chartArea, scales } = chart;
+    const { ctx, scales } = chart;
     const phase = 0.5 + 0.5 * Math.sin(state.manPhase);
     const bw = cols.length > 1 ? Math.abs(scales.x.getPixelForValue(1) - scales.x.getPixelForValue(0)) * 0.72 : 30;
+    const slice = (idx, yA, yB, fill, stroke, aBase, aAmp) => {
+      const x = scales.x.getPixelForValue(idx);
+      const top = Math.min(yA, yB), hgt = Math.max(1, Math.abs(yB - yA));
+      ctx.save();
+      ctx.globalAlpha = aBase + aAmp * phase;
+      ctx.fillStyle = fill;
+      ctx.fillRect(x - bw / 2, top, bw, hgt);
+      ctx.setLineDash([4, 3]); ctx.strokeStyle = stroke; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - bw / 2, top, bw, hgt);
+      ctx.restore();
+    };
+    // Source line: the slice that will be CUT (from floor up to the current top)
+    const sidx = cols.findIndex(c => c.line === h.line && c.month === h.month);
+    if (sidx >= 0) slice(sidx, scales.y.getPixelForValue(h.srcHours), scales.y.getPixelForValue(h.srcHours - h.cutHrs), 'rgba(226,75,74,0.35)', '#E24B4A', 0.25, 0.35);
+    // Target lines: the slice that will be ADDED (ghost, part colour)
     for (const tg of h.targets) {
       const idx = cols.findIndex(c => c.line === tg.name && c.month === h.month);
       if (idx < 0) continue;
-      const x = scales.x.getPixelForValue(idx);
-      ctx.save();
-      ctx.globalAlpha = 0.10 + 0.20 * phase;
-      ctx.fillStyle = '#1D9E75';
-      ctx.fillRect(x - bw / 2, chartArea.top, bw, chartArea.bottom - chartArea.top);
-      const yBase = scales.y.getPixelForValue(tg.curHours);
-      const yTop = scales.y.getPixelForValue(tg.curHours + tg.hrsTo);
-      ctx.globalAlpha = 0.35 + 0.35 * phase;
-      ctx.fillStyle = getPartColor(h.pn);
-      ctx.fillRect(x - bw / 2, yTop, bw, Math.max(1, yBase - yTop));
-      ctx.setLineDash([4, 3]); ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.5;
-      ctx.strokeRect(x - bw / 2, yTop, bw, Math.max(1, yBase - yTop));
-      ctx.restore();
+      slice(idx, scales.y.getPixelForValue(tg.curHours), scales.y.getPixelForValue(tg.curHours + tg.hrsTo), getPartColor(h.pn), '#1D9E75', 0.30, 0.40);
     }
   }
 };
 function buildManualChart() {
   const m = state.manual, proc = m.proc, data = m.byProcess[proc];
   const months = m.months;
-  const lines = (Array.isArray(data.lines) ? data.lines : Array.from(data.lines)).slice();
+  // Show every line the process can use (even empty ones) so move targets are always visible.
+  const allLines = new Set(Array.isArray(data.lines) ? data.lines : Array.from(data.lines || []));
+  for (const p of state.master.parts) { const pd = p.processes[proc]; if (pd) for (const l of pd.lines) allLines.add(l.name); }
+  const lines = Array.from(allLines).sort();
   const setting = m.setting;
   const allParts = new Set();
   for (const line of lines) for (const mo of months) { const a = data.partAlloc[line] && data.partAlloc[line][mo] || {}; for (const pn in a) if (a[pn].hours > 0) allParts.add(pn); }
@@ -5136,12 +5142,13 @@ function buildManualChart() {
     }
   });
   state.manualChart._manCols = cols;
-  state.manualChart.canvas.addEventListener('mouseleave', () => {
-    if (state.manHover) { state.manHover = null; manStopPulse(); state.manualChart.canvas.style.cursor = 'default'; $('manStatus').textContent = ''; state.manualChart.draw(); }
-  });
 }
 function manInit() {
   if (!$('manLoadBtn')) return;
+  const cv = $('manualChart');
+  if (cv) cv.addEventListener('mouseleave', () => {
+    if (state.manHover) { state.manHover = null; manStopPulse(); cv.style.cursor = 'default'; $('manStatus').textContent = ''; if (state.manualChart) state.manualChart.draw(); }
+  });
   $('manLoadBtn').onclick = manLoadCurrent;
   $('manResetBtn').onclick = manLoadCurrent;
   $('manProc').onchange = () => { if (state.manual) { state.manual.proc = $('manProc').value; state.manHover = null; buildManualChart(); } };
