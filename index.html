@@ -246,6 +246,16 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .main-tabs button:hover:not(.active) { color: #2C2C2A; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
+.manual-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.manual-toolbar select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; font-family: inherit; }
+.manual-canvas-wrap { position: relative; height: 560px; margin-top: 8px; }
+.man-popup { position: fixed; z-index: 200; background: white; border: 1px solid #B4B2A9; border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.18); padding: 12px 14px; font-size: 13px; min-width: 240px; max-width: 320px; }
+.man-popup h4 { font-size: 12px; margin-bottom: 8px; color: #2C2C2A; }
+.man-popup .man-opt { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #E5E3DB; border-radius: 6px; margin-bottom: 6px; cursor: pointer; }
+.man-popup .man-opt:hover { background: #F1F8F5; border-color: #1D9E75; }
+.man-popup .man-opt .mo-line { font-weight: 600; }
+.man-popup .man-opt .mo-detail { font-size: 11px; color: #5F5E5A; margin-left: auto; text-align: right; }
+.man-popup .man-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .layout-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .lay-tools { display: flex; gap: 4px; }
 .lay-tool { padding: 6px 12px; font-size: 13px; font-family: inherit; background: white; border: 1px solid #B4B2A9; border-radius: 5px; cursor: pointer; color: #5F5E5A; }
@@ -327,6 +337,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
   <nav class="main-tabs" id="mainTabs">
     <button data-tab="setup" class="active"><span>⚙️</span><span data-i18n="tab_setup">Setup</span></button>
     <button data-tab="results"><span>📊</span><span data-i18n="tab_results">Results</span></button>
+    <button data-tab="manual"><span>✋</span><span data-i18n="tab_manual">Manual</span></button>
     <button data-tab="layout"><span>🗺️</span><span data-i18n="tab_layout">Layout</span></button>
   </nav>
 
@@ -543,6 +554,25 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
   </div>
   </div><!-- /tab-panel results -->
 
+  <div class="tab-panel" data-panel="manual">
+  <div class="section" id="manualSection">
+    <h2><span class="step-num">✋</span><span data-i18n="sec_manual">Manual Balance</span></h2>
+    <div class="manual-toolbar">
+      <button class="btn-small" id="manLoadBtn" type="button" data-i18n="man_load">↻ Load current step</button>
+      <span class="lay-sep"></span>
+      <label class="lay-field"><span data-i18n="man_process">Process</span><select id="manProc"></select></label>
+      <label class="lay-field"><span data-i18n="man_floor">Reduce line to</span><select id="manFloor"></select></label>
+      <span class="lay-sep"></span>
+      <button class="btn-small" id="manResetBtn" type="button" data-i18n="man_reset">Reset</button>
+      <span id="manStatus" style="font-size:12px;color:#5F5E5A;"></span>
+    </div>
+    <div class="help-text" data-i18n="man_help" style="margin-top:0">Hover a bar segment that sits above the lowest line — the lines it can move to blink and a ghost bar shows the new height. Click to pick the target line; the source line is reduced to the “Reduce line to” value. Targets may overflow — balance them next.</div>
+    <div class="manual-canvas-wrap"><canvas id="manualChart"></canvas></div>
+    <div id="manEmpty" class="empty-state" style="display:none; padding:24px;"><div data-i18n="man_no_data">Calculate a step first, then click “Load current step”.</div></div>
+    <div id="manPopup" class="man-popup" style="display:none"></div>
+  </div>
+  </div><!-- /tab-panel manual -->
+
   <div class="tab-panel" data-panel="layout">
   <div class="section" id="layoutSection">
     <h2><span class="step-num">🗺️</span><span data-i18n="sec_layout">Factory Layout</span></h2>
@@ -631,6 +661,9 @@ const I18N = {
     lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
     lay_save:'💾 Save', lay_load:'📂 Load', lay_export_svg:'SVG', lay_loaded:'Layout loaded', lay_load_err:'Could not read the file', lay_empty_export:'Nothing to export',
     lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours', lay_image:'🖼 Image',
+    tab_manual:'Manual', sec_manual:'Manual Balance', man_load:'↻ Load current step', man_process:'Process', man_floor:'Reduce line to', man_reset:'Reset', man_cancel:'Cancel', man_moves:'{q} pcs', man_nothing:'Nothing to move at this level',
+    man_no_data:'Calculate a step first, then click "Load current step".', man_hint_move:'Balance {p} from {l} — click to choose a target line', man_move_from:'Move {p} off {l} ({h}h)',
+    man_help:'Hover a bar segment above the lowest line — the lines it can move to blink and a ghost bar shows the new height. Click to pick a target line; the source line is reduced to the "Reduce line to" value. Targets may overflow — balance them next.',
     lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Hold Shift while resizing to lock the aspect ratio. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
@@ -704,6 +737,9 @@ const I18N = {
     lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
     lay_save:'💾 เซฟไฟล์', lay_load:'📂 โหลด', lay_export_svg:'SVG', lay_loaded:'โหลดผังแล้ว', lay_load_err:'อ่านไฟล์ไม่ได้', lay_empty_export:'ไม่มีอะไรให้ส่งออก',
     lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี', lay_image:'🖼 รูปภาพ',
+    tab_manual:'Manual', sec_manual:'บาลานซ์เอง (Manual)', man_load:'↻ โหลด step ปัจจุบัน', man_process:'Process', man_floor:'ลดไลน์เหลือ', man_reset:'รีเซ็ต', man_cancel:'ยกเลิก', man_moves:'{q} ชิ้น', man_nothing:'ไม่มีอะไรให้ย้ายที่ระดับนี้',
+    man_no_data:'คำนวณ step ก่อน แล้วกด "โหลด step ปัจจุบัน"', man_hint_move:'บาลานซ์ {p} จาก {l} — คลิกเพื่อเลือกไลน์ปลายทาง', man_move_from:'ย้าย {p} ออกจาก {l} ({h}h)',
+    man_help:'ชี้แท่ง part ที่อยู่เหนือเส้นล่างสุด — ไลน์ที่ย้ายไปได้จะกระพริบ และมี ghost bar โชว์ความสูงใหม่ • คลิกเพื่อเลือกไลน์ปลายทาง ไลน์เดิมจะถูกลดลงเหลือค่า "ลดไลน์เหลือ" • ปลายทางล้นได้ ค่อยไปบาลานซ์ต่อ',
     lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • กด Shift ค้างตอนปรับขนาด = ล็อกอัตราส่วน • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
@@ -777,6 +813,9 @@ const I18N = {
     lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
     lay_save:'💾 保存', lay_load:'📂 読込', lay_export_svg:'SVG', lay_loaded:'レイアウトを読込みました', lay_load_err:'ファイルを読めません', lay_empty_export:'エクスポート対象なし',
     lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット', lay_image:'🖼 画像',
+    tab_manual:'Manual', sec_manual:'手動バランス', man_load:'↻ 現ステップ読込', man_process:'工程', man_floor:'ラインを減らす基準', man_reset:'リセット', man_cancel:'キャンセル', man_moves:'{q} 個', man_nothing:'このレベルで移動対象なし',
+    man_no_data:'先にステップを計算し「現ステップ読込」を押してください', man_hint_move:'{p} を {l} からバランス — クリックで移動先を選択', man_move_from:'{p} を {l} から移動 ({h}h)',
+    man_help:'最下線より上のバー部分にホバー — 移動可能なラインが点滅しゴーストバーで新しい高さを表示。クリックで移動先を選択、元ラインは「ラインを減らす基準」まで減少。移動先はオーバー可、次でバランス。',
     lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。リサイズ中にShiftを押すと縦横比を固定。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
@@ -905,6 +944,11 @@ const state = {
   stepConfigs: DEFAULT_STEP_CONFIGS.map(c => ({ ...c })),
   maxCapOT: 2.5,
   layout: { objects: [], unit: 'm', pxPerMm: 0.03, panX: 30, panY: 30, snap: true, nextId: 1, nextGroup: 1, selected: [], tool: 'select' },
+  manual: null,          // { byProcess, months, setting, partMap, proc, floorVal }
+  manualChart: null,
+  manHover: null,
+  manPhase: 0,
+  manPulseTimer: null,
   dsIdCounter: 0
 };
 
@@ -3981,6 +4025,7 @@ function switchTab(name) {
   document.querySelectorAll('#mainTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
   if (name === 'layout') layRender();
+  if (name === 'manual') { if (!state.manual) manLoadCurrent(); else manRender(); }
   if (!state.isSnapshot) saveStorage({ activeTab: name });
 }
 
@@ -4876,12 +4921,241 @@ function layInit() {
   layResetHistory();
 }
 
+// ===== Manual Balance tab =====
+function manThresholdList() {
+  const setting = (state.manual && state.manual.setting) || readSettings();
+  return getStepThresholds(setting).map(th => ({ value: th.value }));
+}
+function manLoadCurrent() {
+  const result = getCurrentResult();
+  if (!result || !state.master) { state.manual = null; manRender(); return; }
+  const clone = JSON.parse(JSON.stringify(result.byProcess));   // deep copy — never mutate the auto result
+  state.manual = {
+    byProcess: clone,
+    months: result.months.slice(),
+    setting: result.settings,
+    partMap: new Map(state.master.parts.map(p => [p.partNo, p])),
+    proc: null,
+    floorVal: null
+  };
+  const procs = getProcesses();
+  state.manual.proc = procs.find(p => clone[p] && clone[p].lines && clone[p].lines.length) || procs[0];
+  const ths = manThresholdList();
+  state.manual.floorVal = ths.length ? ths[0].value : 400;
+  state.manHover = null;
+  manRender();
+}
+function manPopulateControls() {
+  const m = state.manual; if (!m) return;
+  $('manProc').innerHTML = getProcesses().map(p => `<option value="${p}"${p === m.proc ? ' selected' : ''}>${p}</option>`).join('');
+  const ths = manThresholdList();
+  if (m.floorVal == null && ths.length) m.floorVal = ths[0].value;
+  $('manFloor').innerHTML = ths.map(th => `<option value="${th.value}"${th.value === m.floorVal ? ' selected' : ''}>${th.value} h</option>`).join('');
+}
+function manRender() {
+  const m = state.manual;
+  if (!m || typeof Chart === 'undefined' || !m.byProcess[m.proc] || !(m.byProcess[m.proc].lines || []).length) {
+    if (state.manualChart) { state.manualChart.destroy(); state.manualChart = null; }
+    $('manEmpty').style.display = '';
+    return;
+  }
+  $('manEmpty').style.display = 'none';
+  manPopulateControls();
+  buildManualChart();
+}
+// Evaluate whether the hovered part on a line can be balanced down to floorVal, and to which lines.
+function manEval(pn, line, month, floorVal) {
+  const m = state.manual, proc = m.proc, data = m.byProcess[proc];
+  if (floorVal == null) floorVal = m.floorVal;
+  const srcHours = data.hours[line] && data.hours[line][month] || 0;
+  if (srcHours <= floorVal + 0.01) return null;
+  const part = m.partMap.get(pn); if (!part || !part.processes[proc]) return null;
+  const pd = part.processes[proc];
+  const fromCfg = pd.lines.find(l => l.name === line); if (!fromCfg) return null;
+  const allocQty = (data.partAlloc[line] && data.partAlloc[line][month] && data.partAlloc[line][month][pn] || {}).qty || 0;
+  if (allocQty <= 0.01) return null;
+  const fact = pd.oa * pd.fluct;
+  const pHr = getEffectiveCT(pn, proc, line, month, fromCfg.ct) / 3600 / fact;
+  const hoursToRemove = srcHours - floorVal;
+  const targets = [];
+  for (const l of pd.lines) {
+    if (l.name === line) continue;
+    const bHr = getEffectiveCT(pn, proc, l.name, month, l.ct) / 3600 / fact;
+    const qty = Math.min(allocQty, hoursToRemove / pHr);
+    if (qty <= 0.01) continue;
+    targets.push({ name: l.name, curHours: data.hours[l.name] && data.hours[l.name][month] || 0, hrsTo: qty * bHr, qty });
+  }
+  if (!targets.length) return null;
+  return { key: pn + '|' + line + '|' + month, pn, line, month, floorVal, srcHours, targets };
+}
+function manOnHover(e, els) {
+  const chart = state.manualChart; if (!chart) return;
+  let hover = null;
+  if (els && els.length) {
+    const el = els.find(x => chart.data.datasets[x.datasetIndex] && chart.data.datasets[x.datasetIndex].stack === 'parts');
+    if (el) {
+      const pn = chart.data.datasets[el.datasetIndex].label;
+      const c = chart._manCols[el.index];
+      if (c) hover = manEval(pn, c.line, c.month);
+    }
+  }
+  const changed = (hover && hover.key) !== (state.manHover && state.manHover.key);
+  state.manHover = hover;
+  chart.canvas.style.cursor = hover ? 'pointer' : 'default';
+  $('manStatus').textContent = hover ? t('man_hint_move', { p: hover.pn, l: hover.line }) : '';
+  if (hover) manStartPulse(); else { manStopPulse(); if (changed) chart.draw(); }
+}
+function manOnClick(e, els) {
+  if (state.manHover) manOpenPopup(state.manHover, e.native || e);
+}
+function manOpenPopup(hover, ev) {
+  const pop = $('manPopup');
+  const ths = manThresholdList();
+  pop.innerHTML =
+    `<h4>${t('man_move_from', { p: hover.pn, l: hover.line, h: Math.round(hover.srcHours) })}</h4>` +
+    `<div style="font-size:12px;margin-bottom:8px;">${t('man_floor')}: <select id="manPopFloor">` +
+    ths.map(th => `<option value="${th.value}"${th.value === hover.floorVal ? ' selected' : ''}>${th.value} h</option>`).join('') + `</select></div>` +
+    `<div id="manPopTargets"></div>` +
+    `<div class="man-actions"><button class="btn-small" id="manPopCancel">${t('man_cancel')}</button></div>`;
+  const renderTargets = () => {
+    const floorVal = parseFloat($('manPopFloor').value);
+    const ev2 = manEval(hover.pn, hover.line, hover.month, floorVal);
+    const box = $('manPopTargets');
+    if (!ev2) { box.innerHTML = `<div class="lay-empty">${t('man_nothing')}</div>`; return; }
+    box.innerHTML = ev2.targets.map(tg =>
+      `<div class="man-opt" data-to="${tg.name}"><span class="mo-line">${tg.name}</span>` +
+      `<span class="mo-detail">${t('man_moves', { q: Math.round(tg.qty) })} · ${Math.round(tg.curHours)}→${Math.round(tg.curHours + tg.hrsTo)}h</span></div>`).join('');
+    box.querySelectorAll('.man-opt').forEach(opt => opt.onclick = () => { manApplyMove(hover.pn, hover.line, hover.month, opt.dataset.to, floorVal); manClosePopup(); });
+  };
+  $('manPopFloor').onchange = renderTargets;
+  $('manPopCancel').onclick = manClosePopup;
+  renderTargets();
+  pop.style.display = 'block';
+  const px = ev.clientX || 200, py = ev.clientY || 200;
+  pop.style.left = Math.max(8, Math.min(px + 8, window.innerWidth - pop.offsetWidth - 12)) + 'px';
+  pop.style.top = Math.max(8, Math.min(py + 8, window.innerHeight - pop.offsetHeight - 12)) + 'px';
+}
+function manClosePopup() { const p = $('manPopup'); if (p) p.style.display = 'none'; }
+function manApplyMove(pn, from, month, to, floorVal) {
+  const m = state.manual, proc = m.proc, data = m.byProcess[proc];
+  const part = m.partMap.get(pn); if (!part) return;
+  const pd = part.processes[proc];
+  const fromCfg = pd.lines.find(l => l.name === from), toCfg = pd.lines.find(l => l.name === to);
+  if (!fromCfg || !toCfg) return;
+  const fact = pd.oa * pd.fluct;
+  const pHr = getEffectiveCT(pn, proc, from, month, fromCfg.ct) / 3600 / fact;
+  const bHr = getEffectiveCT(pn, proc, to, month, toCfg.ct) / 3600 / fact;
+  const srcHours = data.hours[from] && data.hours[from][month] || 0;
+  const allocQty = (data.partAlloc[from] && data.partAlloc[from][month] && data.partAlloc[from][month][pn] || {}).qty || 0;
+  const qty = Math.min(allocQty, Math.max(0, srcHours - floorVal) / pHr);
+  if (qty <= 0.01) { toast(t('man_nothing'), 'error'); return; }
+  applyMove(data, month, { operations: [{ from, to, partNo: pn, qty, hrsFrom: qty * pHr, hrsTo: qty * bHr }] });
+  if (!data.lines.includes(to)) data.lines.push(to);
+  data.lines = Array.from(new Set(data.lines)).sort();
+  state.manHover = null; manStopPulse();
+  buildManualChart();
+}
+function manStartPulse() {
+  if (state.manPulseTimer) return;
+  state.manPulseTimer = setInterval(() => { state.manPhase += 0.4; if (state.manualChart) state.manualChart.draw(); }, 60);
+}
+function manStopPulse() {
+  if (state.manPulseTimer) { clearInterval(state.manPulseTimer); state.manPulseTimer = null; }
+}
+const manOverlayPlugin = {
+  id: 'manOverlay',
+  afterDatasetsDraw(chart) {
+    const h = state.manHover; if (!h || chart !== state.manualChart) return;
+    const cols = chart._manCols; if (!cols) return;
+    const { ctx, chartArea, scales } = chart;
+    const phase = 0.5 + 0.5 * Math.sin(state.manPhase);
+    const bw = cols.length > 1 ? Math.abs(scales.x.getPixelForValue(1) - scales.x.getPixelForValue(0)) * 0.72 : 30;
+    for (const tg of h.targets) {
+      const idx = cols.findIndex(c => c.line === tg.name && c.month === h.month);
+      if (idx < 0) continue;
+      const x = scales.x.getPixelForValue(idx);
+      ctx.save();
+      ctx.globalAlpha = 0.10 + 0.20 * phase;
+      ctx.fillStyle = '#1D9E75';
+      ctx.fillRect(x - bw / 2, chartArea.top, bw, chartArea.bottom - chartArea.top);
+      const yBase = scales.y.getPixelForValue(tg.curHours);
+      const yTop = scales.y.getPixelForValue(tg.curHours + tg.hrsTo);
+      ctx.globalAlpha = 0.35 + 0.35 * phase;
+      ctx.fillStyle = getPartColor(h.pn);
+      ctx.fillRect(x - bw / 2, yTop, bw, Math.max(1, yBase - yTop));
+      ctx.setLineDash([4, 3]); ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - bw / 2, yTop, bw, Math.max(1, yBase - yTop));
+      ctx.restore();
+    }
+  }
+};
+function buildManualChart() {
+  const m = state.manual, proc = m.proc, data = m.byProcess[proc];
+  const months = m.months;
+  const lines = (Array.isArray(data.lines) ? data.lines : Array.from(data.lines)).slice();
+  const setting = m.setting;
+  const allParts = new Set();
+  for (const line of lines) for (const mo of months) { const a = data.partAlloc[line] && data.partAlloc[line][mo] || {}; for (const pn in a) if (a[pn].hours > 0) allParts.add(pn); }
+  const partList = Array.from(allParts).sort();
+  const useNumeric = shouldUseNumericMonths(lines.length * months.length);
+  const cols = [], labels = [];
+  for (const line of lines) for (const mo of months) { cols.push({ line, month: mo }); labels.push(getMonthOnly(getDisplayLabel(mo), useNumeric)); }
+  const xHier = computeXHierarchy(lines, months);
+  const datasets = [];
+  for (const pn of partList) {
+    const arr = [], colorArr = [];
+    const solid = getPartColor(pn), hatch = getHatchPattern(solid);
+    for (const c of cols) {
+      const a = data.partAlloc[c.line] && data.partAlloc[c.line][c.month] && data.partAlloc[c.line][c.month][pn];
+      arr.push(a ? Math.round(a.hours * 10) / 10 : 0);
+      const origin = data.partOrigin && data.partOrigin[pn];
+      colorArr.push(origin && origin !== c.line ? hatch : solid);
+    }
+    datasets.push({ type: 'bar', label: pn, data: arr, backgroundColor: colorArr, borderWidth: 0, stack: 'parts', order: 2 });
+  }
+  for (const th of getStepThresholds(setting)) datasets.push(thresholdLineDataset(String(th.value), th.value, th.color, th.dash, labels.map(() => th.value), 'step' + th.idx));
+  datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], cols.map(c => Math.round(calculateMaxCap(setting, c.month)))), stack: 'th_mc' });
+  if (state.manualChart) state.manualChart.destroy();
+  state.manualChart = new Chart($('manualChart'), {
+    plugins: [xHierarchyPlugin, manOverlayPlugin],
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { bottom: 60 } },
+      interaction: { mode: 'nearest', intersect: true },
+      onHover: manOnHover, onClick: manOnClick,
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: t('hours_axis') } }
+      },
+      plugins: {
+        xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
+        legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: { enabled: false }
+      }
+    }
+  });
+  state.manualChart._manCols = cols;
+  state.manualChart.canvas.addEventListener('mouseleave', () => {
+    if (state.manHover) { state.manHover = null; manStopPulse(); state.manualChart.canvas.style.cursor = 'default'; $('manStatus').textContent = ''; state.manualChart.draw(); }
+  });
+}
+function manInit() {
+  if (!$('manLoadBtn')) return;
+  $('manLoadBtn').onclick = manLoadCurrent;
+  $('manResetBtn').onclick = manLoadCurrent;
+  $('manProc').onchange = () => { if (state.manual) { state.manual.proc = $('manProc').value; state.manHover = null; buildManualChart(); } };
+  $('manFloor').onchange = () => { if (state.manual) { state.manual.floorVal = parseFloat($('manFloor').value); state.manHover = null; buildManualChart(); } };
+  document.addEventListener('mousedown', e => { const p = $('manPopup'); if (p && p.style.display !== 'none' && !p.contains(e.target)) manClosePopup(); });
+}
+
 function init() {
   setupEvents();
   setupUpload();
   setupCollapsibleSections();
   setupTabs();
   layInit();
+  manInit();
 
   // Try snapshot mode first
   const isSnapshot = loadSnapshotIfPresent();

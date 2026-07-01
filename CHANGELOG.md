@@ -33,6 +33,15 @@ All notable changes to this project will be documented in this file.
   adjustable opacity and lockable like any object; it round-trips through save/load and SVG export.
 - **Hold Shift to lock aspect ratio** while resizing a Layout object (or image).
 
+### Added
+- **Manual Balance tab.** A separate tab for hands-on load balancing that leaves the auto Smart
+  Balance untouched. Load the current step, then hover a bar segment sitting above the chosen
+  threshold — Chart.js pinpoints the exact part under the cursor, the lines it can move to blink,
+  and a ghost bar previews the new height. Click to open a popup: pick the target line and the
+  "reduce line to" value; the source line is reduced to that value and the amount moves across
+  (respecting each line's cycle time). Targets may overflow past their cap — you then balance those
+  next. Each move is a live what-if on a copy of the result.
+
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
   month labels, Calculate) and a **Results** tab (chart, table, overflow alerts). Calculate jumps
