@@ -631,7 +631,7 @@ const I18N = {
     lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
     lay_save:'💾 Save', lay_load:'📂 Load', lay_export_svg:'SVG', lay_loaded:'Layout loaded', lay_load_err:'Could not read the file', lay_empty_export:'Nothing to export',
     lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours', lay_image:'🖼 Image',
-    lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
+    lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Hold Shift while resizing to lock the aspect ratio. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
     dl_master_tpl:'Download Master template', dl_monthly_tpl:'Download Monthly template',
@@ -704,7 +704,7 @@ const I18N = {
     lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
     lay_save:'💾 เซฟไฟล์', lay_load:'📂 โหลด', lay_export_svg:'SVG', lay_loaded:'โหลดผังแล้ว', lay_load_err:'อ่านไฟล์ไม่ได้', lay_empty_export:'ไม่มีอะไรให้ส่งออก',
     lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี', lay_image:'🖼 รูปภาพ',
-    lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
+    lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • กด Shift ค้างตอนปรับขนาด = ล็อกอัตราส่วน • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
     dl_master_tpl:'ดาวน์โหลด Template Master', dl_monthly_tpl:'ดาวน์โหลด Template Monthly',
@@ -777,7 +777,7 @@ const I18N = {
     lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
     lay_save:'💾 保存', lay_load:'📂 読込', lay_export_svg:'SVG', lay_loaded:'レイアウトを読込みました', lay_load_err:'ファイルを読めません', lay_empty_export:'エクスポート対象なし',
     lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット', lay_image:'🖼 画像',
-    lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
+    lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。リサイズ中にShiftを押すと縦横比を固定。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
     dl_master_tpl:'マスターテンプレートDL', dl_monthly_tpl:'月次テンプレートDL',
@@ -4417,11 +4417,19 @@ function layDocMove(e) {
     layDrag.guide = { gx: sn.gx, gy: sn.gy }; layRender();
   } else if (layDrag.mode === 'resize') {
     const o = layDrag.orig;
-    let ex = p.x, ey = p.y;
-    const sx = laySnapVal(ex, laySnapXs([layDrag.id]), thr); if (sx != null) ex = sx;
-    const sy = laySnapVal(ey, laySnapYs([layDrag.id]), thr); if (sy != null) ey = sy;
-    layObj(layDrag.id).rects[0] = { x: o.x, y: o.y, w: Math.max(50, ex - o.x), h: Math.max(50, ey - o.y) };
-    layDrag.guide = { gx: sx, gy: sy }; layRender();
+    if (e.shiftKey) {
+      // Shift = lock aspect ratio to the object's original ratio (snapping off)
+      const s = Math.max(50 / o.w, 50 / o.h, Math.max((p.x - o.x) / o.w, (p.y - o.y) / o.h));
+      layObj(layDrag.id).rects[0] = { x: o.x, y: o.y, w: o.w * s, h: o.h * s };
+      layDrag.guide = { gx: null, gy: null };
+    } else {
+      let ex = p.x, ey = p.y;
+      const sx = laySnapVal(ex, laySnapXs([layDrag.id]), thr); if (sx != null) ex = sx;
+      const sy = laySnapVal(ey, laySnapYs([layDrag.id]), thr); if (sy != null) ey = sy;
+      layObj(layDrag.id).rects[0] = { x: o.x, y: o.y, w: Math.max(50, ex - o.x), h: Math.max(50, ey - o.y) };
+      layDrag.guide = { gx: sx, gy: sy };
+    }
+    layRender();
   } else if (layDrag.mode === 'marquee') {
     layDrag.x1 = p.x; layDrag.y1 = p.y;
     const mx0 = Math.min(layDrag.x0, layDrag.x1), my0 = Math.min(layDrag.y0, layDrag.y1);

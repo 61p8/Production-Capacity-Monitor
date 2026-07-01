@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file.
   Backward / Send to Back (toolbar, plus `]` `[` and `Ctrl+]` `Ctrl+[`). Insert an image (🖼) as a
   reference underlay for tracing a layout — dropped at the back, downscaled on import, with an
   adjustable opacity and lockable like any object; it round-trips through save/load and SVG export.
+- **Hold Shift to lock aspect ratio** while resizing a Layout object (or image).
 
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
