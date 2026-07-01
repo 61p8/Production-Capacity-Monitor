@@ -551,6 +551,8 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <button class="lay-tool active" data-laytool="select" type="button" title="Select"><span data-i18n="lay_select">Select</span></button>
         <button class="lay-tool" data-laytool="rect" type="button" title="Draw rectangle"><span data-i18n="lay_rect">▭ Rectangle</span></button>
       </div>
+      <button class="btn-small" id="layImageBtn" type="button" data-i18n="lay_image">🖼 Image</button>
+      <input type="file" id="layImageInput" accept="image/*" style="display:none">
       <span class="lay-sep"></span>
       <button class="btn-small" id="layUndoBtn" type="button" title="Undo (Ctrl+Z)">↶</button>
       <button class="btn-small" id="layRedoBtn" type="button" title="Redo (Ctrl+Y)">↷</button>
@@ -588,6 +590,11 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <button class="btn-small" id="layUngroupBtn" type="button" data-i18n="lay_ungroup">Ungroup</button>
       <button class="btn-small" id="layLockBtn" type="button" data-i18n="lay_lock_btn">Lock</button>
       <span class="lay-sep"></span>
+      <button class="btn-small" id="layFrontBtn" type="button" title="Bring to front (Ctrl+])">⤒</button>
+      <button class="btn-small" id="layForwardBtn" type="button" title="Bring forward (])">↑</button>
+      <button class="btn-small" id="layBackwardBtn" type="button" title="Send backward ([)">↓</button>
+      <button class="btn-small" id="layBackBtn" type="button" title="Send to back (Ctrl+[)">⤓</button>
+      <span class="lay-sep"></span>
       <button class="btn-small" id="layDeleteBtn" type="button" data-i18n="lay_delete">Delete</button>
       <button class="btn-small" id="layClearBtn" type="button" data-i18n="lay_clear">Clear all</button>
       <span class="lay-sep"></span>
@@ -623,7 +630,7 @@ const I18N = {
     lay_need2:'Select at least 2 objects', lay_no_overlap:'Objects do not overlap', lay_clear_confirm:'Clear the whole layout?',
     lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
     lay_save:'💾 Save', lay_load:'📂 Load', lay_export_svg:'SVG', lay_loaded:'Layout loaded', lay_load_err:'Could not read the file', lay_empty_export:'Nothing to export',
-    lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours',
+    lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours', lay_image:'🖼 Image',
     lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'Drag-drop or click to choose',
@@ -696,7 +703,7 @@ const I18N = {
     lay_need2:'เลือกอย่างน้อย 2 ชิ้น', lay_no_overlap:'วัตถุไม่ได้ซ้อนทับกัน', lay_clear_confirm:'ล้างผังทั้งหมด?',
     lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
     lay_save:'💾 เซฟไฟล์', lay_load:'📂 โหลด', lay_export_svg:'SVG', lay_loaded:'โหลดผังแล้ว', lay_load_err:'อ่านไฟล์ไม่ได้', lay_empty_export:'ไม่มีอะไรให้ส่งออก',
-    lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี',
+    lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี', lay_image:'🖼 รูปภาพ',
     lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
     upload_master:'Master Data Matrix', upload_monthly:'Monthly Requirements', upload_hint:'ลากวาง หรือคลิกเพื่อเลือก',
@@ -769,7 +776,7 @@ const I18N = {
     lay_need2:'2個以上選択してください', lay_no_overlap:'重なっていません', lay_clear_confirm:'レイアウトを全消去しますか？',
     lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
     lay_save:'💾 保存', lay_load:'📂 読込', lay_export_svg:'SVG', lay_loaded:'レイアウトを読込みました', lay_load_err:'ファイルを読めません', lay_empty_export:'エクスポート対象なし',
-    lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット',
+    lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット', lay_image:'🖼 画像',
     lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
     ready_to_calc:'計算準備完了',
     upload_master:'マスターデータ', upload_monthly:'月次要求', upload_hint:'ドラッグ又はクリック',
@@ -4284,15 +4291,26 @@ function layRender() {
     g.appendChild(layEl('line', { x1: minX, y1: y, x2: maxX, y2: y, stroke: y % (step * 5) === 0 ? '#D8D6CE' : '#EDEBE3', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
   const fontMm = 12 / L.pxPerMm;
   for (const obj of L.objects) {
-    const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
     const sel = L.selected.includes(obj.id);
-    let d = '';
-    for (const loop of layOutline(obj.rects)) d += 'M' + loop.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
-    const path = layEl('path', { id: 'layshape_' + obj.id, d, fill: obj.fill || st.fill, 'fill-opacity': obj.opacity != null ? obj.opacity : 0.78, stroke: sel ? '#E24B4A' : (obj.stroke || st.stroke), 'stroke-width': sel ? 2.5 : 1.5, 'fill-rule': 'evenodd', 'vector-effect': 'non-scaling-stroke' });
-    path.style.cursor = obj.locked ? 'default' : 'move';
-    path.addEventListener('mousedown', e => layShapeDown(e, obj.id));
-    g.appendChild(path);
     const bb = layBBox(obj.rects);
+    if (obj.kind === 'image') {
+      const r = obj.rects[0];
+      const im = layEl('image', { id: 'layshape_' + obj.id, x: r.x, y: r.y, width: r.w, height: r.h, opacity: obj.opacity != null ? obj.opacity : 1, preserveAspectRatio: 'none' });
+      im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', obj.href);
+      im.setAttribute('href', obj.href);
+      im.style.cursor = obj.locked ? 'default' : 'move';
+      im.addEventListener('mousedown', e => layShapeDown(e, obj.id));
+      g.appendChild(im);
+      if (sel) g.appendChild(layEl('rect', { x: r.x, y: r.y, width: r.w, height: r.h, fill: 'none', stroke: '#E24B4A', 'stroke-width': 2.5, 'vector-effect': 'non-scaling-stroke' }));
+    } else {
+      const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
+      let d = '';
+      for (const loop of layOutline(obj.rects)) d += 'M' + loop.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
+      const path = layEl('path', { id: 'layshape_' + obj.id, d, fill: obj.fill || st.fill, 'fill-opacity': obj.opacity != null ? obj.opacity : 0.78, stroke: sel ? '#E24B4A' : (obj.stroke || st.stroke), 'stroke-width': sel ? 2.5 : 1.5, 'fill-rule': 'evenodd', 'vector-effect': 'non-scaling-stroke' });
+      path.style.cursor = obj.locked ? 'default' : 'move';
+      path.addEventListener('mousedown', e => layShapeDown(e, obj.id));
+      g.appendChild(path);
+    }
     if (obj.locked) {
       const lk = layEl('text', { x: bb.x + bb.w - fontMm * 0.7, y: bb.y + fontMm * 0.9, 'text-anchor': 'middle', 'font-size': fontMm, fill: '#5F5E5A' });
       lk.textContent = '🔒'; g.appendChild(lk);
@@ -4528,14 +4546,15 @@ function layRenderProps() {
 }
 
 function layUnion() {
-  const L = layCur(), sel = L.selected.map(layObj).filter(Boolean);
+  const L = layCur(), sel = L.selected.map(layObj).filter(o => o && o.kind !== 'image');
   if (sel.length < 2) { toast(t('lay_need2'), 'error'); return; }
+  const ids = sel.map(o => o.id);
   const obj = { id: L.nextId++, type: sel[0].type, label: sel[0].label || '', rects: sel.flatMap(o => o.rects.map(r => ({ ...r }))) };
-  L.objects = L.objects.filter(o => !L.selected.includes(o.id)).concat(obj);
+  L.objects = L.objects.filter(o => !ids.includes(o.id)).concat(obj);
   L.selected = [obj.id]; laySave(); layRecord(); layRender();
 }
 function layIntersect() {
-  const L = layCur(), sel = L.selected.map(layObj).filter(Boolean);
+  const L = layCur(), sel = L.selected.map(layObj).filter(o => o && o.kind !== 'image');
   if (sel.length < 2) { toast(t('lay_need2'), 'error'); return; }
   let acc = sel[0].rects.map(r => ({ ...r }));
   for (let i = 1; i < sel.length; i++) {
@@ -4548,8 +4567,9 @@ function layIntersect() {
     acc = next;
   }
   if (!acc.length) { toast(t('lay_no_overlap'), 'error'); return; }
+  const ids = sel.map(o => o.id);
   const obj = { id: L.nextId++, type: sel[0].type, label: sel[0].label || '', rects: acc };
-  L.objects = L.objects.filter(o => !L.selected.includes(o.id)).concat(obj);
+  L.objects = L.objects.filter(o => !ids.includes(o.id)).concat(obj);
   L.selected = [obj.id]; laySave(); layRecord(); layRender();
 }
 function layDelete() {
@@ -4670,12 +4690,65 @@ function layStyleApply(field, val, record) {
   laySave(); if (record) layRecord();
 }
 function layUpdateShapeStyle(obj) {
-  const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
   const p = document.getElementById('layshape_' + obj.id);
   if (!p) return;
+  if (obj.kind === 'image') { p.setAttribute('opacity', obj.opacity != null ? obj.opacity : 1); return; }
+  const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
   p.setAttribute('fill', obj.fill || st.fill);
   p.setAttribute('stroke', layCur().selected.includes(obj.id) ? '#E24B4A' : (obj.stroke || st.stroke));
   p.setAttribute('fill-opacity', obj.opacity != null ? obj.opacity : 0.78);
+}
+
+// ----- z-order -----
+function laySelObjs() { return layCur().objects.filter(o => layCur().selected.includes(o.id)); }
+function layToFront() {
+  const L = layCur(); if (!L.selected.length) return;
+  const sel = L.objects.filter(o => L.selected.includes(o.id)), rest = L.objects.filter(o => !L.selected.includes(o.id));
+  L.objects = rest.concat(sel); laySave(); layRecord(); layRender();
+}
+function layToBack() {
+  const L = layCur(); if (!L.selected.length) return;
+  const sel = L.objects.filter(o => L.selected.includes(o.id)), rest = L.objects.filter(o => !L.selected.includes(o.id));
+  L.objects = sel.concat(rest); laySave(); layRecord(); layRender();
+}
+function layForward() {
+  const L = layCur(); if (!L.selected.length) return;
+  for (let i = L.objects.length - 2; i >= 0; i--)
+    if (L.selected.includes(L.objects[i].id) && !L.selected.includes(L.objects[i + 1].id))
+      [L.objects[i], L.objects[i + 1]] = [L.objects[i + 1], L.objects[i]];
+  laySave(); layRecord(); layRender();
+}
+function layBackward() {
+  const L = layCur(); if (!L.selected.length) return;
+  for (let i = 1; i < L.objects.length; i++)
+    if (L.selected.includes(L.objects[i].id) && !L.selected.includes(L.objects[i - 1].id))
+      [L.objects[i], L.objects[i - 1]] = [L.objects[i - 1], L.objects[i]];
+  laySave(); layRecord(); layRender();
+}
+
+// ----- image reference objects -----
+function layAddImage(file) {
+  if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxpx = 1600, scale = Math.min(1, maxpx / Math.max(img.naturalWidth, img.naturalHeight));
+      const cw = Math.max(1, Math.round(img.naturalWidth * scale)), ch = Math.max(1, Math.round(img.naturalHeight * scale));
+      const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+      cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
+      let href; try { href = cv.toDataURL('image/png'); } catch (e) { href = rd.result; }
+      const L = layCur(), wrap = $('layCanvasWrap');
+      const W = wrap.clientWidth || 900, H = wrap.clientHeight || 560;
+      const cxmm = (W / 2 - L.panX) / L.pxPerMm, cymm = (H / 2 - L.panY) / L.pxPerMm;
+      const wmm = 10000, hmm = wmm * (ch / cw);
+      const o = { id: L.nextId++, kind: 'image', type: 'area', label: '', href, opacity: 0.85, rects: [{ x: cxmm - wmm / 2, y: cymm - hmm / 2, w: wmm, h: hmm }] };
+      L.objects.unshift(o); L.selected = [o.id];
+      laySave(); layRecord(); layRender();
+    };
+    img.src = rd.result;
+  };
+  rd.readAsDataURL(file);
 }
 function layKey(e) {
   const panel = document.querySelector('.tab-panel[data-panel="layout"]');
@@ -4691,6 +4764,8 @@ function layKey(e) {
   else if (ctrl && key === 'a') { e.preventDefault(); laySelectAll(); }
   else if (ctrl && key === 'd') { e.preventDefault(); layDuplicate(); }
   else if (ctrl && key === 'g') { e.preventDefault(); e.shiftKey ? layUngroupSel() : layGroupSel(); }
+  else if (key === ']') { e.preventDefault(); ctrl ? layToFront() : layForward(); }
+  else if (key === '[') { e.preventDefault(); ctrl ? layToBack() : layBackward(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); layDelete(); }
   else if (e.key === 'Escape') { layCur().selected = []; layRender(); }
   else if (e.key.indexOf('Arrow') === 0) {
@@ -4735,10 +4810,15 @@ function layExportSvg() {
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   let body = '';
   for (const obj of L.objects) {
+    const b = layBBox(obj.rects);
+    if (obj.kind === 'image') {
+      const r = obj.rects[0];
+      body += `<image x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" opacity="${obj.opacity != null ? obj.opacity : 1}" preserveAspectRatio="none" href="${obj.href}"/>`;
+      continue;
+    }
     const st = LAY_TYPE_STYLE[obj.type] || LAY_TYPE_STYLE.area;
     let d = '';
     for (const loop of layOutline(obj.rects)) d += 'M' + loop.map(p => `${p[0]} ${p[1]}`).join(' L ') + ' Z';
-    const b = layBBox(obj.rects);
     body += `<path d="${d}" fill="${obj.fill || st.fill}" fill-opacity="${obj.opacity != null ? obj.opacity : 0.78}" stroke="${obj.stroke || st.stroke}" stroke-width="${sw}" fill-rule="evenodd"/>`;
     if (obj.label) body += `<text x="${b.x + b.w / 2}" y="${b.y + b.h / 2}" font-size="${fs}" text-anchor="middle" dominant-baseline="middle" fill="#2C2C2A" font-family="sans-serif">${esc(obj.label)}</text>`;
     body += `<text x="${b.x + b.w / 2}" y="${b.y + fs}" font-size="${fs * 0.85}" text-anchor="middle" fill="#5F5E5A" font-family="sans-serif">${layFmt(b.w)} ${L.unit}</text>`;
@@ -4768,6 +4848,12 @@ function layInit() {
   $('layGroupBtn').onclick = layGroupSel;
   $('layUngroupBtn').onclick = layUngroupSel;
   $('layLockBtn').onclick = layLockSel;
+  $('layFrontBtn').onclick = layToFront;
+  $('layForwardBtn').onclick = layForward;
+  $('layBackwardBtn').onclick = layBackward;
+  $('layBackBtn').onclick = layToBack;
+  $('layImageBtn').onclick = () => $('layImageInput').click();
+  $('layImageInput').onchange = e => { if (e.target.files[0]) layAddImage(e.target.files[0]); e.target.value = ''; };
   $('layDeleteBtn').onclick = layDelete;
   $('layClearBtn').onclick = layClear;
   $('layUndoBtn').onclick = layUndo;

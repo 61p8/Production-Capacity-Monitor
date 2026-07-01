@@ -27,6 +27,10 @@ All notable changes to this project will be documented in this file.
   with a 🔒). Per-object Fill colour, Border colour and Opacity are editable in the properties panel
   (single or whole selection), with Reset to type defaults. Zoom range widened to roughly
   1 m = 0.4 px (very large floors) up to 1 mm = 6 px (fine detail).
+- **Layout z-order & image references.** Reorder overlapping objects with Bring to Front / Forward /
+  Backward / Send to Back (toolbar, plus `]` `[` and `Ctrl+]` `Ctrl+[`). Insert an image (🖼) as a
+  reference underlay for tracing a layout — dropped at the back, downscaled on import, with an
+  adjustable opacity and lockable like any object; it round-trips through save/load and SVG export.
 
 ### Changed
 - **Two-tab layout.** The page is split into a **Setup** tab (upload, preview, settings/steps,
