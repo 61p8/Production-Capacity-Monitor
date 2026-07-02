@@ -123,6 +123,12 @@ Step target = [ WD × hrs_per_shift + OT_days × OT_normal + HD × (hrs_per_shif
 Steps can be added or removed freely; the final step is always per-month **Max Cap**. The shipped
 defaults reproduce the original 417 / 447 / 497 targets at `hrs_per_shift = 7.44`, `shifts = 2`:
 
+**Per-month (variable) steps:** click the 📅 button on a step row to open a month-by-month table
+(months come from the uploaded Monthly file) and set that month's WD / OT days / OT h / holidays /
+holiday OT individually — empty cells inherit the step's base values. The threshold line then varies
+by month (like Max Cap), and balancing, alerts and the Manual tab all use each month's own value.
+Variable steps are marked with a trailing `~` (e.g. `417~`).
+
 | Step | WD | OT_days | OT_normal | HD | OT_holiday | Target |
 |---|---|---|---|---|---|---|
 | 1 | 21 | 21 | 2.5 | 0 | 0   | 417 |

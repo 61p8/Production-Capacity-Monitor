@@ -34,6 +34,11 @@ All notable changes to this project will be documented in this file.
 - **Hold Shift to lock aspect ratio** while resizing a Layout object (or image).
 
 ### Added
+- **Per-month (variable) capacity steps.** Any step can now vary month by month like Max Cap:
+  click 📅 on a step row to set that month's work days, OT days, OT h/shift, holidays worked and
+  holiday OT individually (empty cells inherit the step's base values). The chart line follows the
+  per-month values, and auto-balance targets, overflow alerts and the Manual tab floor all resolve
+  per month. Variable steps are marked with `~` (e.g. `417~`); the steps table shows their min–max.
 - **Raw_Data auto-import.** Add an optional `Raw_Data` sheet to the Monthly file and paste raw
   long-format records (Part / Month-or-Date / Qty) straight from the production system — the app
   auto-detects the columns (English/Thai/Japanese headers, or by value shape for the month column),

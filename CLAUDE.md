@@ -95,6 +95,11 @@ leading Initial step and a trailing Max Cap step. Each middle step's hour thresh
   threshold = [ WD × hrs_per_shift + otDays × otNormal + HD × (hrs_per_shift + otHoliday) ] × shifts
   (computeStepThreshold; otDays defaults to wd for legacy configs missing the field)
 ```
+A step may also carry **per-month overrides** in `cfg.perMonth = { [monthKey]: {wd, otDays, otNormal,
+hdWorked, otHoliday} }` (edited via the 📅 button per step row; fields left empty inherit the base).
+`computeStepThresholdMonth(cfg, setting, month)` resolves the effective threshold; balance targets,
+alerts, chart lines and the Manual tab all go through it, so a variable step's line moves month by
+month (labelled with a trailing `~`). `readSettings()` deep-copies `stepConfigs` for this reason.
 - Step 0 = Initial (no balance applied; overflow compared against the first configured step)
 - Steps 1..N = computed from `state.stepConfigs` (edited in Settings → Capacity steps; add/remove allowed)
 - Final step = MaxCap (per-month from settings)
