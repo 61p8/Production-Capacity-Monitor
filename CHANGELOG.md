@@ -34,6 +34,11 @@ All notable changes to this project will be documented in this file.
 - **Hold Shift to lock aspect ratio** while resizing a Layout object (or image).
 
 ### Added
+- **Raw_Data auto-import.** Add an optional `Raw_Data` sheet to the Monthly file and paste raw
+  long-format records (Part / Month-or-Date / Qty) straight from the production system — the app
+  auto-detects the columns (English/Thai/Japanese headers, or by value shape for the month column),
+  sums duplicate rows and pivots to parts × months. A non-empty Raw_Data sheet takes priority over
+  Monthly_Req; an empty scaffold (as shipped in the template) is ignored.
 - **Manual Balance tab.** A separate tab for hands-on load balancing that leaves the auto Smart
   Balance untouched. Load the current step, then hover a bar segment sitting above the chosen
   threshold — Chart.js pinpoints the exact part under the cursor, the lines it can move to blink,

@@ -73,6 +73,25 @@ A wide-format table with parts in rows and months in columns:
 
 Header rows can include `PRTNO` or `Part No.` — the parser auto-detects the header row within the first 15 rows.
 
+### Raw_Data sheet (optional auto-import)
+
+Instead of filling the Monthly_Req grid by hand, add a sheet named **`Raw_Data`** and paste raw
+records from your production system — one row per record, long format:
+
+| Part No. | Month | Qty |
+|---|---|---|
+| PART-001 | Apr 2026 | 5000 |
+| PART-001 | Apr 2026 | 3500 |
+| PART-001 | May 2026 | 9000 |
+
+- Columns are auto-detected by header (`Part No.`/`PRTNO`/`Item`/`Material`…, `Month`/`Date`…,
+  `Qty`/`Quantity`/`Plan`… — Thai/Japanese equivalents also work). If the month column has no
+  recognisable header, the column whose values parse as months/dates is used.
+- Month cells accept labels (`Apr 2026`, `Apr'26`, `2026-04`) or real Excel dates.
+- Duplicate part+month rows are **summed**, then everything is pivoted to parts × months.
+- If a non-empty `Raw_Data` sheet exists it is used **instead of** Monthly_Req; an empty one is
+  ignored, so the template can ship the scaffold safely.
+
 ---
 
 ## Formula reference

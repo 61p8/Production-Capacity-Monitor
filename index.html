@@ -1120,7 +1120,77 @@ function parseMonthLabel(value) {
   return null;
 }
 
+// ===== Raw_Data sheet — long-format auto-import =====
+// One row per record (e.g. a dump from the production system). Columns are auto-detected:
+//   part  = "Part No." / PRTNO / Item / Material / P/N ...
+//   month = "Month" / "Date" / Thai/Japanese equivalents, real Excel dates OR month labels;
+//           if no labelled header is found, the column whose values parse as months is used
+//   qty   = "Qty" / Quantity / Plan / Amount / ยอด / จำนวน / 数量 ...
+// Rows are pivoted and summed into the same {months, data} shape as Monthly_Req.
+function parseRawData(wb) {
+  const name = wb.SheetNames.find(n => /^raw[\s_]?data$/i.test(String(n).trim()));
+  if (!name) return null;
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
+  if (!rows || !rows.length) return null;
+  const PART_RE = /^(part\s*no\.?|prtno|partno|part\s*number|part|item|material|p\/n)$/i;
+  const MONTH_RE = /^(month|date|delivery(\s*date)?|due(\s*date)?|period|prod(uction)?\s*(month|date)|เดือน|วันที่|月|日付)$/i;
+  const QTY_RE = /^(qty\.?|q'ty|quantity|amount|volume|plan(\s*qty)?|pcs|demand|ยอด|จำนวน|数量)$/i;
+  let headerRowIdx = -1, partCol = -1, monthCol = -1, qtyCol = -1;
+  for (let r = 0; r < Math.min(20, rows.length); r++) {
+    const row = rows[r]; if (!row) continue;
+    let p = -1, m = -1, q = -1;
+    for (let c = 0; c < row.length; c++) {
+      const cell = row[c]; if (typeof cell !== 'string') continue;
+      const s = cell.trim();
+      if (p < 0 && PART_RE.test(s)) p = c;
+      else if (m < 0 && MONTH_RE.test(s)) m = c;
+      else if (q < 0 && QTY_RE.test(s)) q = c;
+    }
+    if (p >= 0 && q >= 0) { headerRowIdx = r; partCol = p; monthCol = m; qtyCol = q; break; }
+  }
+  if (headerRowIdx < 0) return null;
+  // No labelled month column → pick the column whose values most often parse as months/dates.
+  if (monthCol < 0) {
+    const counts = {};
+    for (let r = headerRowIdx + 1; r < Math.min(headerRowIdx + 60, rows.length); r++) {
+      const row = rows[r]; if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        if (c === partCol || c === qtyCol) continue;
+        if (row[c] != null && parseMonthLabel(row[c])) counts[c] = (counts[c] || 0) + 1;
+      }
+    }
+    let best = -1, bc = 0;
+    for (const c in counts) if (counts[c] > bc) { bc = counts[c]; best = +c; }
+    if (best >= 0) monthCol = best;
+  }
+  if (monthCol < 0) return null;
+  const data = new Map(), monthSet = new Set();
+  for (let r = headerRowIdx + 1; r < rows.length; r++) {
+    const row = rows[r]; if (!row) continue;
+    const pnRaw = row[partCol]; if (!pnRaw || typeof pnRaw !== 'string') continue;
+    const pn = pnRaw.trim(); if (!pn) continue;
+    const label = parseMonthLabel(row[monthCol]); if (!label) continue;
+    const q = parseFloat(row[qtyCol]); if (!(q > 0)) continue;
+    monthSet.add(label);
+    const mq = data.get(pn) || {};
+    mq[label] = (mq[label] || 0) + q;
+    data.set(pn, mq);
+  }
+  if (data.size === 0 || monthSet.size === 0) return null;
+  const months = Array.from(monthSet).sort((a, b) => {
+    const pa = parseMonthYearFromLabel(a), pb = parseMonthYearFromLabel(b);
+    if (!pa && !pb) return 0;
+    if (!pa) return 1;
+    if (!pb) return -1;
+    return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+  });
+  return { months, data, sheetName: name, headerRowIdx };
+}
+
 function parseMonthly(wb) {
+  // A Raw_Data sheet takes priority — auto-pivot instead of the manual Monthly_Req grid.
+  const raw = parseRawData(wb);
+  if (raw) return raw;
   const sorted = [...wb.SheetNames].sort((a, b) => {
     const aS = /monthly|requirement|req|demand/i.test(a) ? 0 : 1;
     const bS = /monthly|requirement|req|demand/i.test(b) ? 0 : 1;
@@ -3978,7 +4048,12 @@ function downloadMonthlyTemplate() {
     ['Part numbers must start with "TG"'],
     [],
     ['For Compare/Diff feature: keep months and part list consistent across files.'],
-    ['Suggested filename: YYYYMM_Label_v#.xlsx (e.g. 202604_Apr_v1.xlsx)']
+    ['Suggested filename: YYYYMM_Label_v#.xlsx (e.g. 202604_Apr_v1.xlsx)'],
+    [],
+    ['OPTIONAL — "Raw_Data" sheet (auto-import):'],
+    ['  Paste raw records from your production system: one row = Part / Month (or Date) / Qty.'],
+    ['  The app detects the columns, sums duplicates, and pivots to months automatically.'],
+    ['  If a Raw_Data sheet exists it is used INSTEAD of Monthly_Req.']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(readmeData), 'README');
 
@@ -3988,6 +4063,14 @@ function downloadMonthlyTemplate() {
   data.push(['PART-001', 8500, 9000, 8800, 9200, 8600, 9100]);
   data.push(['PART-002', 5200, 5100, 5400, 5300, 5500, 5200]);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Monthly_Req');
+
+  // Raw_Data scaffold — ships EMPTY below the header so Monthly_Req stays in charge
+  // until the user actually pastes records here (empty Raw_Data parses to null → fallback).
+  const rawData = [
+    ['Paste raw records under the header (1 row = 1 record, e.g. PART-001 | Apr 2026 | 5000). Duplicates are summed. Once rows exist here, this sheet is used INSTEAD of Monthly_Req.'],
+    ['Part No.', 'Month', 'Qty']
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rawData), 'Raw_Data');
 
   XLSX.writeFile(wb, 'Monthly_Req_Template.xlsx');
 }
