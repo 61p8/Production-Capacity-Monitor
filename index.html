@@ -2039,6 +2039,7 @@ function applyMonthRange() {
   populateRangeSelectors();
   $('rangeFrom').value = months[0];
   $('rangeTo').value = months[endIdx];
+  renderStepConfigs();   // 📅 per-month editor shows month labels — refresh them
   if (state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) renderResults();
 }
 
@@ -2064,6 +2065,7 @@ function rangeResetOriginal() {
     $('rangeTo').value = months[months.length - 1];
   }
   syncRangeControlsFromState();
+  renderStepConfigs();   // 📅 per-month editor shows month labels — refresh them
   if (state.datasets.some(d => d.resultsHistory && d.resultsHistory.length)) renderResults();
 }
 
@@ -4262,7 +4264,7 @@ function setupEvents() {
   if ($('endYear')) $('endYear').value = String(_now.getFullYear());
 
   document.querySelectorAll('.lang-btn').forEach(b => {
-    b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderCalendarGrid(); };
+    b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderStepConfigs(); renderCalendarGrid(); };
   });
 
   $('calculateBtn').onclick = () => {
