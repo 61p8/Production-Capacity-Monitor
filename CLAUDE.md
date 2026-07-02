@@ -74,7 +74,21 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 7. **The Master file's `Matrix - <Name>` sheet naming convention defines processes.** Parser scans for sheets matching `/^Matrix\s*-\s*(.+)$/i`. If you change this convention, update `README.md`, the template generator's instructions sheet, and the i18n error message `parse_error_master` in all three languages.
 
+8. **Bump the version on every change.** `APP_VERSION` (a `const` near `STORAGE_KEY` in `index.html`) is the single source of truth for the user-facing version; the header subtitle renders `v${APP_VERSION}` from it, so bump that one constant — don't hardcode a version anywhere else. See **Versioning** below.
+
 ---
+
+## Versioning
+
+Every change that ships must bump `APP_VERSION` and add a matching `CHANGELOG.md` entry — no silent edits.
+
+- **Where:** `const APP_VERSION` in `index.html` (drives the header subtitle). Nothing else hardcodes the app version.
+- **How much:** `MAJOR.MINOR` — MINOR for a new feature or notable change, MAJOR for a large module / breaking change; a `.patch` third segment is fine for small fixes (e.g. `3.0.1`).
+- **CHANGELOG:** add the change under a heading for the new version with today's date (move items out of `[Unreleased]` when you assign a number). Match the version you set in `APP_VERSION`.
+- **Do NOT** bump the data-format versions for feature work — those are independent and change only when their own format changes:
+  - snapshot payload `version` (in `buildSnapshotPayload`) — the embedded-state schema
+  - layout file `version` (in `laySaveFile`) — the `.json` layout format
+  - Excel template titles (`downloadMasterTemplate` / `downloadMonthlyTemplate`) — the spreadsheet layout
 
 ## Core formulas
 

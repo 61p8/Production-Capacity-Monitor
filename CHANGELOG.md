@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [3.0] — 2026-07-02
 
 ### Added
 - **Factory Layout editor (new tab).** Draw a factory layout directly in the app on an SVG canvas:

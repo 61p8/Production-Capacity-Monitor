@@ -296,7 +296,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
   <div class="app-header">
     <div>
       <h1 data-i18n="app_title">Capacity Planning Tool</h1>
-      <div class="subtitle"><span data-i18n="app_subtitle">Compare line demand vs capacity</span> • v2.0</div>
+      <div class="subtitle"><span data-i18n="app_subtitle">Compare line demand vs capacity</span> • <span id="appVersion"></span></div>
     </div>
     <div class="section-actions">
       <div class="lang-selector">
@@ -907,6 +907,10 @@ function getProcesses() {
     ? state.master.processList
     : PROCESSES;
 }
+// App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
+// This is separate from the data-format versions (snapshot / layout file / Excel templates),
+// which change only when their format changes.
+const APP_VERSION = '3.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -5382,6 +5386,7 @@ function manInit() {
 }
 
 function init() {
+  const vEl = $('appVersion'); if (vEl) vEl.textContent = 'v' + APP_VERSION;
   setupEvents();
   setupUpload();
   setupCollapsibleSections();
