@@ -576,6 +576,11 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <label><input type="checkbox" id="showTrend" checked> <span data-i18n="show_trend">Trend</span></label>
       <label><input type="checkbox" id="showLineInAxis" checked> <span data-i18n="show_line_axis">Line name</span></label>
       <span style="flex:1"></span>
+      <span style="font-weight:500" data-i18n="y_unit">Y-axis:</span>
+      <select id="yUnit">
+        <option value="hours" data-i18n="y_unit_hours">Hours</option>
+        <option value="pcs" data-i18n="y_unit_pcs">Pieces/month</option>
+      </select>
       <span style="font-weight:500" data-i18n="chart_mode">Chart:</span>
       <select id="chartMode">
         <option value="byPart" data-i18n="chart_by_part">Stacked by Part</option>
@@ -786,6 +791,7 @@ const I18N = {
     first_column:'First column =', graph_show:'Show on chart', range_start:'Start', range_end:'End',
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
+    y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
     balance_done:'{step} done', nothing_changed:'Nothing changed (no backup options)',
@@ -877,6 +883,7 @@ const I18N = {
     first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ', range_start:'เริ่ม', range_end:'ถึง',
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
+    y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
     balance_done:'{step} เสร็จ', nothing_changed:'ไม่มีอะไรเปลี่ยน (ไม่มี backup ให้ใช้)',
@@ -968,6 +975,7 @@ const I18N = {
     first_column:'最初の列 =', graph_show:'グラフ表示', range_start:'開始', range_end:'終了',
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
+    y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
     balance_done:'{step} 完了', nothing_changed:'変化なし',
@@ -991,7 +999,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.1.1';
+const APP_VERSION = '3.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1062,6 +1070,7 @@ const state = {
   activeDatasetId: null,
   compareDatasetIds: [], // for compare/diff mode
   viewMode: 'single',    // 'single' | 'compare' | 'diff'
+  yUnit: 'hours',        // 'hours' | 'pcs' — Results chart Y-axis unit
   currentTab: 'Lathe',
   chart: null,
   monthOverrides: {},
@@ -2607,6 +2616,34 @@ function thresholdLineDataset(label, val, color, dash, dataArr, stackId) {
   return { type: 'line', label, data: dataArr, borderColor: color, borderWidth: 2, borderDash: dash, pointRadius: 0, fill: false, stack: `th_${stackId != null ? stackId : label}`, order: 0 };
 }
 
+// ===== Y-axis unit: Hours ⇄ Pieces =====
+// In 'pcs' mode the chart plots piece counts; the (hour) step thresholds are converted to pieces
+// using each (process, month)'s volume-weighted average hours-per-piece = Σhours / Σqty. That single
+// average bakes in every part's CT, OA and Fluctuation weighted by how much it's produced, so a
+// 417h line becomes "how many pieces 417 hours buys given this month's product mix".
+function getYUnit() { return state.yUnit === 'pcs' ? 'pcs' : 'hours'; }
+function yAxisTitle() { return getYUnit() === 'pcs' ? t('pcs_axis') : t('hours_axis'); }
+function fmtY(v) { return getYUnit() === 'pcs' ? Math.round(v).toLocaleString() + ' ' + t('pcs_unit') : formatHours(v); }
+function allocBarVal(a) { if (!a) return 0; return getYUnit() === 'pcs' ? Math.round(a.qty) : Math.round(a.hours * 10) / 10; }
+function lineQtyTotal(data, line, month) {
+  const alloc = data.partAlloc[line]?.[month] || {};
+  let q = 0; for (const pn in alloc) q += alloc[pn].qty || 0; return q;
+}
+function lineBarVal(data, line, month) {
+  return getYUnit() === 'pcs' ? Math.round(lineQtyTotal(data, line, month)) : Math.round(data.hours[line]?.[month] || 0);
+}
+function procHrsPerPiece(data, month) {
+  let hrs = 0, qty = 0;
+  for (const line of data.lines) { hrs += data.hours[line]?.[month] || 0; qty += lineQtyTotal(data, line, month); }
+  return qty > 0 ? hrs / qty : null;
+}
+// Convert an hour threshold to the active Y unit for a given process-data block + month.
+function thVal(hourVal, data, month) {
+  if (getYUnit() !== 'pcs') return hourVal;
+  const hpp = data ? procHrsPerPiece(data, month) : null;
+  return hpp && hpp > 0 ? Math.round(hourVal / hpp) : null;
+}
+
 // ===== Capacity step config UI =====
 // Per-step chart toggle checkboxes (chart toolbar). Preserves prior checked state.
 function renderStepToggles() {
@@ -2841,7 +2878,7 @@ function renderChartSingle() {
       const hatchPattern = getHatchPattern(solidColor);
       for (const line of visibleLines) for (const m of months) {
         const a = data.partAlloc[line]?.[m]?.[pn];
-        arr.push(a ? Math.round(a.hours * 10) / 10 : 0);
+        arr.push(allocBarVal(a));
         const origin = data.partOrigin?.[pn];
         const isBalanced = origin && origin !== line;
         colorArr.push(isBalanced ? hatchPattern : solidColor);
@@ -2868,12 +2905,12 @@ function renderChartSingle() {
     for (const th of getStepThresholds(setting)) {
       if (!th.show) continue;
       const arr = [];
-      for (const line of visibleLines) for (const m of months) arr.push(th.valueFor(m));
+      for (const line of visibleLines) for (const m of months) arr.push(thVal(th.valueFor(m), data, m));
       datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx));
     }
     if (opts.showMaxCap) {
       const mcData = [];
-      for (const line of visibleLines) for (const m of months) mcData.push(Math.round(calculateMaxCap(setting, m)));
+      for (const line of visibleLines) for (const m of months) mcData.push(thVal(calculateMaxCap(setting, m), data, m));
       datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
     }
 
@@ -2886,7 +2923,7 @@ function renderChartSingle() {
         interaction: { mode: 'index', intersect: false },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
-          y: { stacked: true, beginAtZero: true, title: { display: true, text: t('hours_axis') } }
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
         },
         plugins: {
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
@@ -2908,7 +2945,7 @@ function renderChartSingle() {
               const curLine = visibleLines[lineIdx];
               const balanced = origin && origin !== curLine;
               const tag = balanced ? ` (balanced from ${origin.replace(/^Shaft /, '')})` : '';
-              return `${pn}: ${formatHours(c.parsed.y)}${tag}`;
+              return `${pn}: ${fmtY(c.parsed.y)}${tag}`;
             }
           } }
         }
@@ -2918,28 +2955,28 @@ function renderChartSingle() {
     // byLine mode
     const labels = months.map(m => getDisplayLabel(m));
     visibleLines.forEach((line, i) => {
-      datasets.push({ type: 'bar', label: line, data: months.map(m => Math.round(data.hours[line]?.[m] || 0)), backgroundColor: LINE_COLORS[i % LINE_COLORS.length], borderWidth: 0, order: 2 });
+      datasets.push({ type: 'bar', label: line, data: months.map(m => lineBarVal(data, line, m)), backgroundColor: LINE_COLORS[i % LINE_COLORS.length], borderWidth: 0, order: 2 });
     });
     if (opts.showTrend) {
       const trendData = months.map(m => {
         let sum = 0;
-        for (const line of visibleLines) sum += data.hours[line]?.[m] || 0;
+        for (const line of visibleLines) sum += lineBarVal(data, line, m);
         return Math.round(sum * 10) / 10;
       });
       datasets.push({ type: 'line', label: t('trend_label'), data: trendData, borderColor: TREND_COLOR, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: TREND_COLOR, fill: false, tension: 0.25, order: 1 });
     }
     for (const th of getStepThresholds(setting)) {
-      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => th.valueFor(m)), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
+      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thVal(th.valueFor(m), data, m)), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => Math.round(calculateMaxCap(setting, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thVal(calculateMaxCap(setting, m), data, m)), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        scales: { y: { beginAtZero: true, title: { display: true, text: t('hours_axis') } }, x: { title: { display: true, text: t('month_axis') } } },
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatHours(c.parsed.y)}` } } }
+        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: t('month_axis') } } },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
   }
@@ -2998,7 +3035,7 @@ function renderChartCompare() {
         const hatchPattern = getHatchPattern(solidColor);
         for (const line of visibleLines) for (const m of months) {
           const a = data.partAlloc[line]?.[m]?.[pn];
-          arr.push(a ? Math.round(a.hours * 10) / 10 : 0);
+          arr.push(allocBarVal(a));
           const origin = data.partOrigin?.[pn];
           const isBalanced = origin && origin !== line;
           colorArr.push(isBalanced ? hatchPattern : solidColor);
@@ -3016,15 +3053,16 @@ function renderChartCompare() {
       }
     }
 
+    const refData = refResult.byProcess[process];
     for (const th of getStepThresholds(refResult.settings)) {
       if (!th.show) continue;
       const arr = [];
-      for (const line of visibleLines) for (const m of months) arr.push(th.valueFor(m));
+      for (const line of visibleLines) for (const m of months) arr.push(thVal(th.valueFor(m), refData, m));
       datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx));
     }
     if (opts.showMaxCap) {
       const mcData = [];
-      for (const line of visibleLines) for (const m of months) mcData.push(Math.round(calculateMaxCap(refResult.settings, m)));
+      for (const line of visibleLines) for (const m of months) mcData.push(thVal(calculateMaxCap(refResult.settings, m), refData, m));
       datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
     }
 
@@ -3037,7 +3075,7 @@ function renderChartCompare() {
         interaction: { mode: 'index', intersect: false },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
-          y: { stacked: true, beginAtZero: true, title: { display: true, text: t('hours_axis') } }
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
         },
         plugins: {
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
@@ -3053,7 +3091,7 @@ function renderChartCompare() {
               },
               label: c => {
                 if (c.parsed.y <= 0) return null;
-                return `${c.dataset._ds || ''} • ${c.dataset._part || c.dataset.label}: ${formatHours(c.parsed.y)}`;
+                return `${c.dataset._ds || ''} • ${c.dataset._part || c.dataset.label}: ${fmtY(c.parsed.y)}`;
               }
             }
           }
@@ -3068,7 +3106,7 @@ function renderChartCompare() {
       compareDs.forEach((ds, dsIdx) => {
         const r = getCurrentResult(ds);
         const data = r?.byProcess[process];
-        const arr = months.map(m => Math.round((data?.hours[line]?.[m] || 0)));
+        const arr = months.map(m => data ? lineBarVal(data, line, m) : 0);
         const dsBorderColor = getDatasetColor(ds.id);
         datasets.push({
           type: 'bar', label: `${line} [${ds.name}]`, data: arr,
@@ -3082,18 +3120,19 @@ function renderChartCompare() {
       });
     });
 
+    const refDataL = refResult.byProcess[process];
     for (const th of getStepThresholds(refResult.settings)) {
-      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => th.valueFor(m)), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
+      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thVal(th.valueFor(m), refDataL, m)), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => Math.round(calculateMaxCap(refResult.settings, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thVal(calculateMaxCap(refResult.settings, m), refDataL, m)), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        scales: { y: { beginAtZero: true, title: { display: true, text: t('hours_axis') } }, x: { title: { display: true, text: t('month_axis') } } },
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatHours(c.parsed.y)}` } } }
+        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: t('month_axis') } } },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
   }
@@ -4131,6 +4170,7 @@ function loadSavedDatasets() {
     state.activeDatasetId = d.activeDatasetId && state.datasets.find(x => x.id === d.activeDatasetId) ? d.activeDatasetId : state.datasets[0].id;
     state.compareDatasetIds = Array.isArray(d.compareDatasetIds) ? d.compareDatasetIds.filter(id => state.datasets.find(x => x.id === id)) : [];
     if (d.viewMode && ['single','compare','diff'].includes(d.viewMode)) state.viewMode = d.viewMode;
+    if (d.yUnit === 'pcs' || d.yUnit === 'hours') state.yUnit = d.yUnit;
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     renderDatasetList();
@@ -4677,6 +4717,11 @@ function setupEvents() {
   ['showMaxCap','chartMode','showTrend','showLineInAxis'].forEach(id => {
     $(id).onchange = () => { if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderChart(); renderChartLegendMini(); } };
   });
+  $('yUnit').onchange = () => {
+    state.yUnit = $('yUnit').value === 'pcs' ? 'pcs' : 'hours';
+    saveStorage({ yUnit: state.yUnit });
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderChart(); renderChartLegendMini(); }
+  };
 
   ['rangeFrom','rangeTo'].forEach(id => {
     $(id).onchange = () => {
@@ -5753,6 +5798,7 @@ function init() {
   document.querySelectorAll('#viewToggle button').forEach(b => {
     b.classList.toggle('active', b.dataset.view === state.viewMode);
   });
+  if ($('yUnit')) $('yUnit').value = state.yUnit;
 
   // Sticky header — toggle compact mode when scrolled
   const header = document.querySelector('.app-header');

@@ -44,6 +44,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 | Calculation: Initial | `calculateInitialAllocation()` — assigns each part to its `Pri=1` line per process |
 | Smart Balance | `calculateForStep()`, `smartBalanceV2()`, `simulateDirectMove()`, `simulateChainPush()`, `limitMoveByHours()` |
 | Rendering | `renderPreview()`, `renderCalendarGrid()`, `renderTableArea()`, `renderChart()`, `renderResults()`, etc. |
+| Y-axis unit | `state.yUnit` (`'hours'`/`'pcs'`) toggles the Results chart between hours and pieces. Helpers: `getYUnit()`, `allocBarVal()`, `lineBarVal()`, `procHrsPerPiece()` (volume-weighted `Σhours/Σqty`), `thVal()` (converts an hour threshold to pieces), `fmtY()`, `yAxisTitle()`. Applies to Single + Compare (byPart & byLine); Diff and the data table stay in hours |
 | Text Boxes | `addNote()`, `renderNotes()`, `wireNote()`, `renderTails()` — PPT-style annotations |
 | Snapshot | `exportSnapshot()`, `loadSnapshotIfPresent()`, `applySnapshotMode()`, `buildSnapshotPayload()` |
 | Setup | `setupEvents()`, `setupUpload()`, `setupCollapsibleSections()`, `init()` |

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2] — 2026-07-07
+
+### Added
+- **Y-axis unit toggle: Hours ⇄ Pieces/month (Results chart).** A new selector in the chart toolbar
+  switches the Results chart between hours and pieces. In Pieces mode the bars show each part's
+  monthly quantity, and the existing step threshold lines (417 / 447 / 497 / … and Max Cap) are
+  converted from hours to a piece count using each (process, month)'s **volume-weighted average
+  hours-per-piece** (`Σ hours ÷ Σ qty`) — so a 417h line becomes "how many pieces 417 hours buys at
+  this month's product mix". Works in Single and Compare views, both Stacked-by-Part and By-Line
+  charts; tooltips and the axis label follow the unit. The choice persists across sessions.
+  (The Diff view stays in hours — it shows an hour delta; the data table also remains in hours.)
+
 ## [3.1.1] — 2026-07-07
 
 ### Fixed

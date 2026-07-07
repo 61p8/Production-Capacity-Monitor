@@ -13,6 +13,7 @@ A single-file HTML application for production capacity planning. Compares monthl
 - **Multi-dataset comparison** — load up to 5 monthly requirement datasets and compare side-by-side
 - **Smart Balance algorithm** — automatically redistributes load to alternate lines (priority 2, 3, ...) when primary lines exceed capacity targets
 - **Step-based progression** — Step 0 (initial) → configurable OT-driven targets → MaxCap, with chain-push depth up to 5. Add/remove steps and tune each target from working-day/holiday OT in Settings.
+- **Hours ⇄ Pieces Y-axis** — flip the Results chart between load-hours and pieces/month; threshold lines convert via the volume-weighted average cycle time
 - **CT step function** — cycle times can change over time via Excel `CT_Changes` sheet or in-app overrides
 - **Snapshot export** — share results as self-contained read-only HTML with embedded data
 - **Sticky notes (PPT-style text boxes)** — annotate the dashboard with optional arrow pointers
