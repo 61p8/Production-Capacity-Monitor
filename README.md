@@ -32,11 +32,28 @@ A single-file HTML application for production capacity planning. Compares monthl
 
 ---
 
+## Import mapping — telling the app what to read
+
+By default the app auto-detects sheets and columns (the conventions below). If your files use
+different names, you don't have to rename anything: after you upload a file, a **mapping panel**
+appears on the Setup tab, pre-filled with the actual sheets and header cells found in *your* file.
+Pick the right ones from the dropdowns and the file re-parses immediately. Your choices are
+remembered (localStorage + snapshot) and reused for the next upload.
+
+- **Matrix file:** process-sheet name prefix (default `Matrix -`), Part No. column, the row-2 line
+  marker (default `Pri`), and the OA / Fluctuation columns.
+- **Volume file:** format (Auto / Wide / Long-`Raw_Data`), which sheet, the Part / Month / Qty
+  columns, and an optional "only parts starting with…" prefix filter.
+
+Leave anything on its default / `(auto)` and the built-in detection is used, so the formats below
+keep working with no configuration.
+
 ## Excel format
 
 ### Master file
 
-Contains one sheet per production process, named `Matrix - <ProcessName>`. The process name appears as a tab in the Results section.
+Contains one sheet per production process, named `Matrix - <ProcessName>` (or any prefix you set in
+the import mapping). The process name appears as a tab in the Results section.
 
 | Column | Meaning |
 |---|---|

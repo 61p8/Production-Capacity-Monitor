@@ -39,7 +39,8 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 | Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, hatch pattern cache |
 | CT Step Function | `getEffectiveCT()` resolves CT in priority order: App override → Excel CT_Changes → Matrix base |
 | Chart helpers | `xHierarchyPlugin`, `computeXHierarchy()`, `shouldUseNumericMonths()`, `getMonthOnly()` |
-| Parsers | `parseMaster()` (auto-detects `Matrix - *` sheets), `parseMonthly()` (auto-detects header row) |
+| Parsers | `parseMaster(wb, map)`, `parseMonthly(wb, map)`, `parseRawData(wb, map)` — all take `state.importMap`; blank fields fall back to auto-detection. `matchSheetPrefix()` resolves the process-sheet prefix |
+| Import mapping | `state.importMap` (`{master, volume}`, see `DEFAULT_IMPORT_MAP`) — user config on Setup for what the parsers look for. `renderImportMapMaster/Volume()`, `reparseMaster/Volume()`, `setupImportMap()`, `wbHeaderCandidates()`. Persisted (localStorage + snapshot) |
 | Calculation: Initial | `calculateInitialAllocation()` — assigns each part to its `Pri=1` line per process |
 | Smart Balance | `calculateForStep()`, `smartBalanceV2()`, `simulateDirectMove()`, `simulateChainPush()`, `limitMoveByHours()` |
 | Rendering | `renderPreview()`, `renderCalendarGrid()`, `renderTableArea()`, `renderChart()`, `renderResults()`, etc. |
@@ -72,7 +73,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 6. **Process names are dynamic, not hardcoded.** Use `getProcesses()` which returns `state.master.processList || PROCESSES`. The `PROCESSES` constant is only a fallback for the template generator. Never write `for (const proc of PROCESSES)` outside that fallback context.
 
-7. **The Master file's `Matrix - <Name>` sheet naming convention defines processes.** Parser scans for sheets matching `/^Matrix\s*-\s*(.+)$/i`. If you change this convention, update `README.md`, the template generator's instructions sheet, and the i18n error message `parse_error_master` in all three languages.
+7. **The Master file's `Matrix - <Name>` sheet naming convention defines processes — but it's now the _default_, not a hardcode.** The prefix lives in `state.importMap.master.sheetPrefix` (default `Matrix -`) and is matched via `matchSheetPrefix()`; the user can override it (and the Part No. / OA / Fluctuation columns and `Pri` marker) in the Setup import-mapping panel. Volume files are the same via `state.importMap.volume`. When changing the defaults or the convention, update `DEFAULT_IMPORT_MAP`, `README.md`, the template generator's instructions sheet, and the i18n error messages in all three languages. Do NOT reintroduce hardcoded column labels or part-number prefixes in the parsers — thread them through `importMap`.
 
 8. **Bump the version on every change.** `APP_VERSION` (a `const` near `STORAGE_KEY` in `index.html`) is the single source of truth for the user-facing version; the header subtitle renders `v${APP_VERSION}` from it, so bump that one constant — don't hardcode a version anywhere else. See **Versioning** below.
 

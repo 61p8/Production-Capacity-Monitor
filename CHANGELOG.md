@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1] — 2026-07-07
+
+### Added
+- **Import mapping — tell the app what to read (Setup tab).** Instead of guessing sheet names and
+  columns, each uploaded file now shows a small mapping panel populated with the actual sheets and
+  header cells from *your* file. Pick from dropdowns and the file re-parses live; the choices are
+  remembered as defaults (localStorage + snapshot) for next time.
+  - **Matrix:** configure the process-sheet name prefix (default `Matrix -`, now matches any
+    keyword/spacing/underscore-or-dash), the Part No. column, the row-2 line marker (default `Pri`),
+    and the OA / Fluctuation columns.
+  - **Volume:** choose the format (Auto / Wide / Long-Raw_Data), the sheet, the Part / Month / Qty
+    columns, and an optional "only parts starting with…" prefix filter.
+
+### Changed
+- **Less aggressive auto-scanning.** When a sheet or column is specified in the mapping the parser
+  reads exactly that, instead of scanning every sheet and guessing. Auto mode still works when the
+  mapping is left blank, so existing files parse unchanged.
+
+### Fixed
+- **Removed the hardcoded `TG` part-number filter** in the wide Monthly_Req parser, which silently
+  dropped every part whose number didn't start with `TG`. Use the mapping's prefix filter if you
+  actually want that behaviour. The wide parser also accepts numeric part numbers now (matching
+  Master and Raw_Data).
+
 ## [3.0.1] — 2026-07-02
 
 ### Fixed

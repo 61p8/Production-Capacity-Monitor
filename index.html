@@ -64,6 +64,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .add-dataset-zone { border: 2px dashed #B4B2A9; border-radius: 6px; padding: 10px 12px; text-align: center; cursor: pointer; transition: all 0.15s; background: #FAFAF7; font-size: 12px; color: #5F5E5A; }
 .add-dataset-zone:hover { border-color: #1D9E75; color: #0F6E56; background: #F0F8F4; }
 .add-dataset-zone.drag-over { border-color: #1D9E75; background: #E1F5EE; }
+.import-map { margin-top: 8px; border: 1px solid #E0DED6; border-radius: 6px; padding: 10px 12px; background: #FBFBF8; }
+.import-map-title { font-size: 12px; font-weight: 600; color: #3A3A38; margin-bottom: 8px; }
+.import-map-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+.import-map-grid label { font-size: 11px; color: #5F5E5A; }
+.import-map-grid input, .import-map-grid select { font-size: 12px; padding: 3px 6px; border: 1px solid #C9C7BE; border-radius: 4px; background: #fff; min-width: 0; width: 100%; }
+.import-map-hint { font-size: 11px; color: #8A8880; margin-top: 7px; line-height: 1.4; }
+.import-map.hide-raw .vol-raw-only { display: none; }
 
 .btn { background: #1D9E75; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.15s; font-family: inherit; }
 .btn:hover { background: #0F6E56; }
@@ -366,6 +373,22 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <div style="margin-top:6px; text-align:center;">
           <a class="tpl-link" id="dlMasterTpl">↓ <span data-i18n="dl_master_tpl">Download Master template</span></a>
         </div>
+        <div class="import-map" id="masterMap" style="display:none">
+          <div class="import-map-title">🔎 <span data-i18n="map_master_title">What to read (Matrix)</span></div>
+          <div class="import-map-grid">
+            <label data-i18n="map_sheet_prefix">Sheet name starts with</label>
+            <input type="text" id="mapMSheet" placeholder="Matrix -">
+            <label data-i18n="map_part_col">Part No. column</label>
+            <select id="mapMPart"></select>
+            <label data-i18n="map_pri_token">Line marker (row 2)</label>
+            <input type="text" id="mapMPri" placeholder="Pri">
+            <label data-i18n="map_oa_col">OA column</label>
+            <select id="mapMOa"></select>
+            <label data-i18n="map_fluct_col">Fluctuation column</label>
+            <select id="mapMFluct"></select>
+          </div>
+          <div class="import-map-hint" id="mapMHint"></div>
+        </div>
       </div>
       <div class="monthly-multi">
         <div class="monthly-multi-header">
@@ -376,6 +399,28 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <div class="add-dataset-zone" id="addDatasetZone">
           <input type="file" id="addDatasetInput" accept=".xlsx,.xlsm" hidden multiple>
           + <span data-i18n="add_dataset">Add Monthly Req. dataset (drag-drop or click)</span>
+        </div>
+        <div class="import-map" id="volMap" style="display:none">
+          <div class="import-map-title">🔎 <span data-i18n="map_vol_title">What to read (Volume)</span></div>
+          <div class="import-map-grid">
+            <label data-i18n="map_format">Format</label>
+            <select id="mapVMode">
+              <option value="auto" data-i18n="map_format_auto">Auto</option>
+              <option value="wide" data-i18n="map_format_wide">Wide (months across)</option>
+              <option value="raw" data-i18n="map_format_raw">Long / Raw_Data</option>
+            </select>
+            <label data-i18n="map_sheet">Sheet</label>
+            <select id="mapVSheet"></select>
+            <label data-i18n="map_part_col">Part No. column</label>
+            <select id="mapVPart"></select>
+            <label class="vol-raw-only" data-i18n="map_month_col">Month column</label>
+            <select id="mapVMonth" class="vol-raw-only"></select>
+            <label class="vol-raw-only" data-i18n="map_qty_col">Qty column</label>
+            <select id="mapVQty" class="vol-raw-only"></select>
+            <label data-i18n="map_part_prefix">Only parts starting with</label>
+            <input type="text" id="mapVPrefix" placeholder="(all)">
+          </div>
+          <div class="import-map-hint" id="mapVHint"></div>
         </div>
       </div>
     </div>
@@ -721,6 +766,14 @@ const I18N = {
     pm_err_no_partcol:'Matrix sheet found, but no "Part No." column in the header row.',
     pm_err_no_pri:'Matrix sheet found, but no "Pri" / "C/T" column pairs in row 2.',
     pm_err_no_rows:'Matrix sheet parsed, but no valid part rows — each line needs a Part No. plus Pri and C/T > 0.',
+    map_master_title:'What to read (Matrix)', map_vol_title:'What to read (Volume)',
+    map_sheet_prefix:'Sheet name starts with', map_part_col:'Part No. column', map_pri_token:'Line marker (row 2)',
+    map_oa_col:'OA column', map_fluct_col:'Fluctuation column',
+    map_format:'Format', map_format_auto:'Auto', map_format_wide:'Wide (months across)', map_format_raw:'Long / Raw_Data',
+    map_sheet:'Sheet', map_month_col:'Month column', map_qty_col:'Qty column', map_part_prefix:'Only parts starting with',
+    map_auto:'(auto)', map_default:'(default)',
+    map_master_hint:'Detected {proc} process(es), {lines} line(s).',
+    map_vol_hint:'Sheet "{sheet}" — {n} parts × {m} months.',
     parse_error_monthly:'Header row not found (need "PRTNO" or "Part No.")',
     step_initial:'Step 0 — Initial', step_maxcap:'Max Cap', step:'Step',
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
@@ -804,6 +857,14 @@ const I18N = {
     pm_err_no_partcol:'เจอแท็บ Matrix แต่ไม่มีคอลัมน์ "Part No." ในแถวหัวตาราง',
     pm_err_no_pri:'เจอแท็บ Matrix แต่ไม่มีคู่คอลัมน์ "Pri" / "C/T" ในแถวที่ 2',
     pm_err_no_rows:'อ่านแท็บ Matrix ได้ แต่ไม่มีแถว part ที่ใช้ได้ — แต่ละแถวต้องมีเลข part และแต่ละไลน์ต้องมี Pri กับ C/T > 0',
+    map_master_title:'จะให้อ่านอะไร (Matrix)', map_vol_title:'จะให้อ่านอะไร (Volume)',
+    map_sheet_prefix:'ชื่อแท็บขึ้นต้นด้วย', map_part_col:'คอลัมน์ Part No.', map_pri_token:'ตัวระบุไลน์ (แถว 2)',
+    map_oa_col:'คอลัมน์ OA', map_fluct_col:'คอลัมน์ Fluctuation',
+    map_format:'รูปแบบ', map_format_auto:'อัตโนมัติ', map_format_wide:'Wide (เดือนเป็นคอลัมน์)', map_format_raw:'Long / Raw_Data',
+    map_sheet:'แท็บ', map_month_col:'คอลัมน์เดือน', map_qty_col:'คอลัมน์จำนวน', map_part_prefix:'เอาเฉพาะ part ที่ขึ้นต้นด้วย',
+    map_auto:'(อัตโนมัติ)', map_default:'(ค่าเริ่มต้น)',
+    map_master_hint:'พบ {proc} process, {lines} ไลน์',
+    map_vol_hint:'แท็บ "{sheet}" — {n} part × {m} เดือน',
     parse_error_monthly:'หา header row ไม่เจอ (ต้องมี "PRTNO" หรือ "Part No.")',
     step_initial:'Step 0 — เริ่มต้น', step_maxcap:'Max Cap', step:'ขั้น',
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
@@ -887,6 +948,14 @@ const I18N = {
     pm_err_no_partcol:'Matrix シートに "Part No." 列がありません。',
     pm_err_no_pri:'Matrix シートに "Pri" / "C/T" 列ペアが2行目にありません。',
     pm_err_no_rows:'Matrix を読めましたが有効な部品行がありません — 各行に部品番号、各ラインに Pri と C/T > 0 が必要です。',
+    map_master_title:'何を読むか (Matrix)', map_vol_title:'何を読むか (Volume)',
+    map_sheet_prefix:'シート名の先頭', map_part_col:'Part No. 列', map_pri_token:'ライン識別子 (2行目)',
+    map_oa_col:'OA 列', map_fluct_col:'変動係数 列',
+    map_format:'形式', map_format_auto:'自動', map_format_wide:'ワイド (月が横)', map_format_raw:'ロング / Raw_Data',
+    map_sheet:'シート', map_month_col:'月 列', map_qty_col:'数量 列', map_part_prefix:'先頭一致する部品のみ',
+    map_auto:'(自動)', map_default:'(既定)',
+    map_master_hint:'{proc} 工程 / {lines} ライン検出',
+    map_vol_hint:'シート「{sheet}」 — {n} 部品 × {m} ヶ月',
     parse_error_monthly:'ヘッダー行なし',
     step_initial:'Step 0 — 初期', step_maxcap:'Max Cap', step:'ステップ',
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
@@ -922,12 +991,43 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
 const MAX_DATASETS = 5;
 const MAX_CHAIN_DEPTH = 5;
+
+// ===== Import mapping — what the parsers look for in the uploaded Excel files =====
+// User-configurable on the Setup tab (dropdowns populated from the actual file), persisted to
+// localStorage + snapshot. Empty string = "auto" (fall back to the built-in detection). This
+// replaces the old hardcoded scanning (guessed sheet names, fixed column labels, "TG" prefix).
+const DEFAULT_IMPORT_MAP = {
+  master: {
+    sheetPrefix: 'Matrix -',   // process sheets are the ones whose name starts with this
+    partCol: 'Part No.',       // header labels (case-insensitive exact match)
+    partNameCol: 'Part Name',
+    modelCol: 'Model',
+    oaCol: 'OA',
+    fluctCol: 'Fluct',
+    priToken: 'Pri'            // row-2 marker that starts a Pri/CT line pair
+  },
+  volume: {
+    mode: 'auto',              // 'auto' | 'wide' | 'raw'
+    sheet: '',                 // '' = auto-detect the sheet
+    partCol: '',               // '' = auto (PRTNO/Part No. for wide, pattern for raw)
+    monthCol: '',              // raw mode only; '' = auto
+    qtyCol: '',                // raw mode only; '' = auto
+    partPrefix: ''             // keep only parts whose No. starts with this ('' = keep all)
+  }
+};
+function cloneImportMap(m) {
+  const s = m || {};
+  return {
+    master: Object.assign({}, DEFAULT_IMPORT_MAP.master, s.master),
+    volume: Object.assign({}, DEFAULT_IMPORT_MAP.volume, s.volume)
+  };
+}
 
 // Capacity steps — user-configurable (see state.stepConfigs). Step 0 is always Initial
 // (Pri=1, no balancing); the final step is always per-month Max Cap. Each middle step's
@@ -976,6 +1076,10 @@ const state = {
   notes: [],
   stepConfigs: DEFAULT_STEP_CONFIGS.map(c => ({ ...c })),
   maxCapOT: 2.5,
+  importMap: cloneImportMap(),   // what the parsers look for (see DEFAULT_IMPORT_MAP)
+  _masterWb: null,               // transient: last uploaded Master workbook (for live re-parse)
+  _volWb: null,                  // transient: last uploaded Volume workbook
+  _volDsId: null,                // dataset id produced from _volWb
   layout: { objects: [], unit: 'm', pxPerMm: 0.03, panX: 30, panY: 30, snap: true, nextId: 1, nextGroup: 1, selected: [], tool: 'select' },
   manual: null,          // { byProcess, months, setting, partMap, proc, floorVal }
   manualChart: null,
@@ -1015,6 +1119,8 @@ function applyLanguage() {
   renderDatasetList();
   if (getActiveDataset()?.resultsHistory?.length > 0) renderResults();
   if (state.master && state.datasets.length > 0 && !state.isSnapshot) renderPreview();
+  if (state._masterWb) renderImportMapMaster();
+  if (state._volWb) renderImportMapVolume();
 }
 
 function toast(msg, type) {
@@ -1038,14 +1144,29 @@ async function readWorkbook(file) {
 }
 
 // ===== Parsers =====
-function parseMaster(wb) {
+// Does `sheetName` start with the configured process-sheet prefix? Returns the process name
+// (the remainder, with leading separators stripped) or null. Case- and spacing-insensitive.
+function matchSheetPrefix(sheetName, prefix) {
+  const norm = s => String(s).toLowerCase().replace(/\s+/g, '');
+  const np = norm(prefix), ns = norm(sheetName);
+  if (!np || !ns.startsWith(np)) return null;
+  let consumed = 0, i = 0;
+  for (; i < sheetName.length && consumed < np.length; i++) {
+    if (!/\s/.test(sheetName[i])) consumed++;
+  }
+  const rest = sheetName.slice(i).replace(/^[\s\-_:]+/, '').trim();
+  return rest || sheetName.slice(i).trim() || sheetName.trim();
+}
+
+function parseMaster(wb, map) {
+  const mm = cloneImportMap(map).master;
   const partsMap = new Map();
   const stats = { sheets: 0, lineCount: new Set() };
-  // Auto-detect process sheets — any sheet starting with "Matrix - " (or "Matrix-")
+  // Detect process sheets — those whose name starts with the configured prefix (default "Matrix -").
   const processSheets = [];
   for (const sheetName of wb.SheetNames) {
-    const m = sheetName.match(/^Matrix\s*-\s*(.+)$/i);
-    if (m) processSheets.push({ proc: m[1].trim(), sheetName });
+    const proc = matchSheetPrefix(sheetName, mm.sheetPrefix);
+    if (proc) processSheets.push({ proc, sheetName });
   }
   // Preserve order from Excel
   const processList = [];
@@ -1058,17 +1179,18 @@ function parseMaster(wb) {
     if (rows.length < 3) continue;
     const row1 = rows[0] || [];
     const row2 = rows[1] || [];
-    const findCol = (label) => row1.findIndex(c => c && String(c).trim().toLowerCase() === label.toLowerCase());
-    const partCol = findCol('Part No.');
-    const partNameCol = findCol('Part Name');
-    const modelCol = findCol('Model');
-    const oaCol = findCol('OA');
-    const fluctCol = findCol('Fluct');
+    const findCol = (label) => label ? row1.findIndex(c => c && String(c).trim().toLowerCase() === String(label).toLowerCase()) : -1;
+    const partCol = findCol(mm.partCol);
+    const partNameCol = findCol(mm.partNameCol);
+    const modelCol = findCol(mm.modelCol);
+    const oaCol = findCol(mm.oaCol);
+    const fluctCol = findCol(mm.fluctCol);
     if (partCol < 0) continue;
     sheetsWithPartCol++;
+    const priTok = String(mm.priToken || 'Pri').trim().toLowerCase();
     const lineGroups = [];
     for (let c = 0; c < row2.length; c++) {
-      if (row2[c] === 'Pri' && row1[c]) {
+      if (row2[c] != null && String(row2[c]).trim().toLowerCase() === priTok && row1[c]) {
         lineGroups.push({ priCol: c, ctCol: c + 1, line: String(row1[c]).trim() });
         stats.lineCount.add(`${proc}|${String(row1[c]).trim()}`);
       }
@@ -1172,14 +1294,20 @@ function parseMonthLabel(value) {
 //           if no labelled header is found, the column whose values parse as months is used
 //   qty   = "Qty" / Quantity / Plan / Amount / ยอด / จำนวน / 数量 ...
 // Rows are pivoted and summed into the same {months, data} shape as Monthly_Req.
-function parseRawData(wb) {
-  const name = wb.SheetNames.find(n => /^raw[\s_]?data$/i.test(String(n).trim()));
+function parseRawData(wb, map) {
+  const vm = cloneImportMap(map).volume;
+  // Sheet: explicit override, else the sheet named Raw_Data.
+  const name = vm.sheet
+    ? wb.SheetNames.find(n => String(n).trim().toLowerCase() === String(vm.sheet).trim().toLowerCase())
+    : wb.SheetNames.find(n => /^raw[\s_]?data$/i.test(String(n).trim()));
   if (!name) return null;
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: null });
   if (!rows || !rows.length) return null;
   const PART_RE = /^(part\s*no\.?|prtno|partno|part\s*number|part|item|material|p\/n)$/i;
   const MONTH_RE = /^(month|date|delivery(\s*date)?|due(\s*date)?|period|prod(uction)?\s*(month|date)|เดือน|วันที่|月|日付)$/i;
   const QTY_RE = /^(qty\.?|q'ty|quantity|amount|volume|plan(\s*qty)?|pcs|demand|ยอด|จำนวน|数量)$/i;
+  const eqCol = (cell, label) => label && String(cell).trim().toLowerCase() === String(label).trim().toLowerCase();
+  const prefix = String(vm.partPrefix || '').trim();
   let headerRowIdx = -1, partCol = -1, monthCol = -1, qtyCol = -1;
   for (let r = 0; r < Math.min(20, rows.length); r++) {
     const row = rows[r]; if (!row) continue;
@@ -1187,9 +1315,10 @@ function parseRawData(wb) {
     for (let c = 0; c < row.length; c++) {
       const cell = row[c]; if (typeof cell !== 'string') continue;
       const s = cell.trim();
-      if (p < 0 && PART_RE.test(s)) p = c;
-      else if (m < 0 && MONTH_RE.test(s)) m = c;
-      else if (q < 0 && QTY_RE.test(s)) q = c;
+      // Explicit column overrides win; otherwise fall back to pattern detection.
+      if (p < 0 && (vm.partCol ? eqCol(s, vm.partCol) : PART_RE.test(s))) p = c;
+      else if (m < 0 && (vm.monthCol ? eqCol(s, vm.monthCol) : MONTH_RE.test(s))) m = c;
+      else if (q < 0 && (vm.qtyCol ? eqCol(s, vm.qtyCol) : QTY_RE.test(s))) q = c;
     }
     if (p >= 0 && q >= 0) { headerRowIdx = r; partCol = p; monthCol = m; qtyCol = q; break; }
   }
@@ -1214,6 +1343,7 @@ function parseRawData(wb) {
     const row = rows[r]; if (!row) continue;
     const pnRaw = row[partCol]; if (pnRaw == null || pnRaw === '') continue;
     const pn = String(pnRaw).trim(); if (!pn) continue;
+    if (prefix && !pn.startsWith(prefix)) continue;
     const label = parseMonthLabel(row[monthCol]); if (!label) continue;
     const q = parseFloat(row[qtyCol]); if (!(q > 0)) continue;
     monthSet.add(label);
@@ -1232,17 +1362,30 @@ function parseRawData(wb) {
   return { months, data, sheetName: name, headerRowIdx };
 }
 
-function parseMonthly(wb) {
-  // A Raw_Data sheet takes priority — auto-pivot instead of the manual Monthly_Req grid.
-  const raw = parseRawData(wb);
-  if (raw) return raw;
-  const sorted = [...wb.SheetNames].sort((a, b) => {
-    const aS = /monthly|requirement|req|demand/i.test(a) ? 0 : 1;
-    const bS = /monthly|requirement|req|demand/i.test(b) ? 0 : 1;
-    return aS - bS;
-  });
-  for (const sheetName of sorted) {
+function parseMonthly(wb, map) {
+  const vm = cloneImportMap(map).volume;
+  const mode = vm.mode || 'auto';
+  // Raw/long format — either forced ('raw') or tried first in 'auto'.
+  if (mode === 'raw') return parseRawData(wb, map);
+  if (mode === 'auto') { const raw = parseRawData(wb, map); if (raw) return raw; }
+  // Wide format (Monthly_Req grid).
+  const prefix = String(vm.partPrefix || '').trim();
+  const partHeaders = vm.partCol
+    ? [String(vm.partCol).trim().toUpperCase()]
+    : ['PRTNO','PART NO.','PART NO','PARTNO','PART NUMBER'];
+  let candidates;
+  if (vm.sheet) {
+    candidates = wb.SheetNames.filter(n => String(n).trim().toLowerCase() === String(vm.sheet).trim().toLowerCase());
+  } else {
+    candidates = [...wb.SheetNames].sort((a, b) => {
+      const aS = /monthly|requirement|req|demand/i.test(a) ? 0 : 1;
+      const bS = /monthly|requirement|req|demand/i.test(b) ? 0 : 1;
+      return aS - bS;
+    });
+  }
+  for (const sheetName of candidates) {
     const ws = wb.Sheets[sheetName];
+    if (!ws) continue;
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
     let headerRowIdx = -1, partColIdx = -1;
     for (let r = 0; r < Math.min(20, rows.length); r++) {
@@ -1251,7 +1394,7 @@ function parseMonthly(wb) {
         const cell = row[c];
         if (typeof cell === 'string') {
           const u = cell.trim().toUpperCase();
-          if (['PRTNO','PART NO.','PART NO','PARTNO','PART NUMBER'].includes(u)) {
+          if (partHeaders.includes(u)) {
             headerRowIdx = r; partColIdx = c; break;
           }
         }
@@ -1278,9 +1421,10 @@ function parseMonthly(wb) {
     for (let r = headerRowIdx + 1; r < rows.length; r++) {
       const row = rows[r]; if (!row) continue;
       const pn = row[partColIdx];
-      if (!pn || typeof pn !== 'string') continue;
-      const tr = pn.trim();
-      if (!tr.startsWith('TG')) continue;
+      if (pn == null || pn === '') continue;
+      const tr = String(pn).trim();
+      if (!tr) continue;
+      if (prefix && !tr.startsWith(prefix)) continue;
       const mq = data.get(tr) || {};
       for (const mc of monthCols) {
         const q = parseFloat(row[mc.col]) || 0;
@@ -1317,6 +1461,7 @@ function applySavedSettings() {
   }
   if (d.labelOverrides) state.labelOverrides = d.labelOverrides;
   if (Array.isArray(d.ctOverrides)) state.ctOverrides = d.ctOverrides;
+  if (d.importMap) state.importMap = cloneImportMap(d.importMap);
   applyLayoutData(d.layout);
 }
 
@@ -3693,12 +3838,157 @@ function renderDatasetList() {
   $('addDatasetZone').style.display = state.datasets.length >= MAX_DATASETS ? 'none' : '';
 }
 
+// ===== Import mapping — configure what the parsers look for (Setup tab) =====
+// Candidate header labels for a sheet = the row (within the first 15) with the most string cells.
+function wbHeaderCandidates(wb, sheetName) {
+  const ws = wb && sheetName && wb.Sheets[sheetName];
+  if (!ws) return [];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+  let best = [], bestCount = -1;
+  for (let r = 0; r < Math.min(15, rows.length); r++) {
+    const row = rows[r]; if (!row) continue;
+    const labels = row.filter(c => typeof c === 'string' && c.trim()).map(c => c.trim());
+    if (labels.length > bestCount) { bestCount = labels.length; best = labels; }
+  }
+  return Array.from(new Set(best));
+}
+
+// Populate a <select> with `options`, keep `current` selected (case-insensitive), optional blank.
+function fillMapSelect(sel, options, current, autoLabel) {
+  if (!sel) return;
+  sel.innerHTML = '';
+  if (autoLabel != null) {
+    const o = document.createElement('option'); o.value = ''; o.textContent = autoLabel; sel.appendChild(o);
+  }
+  const opts = options.slice();
+  if (current && !opts.some(o => o.toLowerCase() === current.toLowerCase())) opts.push(current);
+  for (const label of opts) {
+    const o = document.createElement('option'); o.value = label; o.textContent = label; sel.appendChild(o);
+  }
+  sel.value = '';
+  if (current) {
+    const match = Array.from(sel.options).find(o => o.value.toLowerCase() === current.toLowerCase());
+    if (match) sel.value = match.value;
+  }
+}
+
+function saveImportMap() { saveStorage({ importMap: state.importMap }); }
+
+function renderImportMapMaster() {
+  const box = $('masterMap'); if (!box) return;
+  if (state.isSnapshot || !state._masterWb) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  const mm = state.importMap.master;
+  let headers = [];
+  for (const sn of state._masterWb.SheetNames) {
+    if (matchSheetPrefix(sn, mm.sheetPrefix)) { headers = wbHeaderCandidates(state._masterWb, sn); break; }
+  }
+  $('mapMSheet').value = mm.sheetPrefix || '';
+  $('mapMPri').value = mm.priToken || '';
+  fillMapSelect($('mapMPart'), headers, mm.partCol, null);
+  fillMapSelect($('mapMOa'), headers, mm.oaCol, t('map_default'));
+  fillMapSelect($('mapMFluct'), headers, mm.fluctCol, t('map_default'));
+  const st = state.master && state.master.stats;
+  $('mapMHint').textContent = state.master
+    ? t('map_master_hint', { proc: (state.master.processList || []).length, lines: (st && st.totalLines) || 0 })
+    : '';
+}
+
+function renderImportMapVolume() {
+  const box = $('volMap'); if (!box) return;
+  if (state.isSnapshot || !state._volWb) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  const vm = state.importMap.volume;
+  box.classList.toggle('hide-raw', vm.mode !== 'raw');
+  $('mapVMode').value = vm.mode || 'auto';
+  $('mapVPrefix').value = vm.partPrefix || '';
+  const wb = state._volWb;
+  fillMapSelect($('mapVSheet'), wb ? wb.SheetNames.slice() : [], vm.sheet, t('map_auto'));
+  let effSheet = vm.sheet;
+  if (!effSheet) {
+    const ds = state.datasets.find(d => d.id === state._volDsId) || getActiveDataset();
+    effSheet = (ds && ds.monthlyData && ds.monthlyData.sheetName) || (wb && wb.SheetNames[0]) || '';
+  }
+  const headers = wbHeaderCandidates(wb, effSheet);
+  fillMapSelect($('mapVPart'), headers, vm.partCol, t('map_auto'));
+  fillMapSelect($('mapVMonth'), headers, vm.monthCol, t('map_auto'));
+  fillMapSelect($('mapVQty'), headers, vm.qtyCol, t('map_auto'));
+  const ds = state.datasets.find(d => d.id === state._volDsId);
+  $('mapVHint').textContent = ds && ds.monthlyData
+    ? t('map_vol_hint', { sheet: ds.monthlyData.sheetName || '?', n: ds.monthlyData.data.size, m: ds.monthlyData.months.length })
+    : '';
+}
+
+function readMasterMapFromUI() {
+  const mm = state.importMap.master;
+  mm.sheetPrefix = $('mapMSheet').value.trim() || 'Matrix -';
+  mm.priToken = $('mapMPri').value.trim() || 'Pri';
+  mm.partCol = $('mapMPart').value || 'Part No.';
+  mm.oaCol = $('mapMOa').value;
+  mm.fluctCol = $('mapMFluct').value;
+}
+
+function readVolumeMapFromUI() {
+  const vm = state.importMap.volume;
+  vm.mode = $('mapVMode').value || 'auto';
+  vm.sheet = $('mapVSheet').value || '';
+  vm.partCol = $('mapVPart').value || '';
+  vm.monthCol = $('mapVMonth').value || '';
+  vm.qtyCol = $('mapVQty').value || '';
+  vm.partPrefix = $('mapVPrefix').value.trim();
+}
+
+function reparseMaster() {
+  if (!state._masterWb) return;
+  const r = parseMaster(state._masterWb, state.importMap);
+  const s = $('masterStatus'), z = $('masterZone');
+  if (r.parts.length === 0) {
+    state.master = null;
+    z.classList.remove('has-file');
+    if (s) s.innerHTML = `✗ ${r.reason || t('parse_error_master')}`;
+    renderPreview();
+    return;
+  }
+  state.master = r;
+  saveStorage({ master: r });
+  if (s) s.innerHTML = `✓ ${state._masterFileName || ''} — ${r.parts.length} parts`;
+  z.classList.add('has-file');
+  renderPreview();
+  renderCtOverrides();
+}
+
+function reparseVolume() {
+  if (!state._volWb || !state._volDsId) return;
+  const ds = state.datasets.find(d => d.id === state._volDsId);
+  if (!ds) return;
+  const r = parseMonthly(state._volWb, state.importMap);
+  if (!r) { toast(t('parse_error_monthly'), 'error'); return; }
+  ds.monthlyData = r;
+  ds.resultsHistory = []; ds.currentStepIdx = 0;
+  renderDatasetList();
+  renderPreview();
+  saveDatasets();
+}
+
+function setupImportMap() {
+  const mReRender = () => { readMasterMapFromUI(); renderImportMapMaster(); reparseMaster(); saveImportMap(); };
+  const mApply = () => { readMasterMapFromUI(); reparseMaster(); saveImportMap(); };
+  ['mapMSheet','mapMPri'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', mReRender); });
+  ['mapMPart','mapMOa','mapMFluct'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', mApply); });
+  const vReRender = () => { readVolumeMapFromUI(); renderImportMapVolume(); reparseVolume(); saveImportMap(); };
+  const vApply = () => { readVolumeMapFromUI(); reparseVolume(); saveImportMap(); };
+  ['mapVMode','mapVSheet'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', vReRender); });
+  ['mapVPart','mapVMonth','mapVQty'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', vApply); });
+  const pf = $('mapVPrefix'); if (pf) pf.addEventListener('change', vApply);
+}
+
 function removeDataset(id) {
   const idx = state.datasets.findIndex(d => d.id === id);
   if (idx < 0) return;
   state.datasets.splice(idx, 1);
   if (state.activeDatasetId === id) state.activeDatasetId = state.datasets[0]?.id || null;
   state.compareDatasetIds = state.compareDatasetIds.filter(x => x !== id);
+  if (state._volDsId === id) { state._volWb = null; state._volDsId = null; renderImportMapVolume(); }
   renderDatasetList();
   renderPreview();
   saveDatasets();
@@ -3738,13 +4028,16 @@ async function handleMasterFile(file) {
   s.innerHTML = '<span class="spinner"></span>';
   try {
     const wb = await readWorkbook(file);
-    const r = parseMaster(wb);
+    state._masterWb = wb;
+    state._masterFileName = file.name;
+    const r = parseMaster(wb, state.importMap);
     if (r.parts.length === 0) throw new Error(r.reason || t('parse_error_master'));
     state.master = r;
     saveStorage({ master: r });
     s.innerHTML = `✓ ${file.name} — ${r.parts.length} parts`;
     z.classList.add('has-file');
     toast(t('master_parsed', { n: r.parts.length }), 'success');
+    renderImportMapMaster();
     renderPreview();
     renderCtOverrides();
   } catch (err) {
@@ -3758,15 +4051,18 @@ async function handleDatasetFile(file) {
   if (state.datasets.length >= MAX_DATASETS) { toast(t('max_datasets'), 'error'); return; }
   try {
     const wb = await readWorkbook(file);
-    const r = parseMonthly(wb);
+    const r = parseMonthly(wb, state.importMap);
     if (!r) throw new Error(t('parse_error_monthly'));
     state.dsIdCounter++;
     const id = `ds_${Date.now()}_${state.dsIdCounter}`;
     const baseName = file.name.replace(/\.(xlsx|xlsm)$/i, '');
     const ds = { id, name: baseName, monthlyData: r, resultsHistory: [], currentStepIdx: 0 };
     state.datasets.push(ds);
+    state._volWb = wb;
+    state._volDsId = id;
     if (!state.activeDatasetId) state.activeDatasetId = id;
     renderDatasetList();
+    renderImportMapVolume();
     renderPreview();
     saveDatasets();
     toast(t('monthly_parsed', { name: baseName, n: r.data.size }), 'success');
@@ -3892,6 +4188,7 @@ function buildSnapshotPayload(authorName) {
     ctOverrides: state.ctOverrides || [],
     notes: state.notes || [],
     layout: layPayload(),
+    importMap: state.importMap,
     lang: state.lang
   };
 }
@@ -4038,6 +4335,7 @@ function loadSnapshotIfPresent() {
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];
     state.notes = Array.isArray(data.notes) ? data.notes : [];
+    if (data.importMap) state.importMap = cloneImportMap(data.importMap);
     applyLayoutData(data.layout);
     migrateNoteTails();
     if (data.lang) state.lang = data.lang;
@@ -5413,6 +5711,7 @@ function init() {
   const vEl = $('appVersion'); if (vEl) vEl.textContent = 'v' + APP_VERSION;
   setupEvents();
   setupUpload();
+  setupImportMap();
   setupCollapsibleSections();
   setupTabs();
   layInit();
