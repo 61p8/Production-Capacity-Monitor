@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.1] — 2026-07-02
+
+### Fixed
+- **Numeric part numbers now parse.** Master and `Raw_Data` rows whose Part No. cell is a number
+  (not text) were silently skipped, so a file full of numeric part codes parsed to zero parts and
+  looked like a broken upload. Part No. is now coerced to text in both parsers, so `12345` and
+  `"PART-001"` both work.
+- **Master parse error is now accurate and process-name-agnostic.** Re-uploading a Master that
+  parsed to zero parts showed a misleading “check sheet names Matrix - Lathe/Rolling/IHA” message,
+  implying those exact process names were required. The parser now reports the real reason (no
+  `Matrix - *` sheet / no `Part No.` column / no `Pri`+`C/T` pairs / no valid part rows) with no
+  hardcoded process names; the “try other tabs” hint is generic too.
+
 ## [3.0] — 2026-07-02
 
 ### Added

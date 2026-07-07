@@ -691,7 +691,7 @@ const I18N = {
     dataset_label:'Dataset:', chart_mode:'Chart:', chart_by_part:'Stacked by Part', chart_by_line:'By Line (totals)', month_range:'Range:',
     line_filter_show_all:'Show all', line_filter_hide_all:'Hide all',
     no_data_in_proc:'process "{proc}" has no matched parts',
-    hint_other_tab:'Try other tabs (Lathe / Rolling / IHA) — may have data',
+    hint_other_tab:'Try the other process tabs — they may have data',
     hint_check_match:'Check "Verify parsed data" above — matched count > 0?',
     no_overflow:'No overflow — capacity sufficient',
     show_trend:'Trend', show_line_axis:'Line name',
@@ -716,7 +716,11 @@ const I18N = {
     fill_defaults_done_wd:'Filled WD={wd} for all months (HD auto-calc)', overrides_cleared:'Cleared all month overrides',
     labels_applied:'Labels applied sequentially from {anchor}', labels_reset:'Labels reset to original',
     master_parsed:'Master parsed: {n} parts', monthly_parsed:'{name} parsed: {n} parts',
-    parse_error_master:'No data in Master (check sheet names "Matrix - Lathe/Rolling/IHA")',
+    parse_error_master:'No parts found in Master — check the "Matrix - <Process>" sheets.',
+    pm_err_no_matrix:'No "Matrix - <Process>" sheet found. Name each process sheet like "Matrix - Assembly".',
+    pm_err_no_partcol:'Matrix sheet found, but no "Part No." column in the header row.',
+    pm_err_no_pri:'Matrix sheet found, but no "Pri" / "C/T" column pairs in row 2.',
+    pm_err_no_rows:'Matrix sheet parsed, but no valid part rows — each line needs a Part No. plus Pri and C/T > 0.',
     parse_error_monthly:'Header row not found (need "PRTNO" or "Part No.")',
     step_initial:'Step 0 — Initial', step_maxcap:'Max Cap', step:'Step',
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
@@ -770,7 +774,7 @@ const I18N = {
     dataset_label:'Dataset:', chart_mode:'กราฟ:', chart_by_part:'แยกสีตาม Part', chart_by_line:'รวมต่อไลน์', month_range:'ช่วงเดือน:',
     line_filter_show_all:'เลือกทั้งหมด', line_filter_hide_all:'ไม่เลือก',
     no_data_in_proc:'process "{proc}" ไม่มี part ที่ matched',
-    hint_other_tab:'ลองคลิก tab อื่น (Lathe / Rolling / IHA) — อาจมีข้อมูล',
+    hint_other_tab:'ลองคลิก tab process อื่น — อาจมีข้อมูล',
     hint_check_match:'ตรวจ "ตรวจสอบข้อมูลที่อ่านได้" ด้านบนว่า matched > 0 ไหม',
     no_overflow:'ไม่มีจุดล้น — capacity เพียงพอ',
     show_trend:'แนวโน้ม', show_line_axis:'ชื่อไลน์',
@@ -795,7 +799,11 @@ const I18N = {
     fill_defaults_done_wd:'เติม WD={wd} ทุกเดือน (HD auto)', overrides_cleared:'ล้างค่าเดือนทั้งหมด',
     labels_applied:'Apply label ลำดับจาก {anchor}', labels_reset:'Reset label กลับเป็นเดิม',
     master_parsed:'อ่าน Master สำเร็จ: {n} parts', monthly_parsed:'{name}: {n} parts',
-    parse_error_master:'ไม่พบข้อมูลใน Master (ตรวจชื่อ tab "Matrix - Lathe/Rolling/IHA")',
+    parse_error_master:'ไม่พบ part ใน Master — ตรวจแท็บ "Matrix - <ชื่อ Process>"',
+    pm_err_no_matrix:'ไม่พบแท็บ "Matrix - <Process>" • ตั้งชื่อแท็บแต่ละ process เป็น "Matrix - ชื่อ" เช่น "Matrix - Assembly"',
+    pm_err_no_partcol:'เจอแท็บ Matrix แต่ไม่มีคอลัมน์ "Part No." ในแถวหัวตาราง',
+    pm_err_no_pri:'เจอแท็บ Matrix แต่ไม่มีคู่คอลัมน์ "Pri" / "C/T" ในแถวที่ 2',
+    pm_err_no_rows:'อ่านแท็บ Matrix ได้ แต่ไม่มีแถว part ที่ใช้ได้ — แต่ละแถวต้องมีเลข part และแต่ละไลน์ต้องมี Pri กับ C/T > 0',
     parse_error_monthly:'หา header row ไม่เจอ (ต้องมี "PRTNO" หรือ "Part No.")',
     step_initial:'Step 0 — เริ่มต้น', step_maxcap:'Max Cap', step:'ขั้น',
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
@@ -874,7 +882,11 @@ const I18N = {
     fill_defaults_done_wd:'WD={wd} を全月適用', overrides_cleared:'月別上書きクリア',
     labels_applied:'{anchor} から順次適用', labels_reset:'ラベルを元に戻す',
     master_parsed:'マスター解析: {n} parts', monthly_parsed:'{name}: {n} parts',
-    parse_error_master:'マスターにデータなし',
+    parse_error_master:'Master に部品なし — "Matrix - <工程>" シートを確認',
+    pm_err_no_matrix:'"Matrix - <工程>" シートがありません。工程ごとに「Matrix - 名前」で命名してください。',
+    pm_err_no_partcol:'Matrix シートに "Part No." 列がありません。',
+    pm_err_no_pri:'Matrix シートに "Pri" / "C/T" 列ペアが2行目にありません。',
+    pm_err_no_rows:'Matrix を読めましたが有効な部品行がありません — 各行に部品番号、各ラインに Pri と C/T > 0 が必要です。',
     parse_error_monthly:'ヘッダー行なし',
     step_initial:'Step 0 — 初期', step_maxcap:'Max Cap', step:'ステップ',
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
@@ -910,7 +922,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.0.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1037,6 +1049,7 @@ function parseMaster(wb) {
   }
   // Preserve order from Excel
   const processList = [];
+  let sheetsWithPartCol = 0, sheetsWithPri = 0;   // diagnostics for a helpful parse error
   for (const { proc, sheetName } of processSheets) {
     const ws = wb.Sheets[sheetName];
     if (!ws) continue;
@@ -1052,6 +1065,7 @@ function parseMaster(wb) {
     const oaCol = findCol('OA');
     const fluctCol = findCol('Fluct');
     if (partCol < 0) continue;
+    sheetsWithPartCol++;
     const lineGroups = [];
     for (let c = 0; c < row2.length; c++) {
       if (row2[c] === 'Pri' && row1[c]) {
@@ -1060,13 +1074,14 @@ function parseMaster(wb) {
       }
     }
     if (lineGroups.length === 0) continue;
+    sheetsWithPri++;
     let foundData = false;
     for (let r = 2; r < rows.length; r++) {
       const row = rows[r];
       if (!row) continue;
       const partNo = row[partCol];
-      if (!partNo || typeof partNo !== 'string') continue;
-      const trimmed = partNo.trim();
+      if (partNo == null || partNo === '') continue;
+      const trimmed = String(partNo).trim();
       if (!trimmed) continue;
       let part = partsMap.get(trimmed);
       if (!part) {
@@ -1122,7 +1137,16 @@ function parseMaster(wb) {
     }
   }
 
-  return { parts: Array.from(partsMap.values()), processList, ctChanges, stats: { sheets: stats.sheets, totalLines: stats.lineCount.size } };
+  const parts = Array.from(partsMap.values());
+  // Build a specific, process-name-agnostic reason when nothing parsed.
+  let reason = null;
+  if (parts.length === 0) {
+    if (processSheets.length === 0) reason = t('pm_err_no_matrix');
+    else if (sheetsWithPartCol === 0) reason = t('pm_err_no_partcol');
+    else if (sheetsWithPri === 0) reason = t('pm_err_no_pri');
+    else reason = t('pm_err_no_rows');
+  }
+  return { parts, processList, ctChanges, reason, stats: { sheets: stats.sheets, totalLines: stats.lineCount.size } };
 }
 
 function parseMonthLabel(value) {
@@ -1188,8 +1212,8 @@ function parseRawData(wb) {
   const data = new Map(), monthSet = new Set();
   for (let r = headerRowIdx + 1; r < rows.length; r++) {
     const row = rows[r]; if (!row) continue;
-    const pnRaw = row[partCol]; if (!pnRaw || typeof pnRaw !== 'string') continue;
-    const pn = pnRaw.trim(); if (!pn) continue;
+    const pnRaw = row[partCol]; if (pnRaw == null || pnRaw === '') continue;
+    const pn = String(pnRaw).trim(); if (!pn) continue;
     const label = parseMonthLabel(row[monthCol]); if (!label) continue;
     const q = parseFloat(row[qtyCol]); if (!(q > 0)) continue;
     monthSet.add(label);
@@ -3715,7 +3739,7 @@ async function handleMasterFile(file) {
   try {
     const wb = await readWorkbook(file);
     const r = parseMaster(wb);
-    if (r.parts.length === 0) throw new Error(t('parse_error_master'));
+    if (r.parts.length === 0) throw new Error(r.reason || t('parse_error_master'));
     state.master = r;
     saveStorage({ master: r });
     s.innerHTML = `✓ ${file.name} — ${r.parts.length} parts`;
