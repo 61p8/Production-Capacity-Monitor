@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.1] — 2026-07-07
+
+### Fixed
+- **Sticky-header flicker at the bottom of short pages.** The header switched to compact mode at a
+  single scroll threshold (60px); on a page barely taller than the viewport, scrolling to the bottom
+  landed near that threshold and the compact toggle (which shrinks the header, and the page) bounced
+  the scroll back across it, oscillating — the top ribbon appeared to flicker/overlap. Replaced with
+  a hysteresis dead zone (enter compact above 140px, leave below 40px).
+
+### Changed
+- **Matrix mapping columns now offer `(auto)`** like the Volume side. Part No. / OA / Fluctuation
+  default to auto-detection (Part No. also recognises `PRTNO` / `PartNo` / `Item` / … ), so you only
+  set them when your headers differ. Existing explicit selections still apply.
+
 ## [3.1] — 2026-07-07
 
 ### Added

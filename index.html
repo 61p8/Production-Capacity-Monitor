@@ -991,7 +991,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.1';
+const APP_VERSION = '3.1.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1005,11 +1005,11 @@ const MAX_CHAIN_DEPTH = 5;
 const DEFAULT_IMPORT_MAP = {
   master: {
     sheetPrefix: 'Matrix -',   // process sheets are the ones whose name starts with this
-    partCol: 'Part No.',       // header labels (case-insensitive exact match)
+    partCol: '',               // '' = auto (header labels are case-insensitive exact match otherwise)
     partNameCol: 'Part Name',
     modelCol: 'Model',
-    oaCol: 'OA',
-    fluctCol: 'Fluct',
+    oaCol: '',                 // '' = auto
+    fluctCol: '',              // '' = auto
     priToken: 'Pri'            // row-2 marker that starts a Pri/CT line pair
   },
   volume: {
@@ -1180,11 +1180,18 @@ function parseMaster(wb, map) {
     const row1 = rows[0] || [];
     const row2 = rows[1] || [];
     const findCol = (label) => label ? row1.findIndex(c => c && String(c).trim().toLowerCase() === String(label).toLowerCase()) : -1;
-    const partCol = findCol(mm.partCol);
+    // When a mapped column is blank ("auto"), fall back to a small candidate list.
+    const findColAuto = (label, autoList) => {
+      const i = findCol(label);
+      if (i >= 0) return i;
+      if (!label) for (const a of autoList) { const j = findCol(a); if (j >= 0) return j; }
+      return -1;
+    };
+    const partCol = findColAuto(mm.partCol, ['Part No.', 'Part No', 'PartNo', 'PRTNO', 'Part Number', 'Part', 'Item']);
     const partNameCol = findCol(mm.partNameCol);
     const modelCol = findCol(mm.modelCol);
-    const oaCol = findCol(mm.oaCol);
-    const fluctCol = findCol(mm.fluctCol);
+    const oaCol = findColAuto(mm.oaCol, ['OA', 'O.A.']);
+    const fluctCol = findColAuto(mm.fluctCol, ['Fluct', 'Fluctuation']);
     if (partCol < 0) continue;
     sheetsWithPartCol++;
     const priTok = String(mm.priToken || 'Pri').trim().toLowerCase();
@@ -3885,9 +3892,9 @@ function renderImportMapMaster() {
   }
   $('mapMSheet').value = mm.sheetPrefix || '';
   $('mapMPri').value = mm.priToken || '';
-  fillMapSelect($('mapMPart'), headers, mm.partCol, null);
-  fillMapSelect($('mapMOa'), headers, mm.oaCol, t('map_default'));
-  fillMapSelect($('mapMFluct'), headers, mm.fluctCol, t('map_default'));
+  fillMapSelect($('mapMPart'), headers, mm.partCol, t('map_auto'));
+  fillMapSelect($('mapMOa'), headers, mm.oaCol, t('map_auto'));
+  fillMapSelect($('mapMFluct'), headers, mm.fluctCol, t('map_auto'));
   const st = state.master && state.master.stats;
   $('mapMHint').textContent = state.master
     ? t('map_master_hint', { proc: (state.master.processList || []).length, lines: (st && st.totalLines) || 0 })
@@ -3923,7 +3930,7 @@ function readMasterMapFromUI() {
   const mm = state.importMap.master;
   mm.sheetPrefix = $('mapMSheet').value.trim() || 'Matrix -';
   mm.priToken = $('mapMPri').value.trim() || 'Pri';
-  mm.partCol = $('mapMPart').value || 'Part No.';
+  mm.partCol = $('mapMPart').value;   // '' = auto
   mm.oaCol = $('mapMOa').value;
   mm.fluctCol = $('mapMFluct').value;
 }
@@ -5756,7 +5763,11 @@ function init() {
   }
   window.addEventListener('scroll', () => {
     if (!header) return;
-    const should = window.scrollY > 60;
+    // Hysteresis: enter compact above 140px, leave below 40px. The dead zone must be wider than
+    // the header's height change so toggling compact (which shrinks the page) can't bounce the
+    // scroll position back across the threshold and oscillate — the flicker seen at page bottom.
+    const y = window.scrollY;
+    const should = lastCompact ? (y > 40) : (y > 140);
     if (should !== lastCompact) {
       header.classList.toggle('compact', should);
       lastCompact = should;
