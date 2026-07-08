@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] — 2026-07-08
+
+### Changed
+- **Pieces-mode threshold lines stay straight for non-variant steps.** Converting an hour threshold
+  to pieces per month made even a constant step (e.g. a flat 417h) look wavy, because each month's
+  hours-per-piece differs. Now a step that is *not* a per-month variant (no 📅 override) converts
+  with the volume-weighted average hours-per-piece over **all shown months** — one factor, so the
+  line is horizontal like it is in hours mode. Per-month variant steps (📅) and Max Cap still convert
+  with each month's own factor and vary month by month.
+
 ## [3.2] — 2026-07-07
 
 ### Added

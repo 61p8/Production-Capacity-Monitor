@@ -999,7 +999,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.2';
+const APP_VERSION = '3.2.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2617,10 +2617,12 @@ function thresholdLineDataset(label, val, color, dash, dataArr, stackId) {
 }
 
 // ===== Y-axis unit: Hours ⇄ Pieces =====
-// In 'pcs' mode the chart plots piece counts; the (hour) step thresholds are converted to pieces
-// using each (process, month)'s volume-weighted average hours-per-piece = Σhours / Σqty. That single
-// average bakes in every part's CT, OA and Fluctuation weighted by how much it's produced, so a
-// 417h line becomes "how many pieces 417 hours buys given this month's product mix".
+// In 'pcs' mode the chart plots piece counts; the (hour) step thresholds are converted to pieces by
+// dividing by a volume-weighted average hours-per-piece (Σhours / Σqty), which bakes in every part's
+// CT, OA and Fluctuation weighted by how much it's produced. A step that ISN'T a per-month variant
+// uses the average over ALL shown months (one factor → the line stays straight/horizontal, matching
+// hours mode); a per-month-variant step (📅) and Max Cap convert with each month's own factor so they
+// vary month by month.
 function getYUnit() { return state.yUnit === 'pcs' ? 'pcs' : 'hours'; }
 function yAxisTitle() { return getYUnit() === 'pcs' ? t('pcs_axis') : t('hours_axis'); }
 function fmtY(v) { return getYUnit() === 'pcs' ? Math.round(v).toLocaleString() + ' ' + t('pcs_unit') : formatHours(v); }
@@ -2637,11 +2639,21 @@ function procHrsPerPiece(data, month) {
   for (const line of data.lines) { hrs += data.hours[line]?.[month] || 0; qty += lineQtyTotal(data, line, month); }
   return qty > 0 ? hrs / qty : null;
 }
-// Convert an hour threshold to the active Y unit for a given process-data block + month.
-function thVal(hourVal, data, month) {
+// Volume-weighted average hours-per-piece across ALL given months (one flat conversion factor).
+function procHrsPerPieceAvg(data, months) {
+  if (!data) return null;
+  let hrs = 0, qty = 0;
+  for (const m of months) for (const line of data.lines) { hrs += data.hours[line]?.[m] || 0; qty += lineQtyTotal(data, line, m); }
+  return qty > 0 ? hrs / qty : null;
+}
+// Convert an hour value to the active Y unit using a supplied hours-per-piece factor.
+function thPieces(hourVal, hpp) {
   if (getYUnit() !== 'pcs') return hourVal;
-  const hpp = data ? procHrsPerPiece(data, month) : null;
   return hpp && hpp > 0 ? Math.round(hourVal / hpp) : null;
+}
+// hrs/piece factor for a step threshold: per-month if it's a variant step, else the all-months avg.
+function thHpp(th, data, month, hppAvg) {
+  return th.variable ? procHrsPerPiece(data, month) : hppAvg;
 }
 
 // ===== Capacity step config UI =====
@@ -2902,15 +2914,16 @@ function renderChartSingle() {
       });
     }
 
+    const hppAvg = procHrsPerPieceAvg(data, months);
     for (const th of getStepThresholds(setting)) {
       if (!th.show) continue;
       const arr = [];
-      for (const line of visibleLines) for (const m of months) arr.push(thVal(th.valueFor(m), data, m));
+      for (const line of visibleLines) for (const m of months) arr.push(thPieces(th.valueFor(m), thHpp(th, data, m, hppAvg)));
       datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx));
     }
     if (opts.showMaxCap) {
       const mcData = [];
-      for (const line of visibleLines) for (const m of months) mcData.push(thVal(calculateMaxCap(setting, m), data, m));
+      for (const line of visibleLines) for (const m of months) mcData.push(thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m)));
       datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
     }
 
@@ -2965,10 +2978,11 @@ function renderChartSingle() {
       });
       datasets.push({ type: 'line', label: t('trend_label'), data: trendData, borderColor: TREND_COLOR, borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: TREND_COLOR, fill: false, tension: 0.25, order: 1 });
     }
+    const hppAvgL = procHrsPerPieceAvg(data, months);
     for (const th of getStepThresholds(setting)) {
-      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thVal(th.valueFor(m), data, m)), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
+      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), thHpp(th, data, m, hppAvgL))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thVal(calculateMaxCap(setting, m), data, m)), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -3054,15 +3068,16 @@ function renderChartCompare() {
     }
 
     const refData = refResult.byProcess[process];
+    const hppAvgC = procHrsPerPieceAvg(refData, months);
     for (const th of getStepThresholds(refResult.settings)) {
       if (!th.show) continue;
       const arr = [];
-      for (const line of visibleLines) for (const m of months) arr.push(thVal(th.valueFor(m), refData, m));
+      for (const line of visibleLines) for (const m of months) arr.push(thPieces(th.valueFor(m), thHpp(th, refData, m, hppAvgC)));
       datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx));
     }
     if (opts.showMaxCap) {
       const mcData = [];
-      for (const line of visibleLines) for (const m of months) mcData.push(thVal(calculateMaxCap(refResult.settings, m), refData, m));
+      for (const line of visibleLines) for (const m of months) mcData.push(thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refData, m)));
       datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
     }
 
@@ -3121,10 +3136,11 @@ function renderChartCompare() {
     });
 
     const refDataL = refResult.byProcess[process];
+    const hppAvgCL = procHrsPerPieceAvg(refDataL, months);
     for (const th of getStepThresholds(refResult.settings)) {
-      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thVal(th.valueFor(m), refDataL, m)), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
+      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), thHpp(th, refDataL, m, hppAvgCL))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thVal(calculateMaxCap(refResult.settings, m), refDataL, m)), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refDataL, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
