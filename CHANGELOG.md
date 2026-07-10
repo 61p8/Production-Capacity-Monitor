@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.5] — 2026-07-08
+
+### Fixed
+- **Manual tab now matches the Results chart's month range, line filter and threshold toggles.**
+  It plotted every month regardless of the Start→End range, showed lines hidden by the Results line
+  filter, and drew every threshold line even when toggled off. Manual now uses `getRangeMonths()`,
+  skips lines in `state.hiddenLines`, and honours each step's show toggle + the Max Cap checkbox — so
+  switching between Results and Manual shows a consistent view. (The controls live on the Results
+  toolbar; Manual mirrors their state.)
+
 ## [3.2.4] — 2026-07-08
 
 ### Fixed

@@ -999,7 +999,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.2.4';
+const APP_VERSION = '3.2.5';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -5748,11 +5748,14 @@ const manOverlayPlugin = {
 };
 function buildManualChart() {
   const m = state.manual, proc = m.proc, data = m.byProcess[proc];
-  const months = m.months;
-  // Show every line the process can use (even empty ones) so move targets are always visible.
+  // Use the same Start→End range as the Results chart (falls back to all months if unset).
+  const range = getRangeMonths();
+  const months = range.length ? range.filter(mo => m.months.includes(mo)) : m.months;
+  // Show every line the process can use (even empty ones) so move targets are always visible,
+  // but honour the Results line filter so hiding a line hides it here too.
   const allLines = new Set(Array.isArray(data.lines) ? data.lines : Array.from(data.lines || []));
   for (const p of state.master.parts) { const pd = p.processes[proc]; if (pd) for (const l of pd.lines) allLines.add(l.name); }
-  const lines = Array.from(allLines).sort();
+  const lines = Array.from(allLines).sort().filter(l => !state.hiddenLines.has(`${proc}|${l}`));
   const setting = m.setting;
   const allParts = new Set();
   for (const line of lines) for (const mo of months) { const a = data.partAlloc[line] && data.partAlloc[line][mo] || {}; for (const pn in a) if (a[pn].hours > 0) allParts.add(pn); }
@@ -5773,8 +5776,8 @@ function buildManualChart() {
     }
     datasets.push({ type: 'bar', label: pn, data: arr, backgroundColor: colorArr, borderWidth: 0, stack: 'parts', order: 2 });
   }
-  for (const th of getStepThresholds(setting)) datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, cols.map(c => th.valueFor(c.month)), 'step' + th.idx));
-  datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], cols.map(c => Math.round(calculateMaxCap(setting, c.month)))), stack: 'th_mc' });
+  for (const th of getStepThresholds(setting)) { if (!th.show) continue; datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, cols.map(c => th.valueFor(c.month)), 'step' + th.idx)); }
+  if (getThresholdOpts().showMaxCap) datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], cols.map(c => Math.round(calculateMaxCap(setting, c.month)))), stack: 'th_mc' });
   if (state.manualChart) state.manualChart.destroy();
   state.manualChart = new Chart($('manualChart'), {
     plugins: [xHierarchyPlugin, manOverlayPlugin],
