@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.3] — 2026-07-08
+
+### Changed
+- **More distinct part colours when there are many Part No.s.** The per-part colour hash was weak, so
+  near-identical numbers (TG-001, TG-002, …) came out almost the same colour. Replaced it with an
+  avalanche hash (FNV-1a + finalizer) so a one-character difference scatters the hue across the wheel,
+  and widened the saturation/lightness spread so parts that share a hue still differ in shade. Same
+  Part No. still maps to the same colour everywhere (invariant unchanged).
+- **Thin white separators between stacked part segments** (Stacked-by-Part, Single view) so adjacent
+  segments are always visually split even if their colours land close.
+
 ## [3.2.2] — 2026-07-08
 
 ### Changed

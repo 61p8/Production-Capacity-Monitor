@@ -999,7 +999,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.2.2';
+const APP_VERSION = '3.2.3';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1101,12 +1101,21 @@ const state = {
 const $ = id => document.getElementById(id);
 
 // ===== Helpers =====
+// Avalanche hash (FNV-1a + finalizer): a 1-char change scatters the output, so near-identical
+// Part No.s like TG-001 / TG-002 land far apart in colour instead of looking the same.
+function hashStr(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+  return h >>> 0;
+}
 function generatePartColor(partNo) {
-  let hash = 0;
-  for (let i = 0; i < partNo.length; i++) hash = ((hash << 5) - hash + partNo.charCodeAt(i)) | 0;
-  const hue = Math.abs(hash) % 360;
-  const sat = 55 + (Math.abs(hash >> 8) % 25);
-  const light = 50 + (Math.abs(hash >> 16) % 15);
+  const h = hashStr(String(partNo));
+  // Spread hue across the wheel; vary saturation AND lightness from independent bits so even two
+  // parts that happen to share a hue still differ in shade.
+  const hue = h % 360;
+  const sat = 60 + ((h >>> 10) % 30);   // 60–89%
+  const light = 40 + ((h >>> 20) % 25); // 40–64%
   return `hsl(${hue}, ${sat}%, ${light}%)`;
 }
 
@@ -2909,7 +2918,9 @@ function renderChartSingle() {
       }
       datasets.push({
         type: 'bar', label: pn, data: arr,
-        backgroundColor: colorArr, borderWidth: 0, stack: 'parts', order: 2
+        backgroundColor: colorArr,
+        borderColor: '#FFFFFF', borderWidth: 1, borderSkipped: false,
+        stack: 'parts', order: 2
       });
     }
 
