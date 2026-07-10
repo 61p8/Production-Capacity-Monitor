@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3] — 2026-07-08
+
+### Added
+- **Manual tab has its own filters, independent of Results.** The Manual chart now carries its own
+  threshold-line toggles, Max Cap toggle and line filter (`state.manHidden` / `state.manStepHidden` /
+  `state.manShowMaxCap`), so hiding lines or thresholds there no longer touches the Results view and
+  vice-versa.
+- **Threshold lines show their formula on hover.** Hovering a step (or Max Cap) threshold line pops a
+  tooltip with that month's breakdown — work days, OT days × OT h, holidays worked, holiday OT, and
+  hours/shift × shifts (Max Cap shows days × (hrs + OT) × shifts). Works on the Results chart (Single
+  & Compare, both chart modes) and on the Manual chart.
+
+### Changed
+- **Trend line defaults to off**, and the redundant **"Line name" toggle was removed** from the chart
+  toolbar (line names are always shown in the axis hierarchy anyway).
+
 ## [3.2.5] — 2026-07-08
 
 ### Fixed

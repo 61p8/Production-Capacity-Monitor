@@ -573,8 +573,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <span style="font-weight:500" data-i18n="threshold_lines">Threshold lines:</span>
       <span id="stepToggles" style="display:contents"></span>
       <label><input type="checkbox" id="showMaxCap" checked> Max Cap</label>
-      <label><input type="checkbox" id="showTrend" checked> <span data-i18n="show_trend">Trend</span></label>
-      <label><input type="checkbox" id="showLineInAxis" checked> <span data-i18n="show_line_axis">Line name</span></label>
+      <label><input type="checkbox" id="showTrend"> <span data-i18n="show_trend">Trend</span></label>
       <span style="flex:1"></span>
       <span style="font-weight:500" data-i18n="y_unit">Y-axis:</span>
       <select id="yUnit">
@@ -625,6 +624,12 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <span id="manStatus" style="font-size:12px;color:#5F5E5A;"></span>
     </div>
     <div class="help-text" data-i18n="man_help" style="margin-top:0">Hover a bar segment that sits above the lowest line — the lines it can move to blink and a ghost bar shows the new height. Click to pick the target line; the source line is reduced to the “Reduce line to” value. Targets may overflow — balance them next.</div>
+    <div class="chart-toolbar" style="margin:6px 0 4px">
+      <span style="font-weight:500" data-i18n="threshold_lines">Threshold lines:</span>
+      <span id="manStepToggles" style="display:contents"></span>
+      <label><input type="checkbox" id="manShowMaxCap" checked> Max Cap</label>
+    </div>
+    <div class="line-filter" id="manLineFilter"></div>
     <div class="manual-canvas-wrap"><canvas id="manualChart"></canvas></div>
     <div id="manEmpty" class="empty-state" style="display:none; padding:24px;"><div data-i18n="man_no_data">Calculate Step 0 first, then click “Load initial (unbalanced)”.</div></div>
     <div id="manPopup" class="man-popup" style="display:none"></div>
@@ -999,7 +1004,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.2.5';
+const APP_VERSION = '3.3';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1095,6 +1100,9 @@ const state = {
   manHover: null,
   manPhase: 0,
   manPulseTimer: null,
+  manHidden: new Set(),      // Manual tab's own line filter (`proc|line`), independent of Results
+  manStepHidden: new Set(),  // Manual tab's own hidden step-threshold indices
+  manShowMaxCap: true,       // Manual tab's own Max Cap toggle
   dsIdCounter: 0
 };
 
@@ -2621,8 +2629,7 @@ function updateChartDimming() {
 function getThresholdOpts() {
   return {
     showMaxCap: $('showMaxCap').checked,
-    showTrend: $('showTrend').checked,
-    showLineInAxis: $('showLineInAxis').checked
+    showTrend: $('showTrend').checked
   };
 }
 
@@ -2685,6 +2692,46 @@ function thPieces(hourVal, hpp) {
 function thHpp(th, data, month, hppAvg) {
   return th.variable ? procHrsPerPiece(data, month) : hppAvg;
 }
+
+// ===== Threshold hover detail (tooltip) =====
+// Effective step config for a month (per-month overrides fall back to the step's base values).
+function effStepCfg(cfg, month) {
+  const ov = (cfg && cfg.perMonth && cfg.perMonth[month]) || {};
+  const wd = ov.wd != null ? ov.wd : (cfg.wd || 0);
+  return {
+    wd,
+    otDays: ov.otDays != null ? ov.otDays : (cfg.otDays != null ? cfg.otDays : wd),
+    otNormal: ov.otNormal != null ? ov.otNormal : (cfg.otNormal || 0),
+    hdWorked: ov.hdWorked != null ? ov.hdWorked : (cfg.hdWorked || 0),
+    otHoliday: ov.otHoliday != null ? ov.otHoliday : (cfg.otHoliday || 0)
+  };
+}
+// Multi-line tooltip explaining how a step threshold is built for a given month.
+function stepTipLines(idx, setting, month) {
+  const cfg = state.stepConfigs[idx];
+  if (!cfg) return null;
+  const e = effStepCfg(cfg, month);
+  const val = Math.round(computeStepThresholdMonth(cfg, setting, month));
+  return [
+    `▬ ${val} h${stepHasPerMonth(cfg) ? ' · ' + getDisplayLabel(month) : ''}`,
+    `${t('step_wd')}: ${e.wd}`,
+    `${t('step_ot_days')}: ${e.otDays} × ${e.otNormal} h`,
+    `${t('step_hd')}: ${e.hdWorked}`,
+    `${t('step_ot_holiday')}: ${e.otHoliday} h`,
+    `${t('hrs_per_shift')} ${setting.hrsPerShift} × ${setting.shifts} ${t('shifts')}`
+  ];
+}
+function mcTipLines(setting, month) {
+  const info = getMonthInfo(month);
+  const days = info.valid ? info.days : 30;
+  const val = Math.round(calculateMaxCap(setting, month));
+  return [
+    `▬ Max Cap: ${val} h · ${getDisplayLabel(month)}`,
+    `${days} d × (${setting.hrsPerShift} + ${setting.maxCapOT} OT) × ${setting.shifts}`
+  ];
+}
+// Mark a threshold-line dataset as such and attach its per-column tooltip lines.
+function attachTip(dsObj, tipArr) { dsObj._isTh = true; dsObj._tip = tipArr; return dsObj; }
 
 // ===== Capacity step config UI =====
 // Per-step chart toggle checkboxes (chart toolbar). Preserves prior checked state.
@@ -2949,14 +2996,14 @@ function renderChartSingle() {
     const hppAvg = procHrsPerPieceAvg(data, months);
     for (const th of getStepThresholds(setting)) {
       if (!th.show) continue;
-      const arr = [];
-      for (const line of visibleLines) for (const m of months) arr.push(thPieces(th.valueFor(m), thHpp(th, data, m, hppAvg)));
-      datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx));
+      const arr = [], tip = [];
+      for (const line of visibleLines) for (const m of months) { arr.push(thPieces(th.valueFor(m), thHpp(th, data, m, hppAvg))); tip.push(stepTipLines(th.idx, setting, m)); }
+      datasets.push(attachTip(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx), tip));
     }
     if (opts.showMaxCap) {
-      const mcData = [];
-      for (const line of visibleLines) for (const m of months) mcData.push(thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m)));
-      datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
+      const mcData = [], mcTip = [];
+      for (const line of visibleLines) for (const m of months) { mcData.push(thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m))); mcTip.push(mcTipLines(setting, m)); }
+      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), mcTip), stack: 'th_mc' });
     }
 
     state.chart = new Chart($('resultChart'), {
@@ -2982,6 +3029,7 @@ function renderChartSingle() {
               return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
             },
             label: c => {
+              if (c.dataset._tip) return c.dataset._tip[c.dataIndex];
               if (c.parsed.y <= 0) return null;
               const pn = c.dataset.label;
               const origin = data.partOrigin?.[pn];
@@ -3013,9 +3061,10 @@ function renderChartSingle() {
     }
     const hppAvgL = procHrsPerPieceAvg(data, months);
     for (const th of getStepThresholds(setting)) {
-      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), thHpp(th, data, m, hppAvgL))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
+      if (!th.show) continue;
+      datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), thHpp(th, data, m, hppAvgL))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => stepTipLines(th.idx, setting, m)) });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(setting, m)) });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -3023,7 +3072,7 @@ function renderChartSingle() {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: t('month_axis') } } },
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
   }
@@ -3104,14 +3153,14 @@ function renderChartCompare() {
     const hppAvgC = procHrsPerPieceAvg(refData, months);
     for (const th of getStepThresholds(refResult.settings)) {
       if (!th.show) continue;
-      const arr = [];
-      for (const line of visibleLines) for (const m of months) arr.push(thPieces(th.valueFor(m), thHpp(th, refData, m, hppAvgC)));
-      datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx));
+      const arr = [], tip = [];
+      for (const line of visibleLines) for (const m of months) { arr.push(thPieces(th.valueFor(m), thHpp(th, refData, m, hppAvgC))); tip.push(stepTipLines(th.idx, refResult.settings, m)); }
+      datasets.push(attachTip(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx), tip));
     }
     if (opts.showMaxCap) {
-      const mcData = [];
-      for (const line of visibleLines) for (const m of months) mcData.push(thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refData, m)));
-      datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), stack: 'th_mc' });
+      const mcData = [], mcTip = [];
+      for (const line of visibleLines) for (const m of months) { mcData.push(thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refData, m))); mcTip.push(mcTipLines(refResult.settings, m)); }
+      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), mcTip), stack: 'th_mc' });
     }
 
     state.chart = new Chart($('resultChart'), {
@@ -3138,6 +3187,7 @@ function renderChartCompare() {
                 return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
               },
               label: c => {
+                if (c.dataset._tip) return c.dataset._tip[c.dataIndex];
                 if (c.parsed.y <= 0) return null;
                 const pn = c.dataset._part || c.dataset.label;
                 const model = getPartModel(pn);
@@ -3173,9 +3223,10 @@ function renderChartCompare() {
     const refDataL = refResult.byProcess[process];
     const hppAvgCL = procHrsPerPieceAvg(refDataL, months);
     for (const th of getStepThresholds(refResult.settings)) {
-      if (th.show) datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), thHpp(th, refDataL, m, hppAvgCL))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0 });
+      if (!th.show) continue;
+      datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), thHpp(th, refDataL, m, hppAvgCL))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => stepTipLines(th.idx, refResult.settings, m)) });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refDataL, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0 });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refDataL, m))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(refResult.settings, m)) });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -3183,7 +3234,7 @@ function renderChartCompare() {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: t('month_axis') } } },
-        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
   }
@@ -4765,7 +4816,7 @@ function setupEvents() {
     };
   });
 
-  ['showMaxCap','chartMode','showTrend','showLineInAxis'].forEach(id => {
+  ['showMaxCap','chartMode','showTrend'].forEach(id => {
     $(id).onchange = () => { if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderChart(); renderChartLegendMini(); } };
   });
   $('yUnit').onchange = () => {
@@ -5614,7 +5665,54 @@ function manRender() {
   }
   $('manEmpty').style.display = 'none';
   manPopulateControls();
+  renderManStepToggles();
+  renderManLineFilter();
   buildManualChart();
+}
+// Manual tab's own threshold-line toggles (independent of the Results toolbar).
+function renderManStepToggles() {
+  const box = $('manStepToggles'); if (!box) return;
+  const setting = (state.manual && state.manual.setting) || readSettings();
+  box.innerHTML = '';
+  state.stepConfigs.forEach((c, i) => {
+    const val = Math.round(computeStepThreshold(c, setting)) + (stepHasPerMonth(c) ? '~' : '');
+    const id = 'manShowStep' + i;
+    const checked = !state.manStepHidden.has(i);
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" id="${id}"${checked ? ' checked' : ''}> ${val}`;
+    lbl.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.checked) state.manStepHidden.delete(i); else state.manStepHidden.add(i);
+      buildManualChart();
+    });
+    box.appendChild(lbl);
+  });
+  const mc = $('manShowMaxCap'); if (mc) mc.checked = state.manShowMaxCap;
+}
+// Manual tab's own line filter (independent of the Results line filter).
+function renderManLineFilter() {
+  const box = $('manLineFilter'); if (!box) return;
+  const m = state.manual;
+  if (!m || !state.master) { box.innerHTML = ''; return; }
+  const proc = m.proc, data = m.byProcess[proc];
+  if (!data) { box.innerHTML = ''; return; }
+  const allLines = new Set(Array.isArray(data.lines) ? data.lines : Array.from(data.lines || []));
+  for (const p of state.master.parts) { const pd = p.processes[proc]; if (pd) for (const l of pd.lines) allLines.add(l.name); }
+  const lines = Array.from(allLines).sort();
+  let html = `<button class="btn-small" id="manShowAllLines">${t('line_filter_show_all')}</button>`;
+  html += `<button class="btn-small" id="manHideAllLines">${t('line_filter_hide_all')}</button>`;
+  lines.forEach((line, i) => {
+    const active = !state.manHidden.has(`${proc}|${line}`);
+    const color = LINE_COLORS[i % LINE_COLORS.length];
+    html += `<span class="line-chip ${active ? 'active' : ''}" data-line="${line}" style="${active ? `border-color:${color}; color:${color};` : ''}">${line}</span>`;
+  });
+  box.innerHTML = html;
+  box.querySelectorAll('.line-chip').forEach(ch => ch.onclick = () => {
+    const k = `${proc}|${ch.dataset.line}`;
+    if (state.manHidden.has(k)) state.manHidden.delete(k); else state.manHidden.add(k);
+    buildManualChart(); renderManLineFilter();
+  });
+  $('manShowAllLines').onclick = () => { lines.forEach(l => state.manHidden.delete(`${proc}|${l}`)); buildManualChart(); renderManLineFilter(); };
+  $('manHideAllLines').onclick = () => { lines.forEach(l => state.manHidden.add(`${proc}|${l}`)); buildManualChart(); renderManLineFilter(); };
 }
 // Evaluate whether the hovered part on a line can be balanced down to floorVal, and to which lines.
 function manEval(pn, line, month, floorVal) {
@@ -5752,10 +5850,10 @@ function buildManualChart() {
   const range = getRangeMonths();
   const months = range.length ? range.filter(mo => m.months.includes(mo)) : m.months;
   // Show every line the process can use (even empty ones) so move targets are always visible,
-  // but honour the Results line filter so hiding a line hides it here too.
+  // honouring the Manual tab's OWN line filter (state.manHidden), independent of Results.
   const allLines = new Set(Array.isArray(data.lines) ? data.lines : Array.from(data.lines || []));
   for (const p of state.master.parts) { const pd = p.processes[proc]; if (pd) for (const l of pd.lines) allLines.add(l.name); }
-  const lines = Array.from(allLines).sort().filter(l => !state.hiddenLines.has(`${proc}|${l}`));
+  const lines = Array.from(allLines).sort().filter(l => !state.manHidden.has(`${proc}|${l}`));
   const setting = m.setting;
   const allParts = new Set();
   for (const line of lines) for (const mo of months) { const a = data.partAlloc[line] && data.partAlloc[line][mo] || {}; for (const pn in a) if (a[pn].hours > 0) allParts.add(pn); }
@@ -5776,8 +5874,12 @@ function buildManualChart() {
     }
     datasets.push({ type: 'bar', label: pn, data: arr, backgroundColor: colorArr, borderWidth: 0, stack: 'parts', order: 2 });
   }
-  for (const th of getStepThresholds(setting)) { if (!th.show) continue; datasets.push(thresholdLineDataset(th.label, th.value, th.color, th.dash, cols.map(c => th.valueFor(c.month)), 'step' + th.idx)); }
-  if (getThresholdOpts().showMaxCap) datasets.push({ ...thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], cols.map(c => Math.round(calculateMaxCap(setting, c.month)))), stack: 'th_mc' });
+  for (const th of getStepThresholds(setting)) {
+    if (state.manStepHidden.has(th.idx)) continue;
+    const d = attachTip(thresholdLineDataset(th.label, th.value, th.color, th.dash, cols.map(c => th.valueFor(c.month)), 'step' + th.idx), cols.map(c => stepTipLines(th.idx, setting, c.month)));
+    datasets.push(d);
+  }
+  if (state.manShowMaxCap) datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], cols.map(c => Math.round(calculateMaxCap(setting, c.month)))), cols.map(c => mcTipLines(setting, c.month))), stack: 'th_mc' });
   if (state.manualChart) state.manualChart.destroy();
   state.manualChart = new Chart($('manualChart'), {
     plugins: [xHierarchyPlugin, manOverlayPlugin],
@@ -5794,7 +5896,9 @@ function buildManualChart() {
       plugins: {
         xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
         legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
-        tooltip: { enabled: false }
+        // Tooltip only for threshold lines (shows the step's work-day / OT breakdown); the bar hover
+        // is handled by the custom overlay, so bars are filtered out here.
+        tooltip: { enabled: true, filter: item => !!item.dataset._isTh, callbacks: { title: () => '', label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : '' } }
       }
     }
   });
@@ -5808,8 +5912,9 @@ function manInit() {
   });
   $('manLoadBtn').onclick = manLoadInitial;
   $('manResetBtn').onclick = manLoadInitial;
-  $('manProc').onchange = () => { if (state.manual) { state.manual.proc = $('manProc').value; state.manHover = null; buildManualChart(); } };
+  $('manProc').onchange = () => { if (state.manual) { state.manual.proc = $('manProc').value; state.manHover = null; renderManLineFilter(); buildManualChart(); } };
   $('manFloor').onchange = () => { if (state.manual) { state.manual.floorIdx = parseInt($('manFloor').value) || 0; state.manHover = null; buildManualChart(); } };
+  const mmc = $('manShowMaxCap'); if (mmc) mmc.onchange = () => { state.manShowMaxCap = mmc.checked; buildManualChart(); };
   document.addEventListener('mousedown', e => { const p = $('manPopup'); if (p && p.style.display !== 'none' && !p.contains(e.target)) manClosePopup(); });
 }
 
