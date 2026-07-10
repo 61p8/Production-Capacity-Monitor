@@ -616,7 +616,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
   <div class="section" id="manualSection">
     <h2><span class="step-num">✋</span><span data-i18n="sec_manual">Manual Balance</span></h2>
     <div class="manual-toolbar">
-      <button class="btn-small" id="manLoadBtn" type="button" data-i18n="man_load">↻ Load current step</button>
+      <button class="btn-small" id="manLoadBtn" type="button" data-i18n="man_load">↻ Load initial (unbalanced)</button>
       <span class="lay-sep"></span>
       <label class="lay-field"><span data-i18n="man_process">Process</span><select id="manProc"></select></label>
       <label class="lay-field"><span data-i18n="man_floor">Reduce line to</span><select id="manFloor"></select></label>
@@ -626,7 +626,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     </div>
     <div class="help-text" data-i18n="man_help" style="margin-top:0">Hover a bar segment that sits above the lowest line — the lines it can move to blink and a ghost bar shows the new height. Click to pick the target line; the source line is reduced to the “Reduce line to” value. Targets may overflow — balance them next.</div>
     <div class="manual-canvas-wrap"><canvas id="manualChart"></canvas></div>
-    <div id="manEmpty" class="empty-state" style="display:none; padding:24px;"><div data-i18n="man_no_data">Calculate a step first, then click “Load current step”.</div></div>
+    <div id="manEmpty" class="empty-state" style="display:none; padding:24px;"><div data-i18n="man_no_data">Calculate Step 0 first, then click “Load initial (unbalanced)”.</div></div>
     <div id="manPopup" class="man-popup" style="display:none"></div>
   </div>
   </div><!-- /tab-panel manual -->
@@ -719,8 +719,8 @@ const I18N = {
     lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
     lay_save:'💾 Save', lay_load:'📂 Load', lay_export_svg:'SVG', lay_loaded:'Layout loaded', lay_load_err:'Could not read the file', lay_empty_export:'Nothing to export',
     lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours', lay_image:'🖼 Image',
-    tab_manual:'Manual', sec_manual:'Manual Balance', man_load:'↻ Load current step', man_process:'Process', man_floor:'Reduce line to', man_reset:'Reset', man_cancel:'Cancel', man_moves:'{q} pcs', man_nothing:'Nothing to move at this level',
-    man_no_data:'Calculate a step first, then click "Load current step".', man_hint_move:'Balance {p} from {l} — click to choose a target line', man_move_from:'Move {p} off {l} ({h}h)',
+    tab_manual:'Manual', sec_manual:'Manual Balance', man_load:'↻ Load initial (unbalanced)', man_process:'Process', man_floor:'Reduce line to', man_reset:'Reset', man_cancel:'Cancel', man_moves:'{q} pcs', man_nothing:'Nothing to move at this level',
+    man_no_data:'Calculate Step 0 first, then click "Load initial (unbalanced)".', man_hint_move:'Balance {p} from {l} — click to choose a target line', man_move_from:'Move {p} off {l} ({h}h)',
     man_help:'Hover a bar segment above the lowest line — the lines it can move to blink and a ghost bar shows the new height. Click to pick a target line; the source line is reduced to the "Reduce line to" value. Targets may overflow — balance them next.',
     lay_help:'Draw with the Rectangle tool. Left-drag empty space to marquee-select; Ctrl/Shift-click to add to the selection. Middle-drag to pan, wheel or the slider to zoom, Fit to frame everything. Hold Shift while resizing to lock the aspect ratio. Smart snap aligns edges & centres. Sizes are real-scale — switch the Unit to convert every number.',
     ready_to_calc:'Ready to calculate',
@@ -811,8 +811,8 @@ const I18N = {
     lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
     lay_save:'💾 เซฟไฟล์', lay_load:'📂 โหลด', lay_export_svg:'SVG', lay_loaded:'โหลดผังแล้ว', lay_load_err:'อ่านไฟล์ไม่ได้', lay_empty_export:'ไม่มีอะไรให้ส่งออก',
     lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี', lay_image:'🖼 รูปภาพ',
-    tab_manual:'Manual', sec_manual:'บาลานซ์เอง (Manual)', man_load:'↻ โหลด step ปัจจุบัน', man_process:'Process', man_floor:'ลดไลน์เหลือ', man_reset:'รีเซ็ต', man_cancel:'ยกเลิก', man_moves:'{q} ชิ้น', man_nothing:'ไม่มีอะไรให้ย้ายที่ระดับนี้',
-    man_no_data:'คำนวณ step ก่อน แล้วกด "โหลด step ปัจจุบัน"', man_hint_move:'บาลานซ์ {p} จาก {l} — คลิกเพื่อเลือกไลน์ปลายทาง', man_move_from:'ย้าย {p} ออกจาก {l} ({h}h)',
+    tab_manual:'Manual', sec_manual:'บาลานซ์เอง (Manual)', man_load:'↻ โหลดค่าเริ่มต้น (ยังไม่บาลานซ์)', man_process:'Process', man_floor:'ลดไลน์เหลือ', man_reset:'รีเซ็ต', man_cancel:'ยกเลิก', man_moves:'{q} ชิ้น', man_nothing:'ไม่มีอะไรให้ย้ายที่ระดับนี้',
+    man_no_data:'คำนวณ Step 0 ก่อน แล้วกด "โหลดค่าเริ่มต้น (ยังไม่บาลานซ์)"', man_hint_move:'บาลานซ์ {p} จาก {l} — คลิกเพื่อเลือกไลน์ปลายทาง', man_move_from:'ย้าย {p} ออกจาก {l} ({h}h)',
     man_help:'ชี้แท่ง part ที่อยู่เหนือเส้นล่างสุด — ไลน์ที่ย้ายไปได้จะกระพริบ และมี ghost bar โชว์ความสูงใหม่ • คลิกเพื่อเลือกไลน์ปลายทาง ไลน์เดิมจะถูกลดลงเหลือค่า "ลดไลน์เหลือ" • ปลายทางล้นได้ ค่อยไปบาลานซ์ต่อ',
     lay_help:'วาดด้วยเครื่องมือสี่เหลี่ยม • ลากซ้ายบนพื้นที่ว่างเพื่อลากคลุมเลือก กด Ctrl/Shift ค้างเพื่อเลือกเพิ่ม • คลิกเมาส์กลางลากเพื่อเลื่อนจอ ใช้ลูกกลิ้งหรือสไลเดอร์ซูม กดพอดีจอเพื่อจัดให้เห็นทั้งหมด • กด Shift ค้างตอนปรับขนาด = ล็อกอัตราส่วน • Smart snap จัดขอบ/จุดกึ่งกลางให้ตรงกัน • ขนาดเป็นสเกลจริง เปลี่ยนหน่วยแล้วตัวเลขแปลงตาม',
     ready_to_calc:'พร้อมคำนวณ',
@@ -903,8 +903,8 @@ const I18N = {
     lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
     lay_save:'💾 保存', lay_load:'📂 読込', lay_export_svg:'SVG', lay_loaded:'レイアウトを読込みました', lay_load_err:'ファイルを読めません', lay_empty_export:'エクスポート対象なし',
     lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット', lay_image:'🖼 画像',
-    tab_manual:'Manual', sec_manual:'手動バランス', man_load:'↻ 現ステップ読込', man_process:'工程', man_floor:'ラインを減らす基準', man_reset:'リセット', man_cancel:'キャンセル', man_moves:'{q} 個', man_nothing:'このレベルで移動対象なし',
-    man_no_data:'先にステップを計算し「現ステップ読込」を押してください', man_hint_move:'{p} を {l} からバランス — クリックで移動先を選択', man_move_from:'{p} を {l} から移動 ({h}h)',
+    tab_manual:'Manual', sec_manual:'手動バランス', man_load:'↻ 初期状態を読込 (未バランス)', man_process:'工程', man_floor:'ラインを減らす基準', man_reset:'リセット', man_cancel:'キャンセル', man_moves:'{q} 個', man_nothing:'このレベルで移動対象なし',
+    man_no_data:'先に Step 0 を計算し「初期状態を読込 (未バランス)」を押してください', man_hint_move:'{p} を {l} からバランス — クリックで移動先を選択', man_move_from:'{p} を {l} から移動 ({h}h)',
     man_help:'最下線より上のバー部分にホバー — 移動可能なラインが点滅しゴーストバーで新しい高さを表示。クリックで移動先を選択、元ラインは「ラインを減らす基準」まで減少。移動先はオーバー可、次でバランス。',
     lay_help:'矩形ツールで描画。空白を左ドラッグで範囲選択、Ctrl/Shift+クリックで追加選択。中ボタンドラッグでパン、ホイール/スライダーでズーム、全体表示で全体にフィット。リサイズ中にShiftを押すと縦横比を固定。スマートスナップで端・中心を整列。サイズは実寸 — 単位切替で数値が変換されます。',
     ready_to_calc:'計算準備完了',
@@ -999,7 +999,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.2.3';
+const APP_VERSION = '3.2.4';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2158,6 +2158,15 @@ function getCurrentResult(ds) {
   ds = ds || getActiveDataset();
   if (!ds || !ds.resultsHistory) return null;
   return ds.resultsHistory[ds.currentStepIdx];
+}
+
+// The initial (Step 0 = un-balanced) result — Manual balancing always starts from here, never from
+// whatever balanced step is currently shown on Results (matters most when a snapshot opens at the
+// last step).
+function getInitialResult(ds) {
+  ds = ds || getActiveDataset();
+  if (!ds || !ds.resultsHistory || !ds.resultsHistory.length) return null;
+  return ds.resultsHistory[0];
 }
 
 // Month key whose display label resolves to the real current calendar month, else null.
@@ -4659,7 +4668,7 @@ function switchTab(name) {
   document.querySelectorAll('#mainTabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
   if (name === 'layout') layRender();
-  if (name === 'manual') { if (!state.manual) manLoadCurrent(); else manRender(); }
+  if (name === 'manual') { if (!state.manual) manLoadInitial(); else manRender(); }
   if (!state.isSnapshot) saveStorage({ activeTab: name });
 }
 
@@ -5572,8 +5581,8 @@ function manFloorFor(month) {
   const it = ths[(state.manual && state.manual.floorIdx) || 0] || ths[0];
   return it ? it.valueFor(month) : 400;
 }
-function manLoadCurrent() {
-  const result = getCurrentResult();
+function manLoadInitial() {
+  const result = getInitialResult();
   if (!result || !state.master) { state.manual = null; manRender(); return; }
   const clone = JSON.parse(JSON.stringify(result.byProcess));   // deep copy — never mutate the auto result
   state.manual = {
@@ -5794,8 +5803,8 @@ function manInit() {
   if (cv) cv.addEventListener('mouseleave', () => {
     if (state.manHover) { state.manHover = null; manStopPulse(); cv.style.cursor = 'default'; $('manStatus').textContent = ''; if (state.manualChart) state.manualChart.draw(); }
   });
-  $('manLoadBtn').onclick = manLoadCurrent;
-  $('manResetBtn').onclick = manLoadCurrent;
+  $('manLoadBtn').onclick = manLoadInitial;
+  $('manResetBtn').onclick = manLoadInitial;
   $('manProc').onchange = () => { if (state.manual) { state.manual.proc = $('manProc').value; state.manHover = null; buildManualChart(); } };
   $('manFloor').onchange = () => { if (state.manual) { state.manual.floorIdx = parseInt($('manFloor').value) || 0; state.manHover = null; buildManualChart(); } };
   document.addEventListener('mousedown', e => { const p = $('manPopup'); if (p && p.style.display !== 'none' && !p.contains(e.target)) manClosePopup(); });

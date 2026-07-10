@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.4] — 2026-07-08
+
+### Fixed
+- **Manual tab now starts from the initial, un-balanced allocation.** It seeded from the currently
+  shown step, so opening a snapshot (which lands on the last, fully-balanced step) gave a Manual tab
+  that was already balanced with nothing to move. Manual balancing now always loads Step 0 (the raw
+  allocation) via `getInitialResult()`, independent of the Results step. Renamed the loader to
+  `manLoadInitial()` and relabelled the button "Load initial (unbalanced)".
+
 ## [3.2.3] — 2026-07-08
 
 ### Changed
