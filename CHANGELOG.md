@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.1] — 2026-07-08
+
+### Fixed
+- **Threshold hover tooltip now actually triggers.** On the Stacked-by-Part and Manual charts
+  (which use `intersect: true`), the threshold lines had `pointRadius: 0` and so no point to hover —
+  the tooltip never appeared. Added `pointHitRadius` to the threshold datasets so hovering the line
+  registers.
+
 ## [3.3] — 2026-07-08
 
 ### Added
