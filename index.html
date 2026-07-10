@@ -999,7 +999,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.2.1';
+const APP_VERSION = '3.2.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1113,6 +1113,18 @@ function generatePartColor(partNo) {
 function getPartColor(partNo) {
   if (!state.partColors.has(partNo)) state.partColors.set(partNo, generatePartColor(partNo));
   return state.partColors.get(partNo);
+}
+
+// Lookup a part's Model (from the Master matrix), cached by Part No. Empty string if unknown.
+function getPartModel(partNo) {
+  if (!state._partModelCache || state._partModelCacheFor !== state.master) {
+    state._partModelCache = new Map();
+    state._partModelCacheFor = state.master;
+    if (state.master && Array.isArray(state.master.parts)) {
+      for (const p of state.master.parts) state._partModelCache.set(p.partNo, p.model || '');
+    }
+  }
+  return state._partModelCache.get(partNo) || '';
 }
 
 function t(key, params) {
@@ -2933,7 +2945,7 @@ function renderChartSingle() {
       options: {
         responsive: true, maintainAspectRatio: false,
         layout: { padding: { bottom: 60 } },
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'nearest', intersect: true },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
           y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
@@ -2958,7 +2970,8 @@ function renderChartSingle() {
               const curLine = visibleLines[lineIdx];
               const balanced = origin && origin !== curLine;
               const tag = balanced ? ` (balanced from ${origin.replace(/^Shaft /, '')})` : '';
-              return `${pn}: ${fmtY(c.parsed.y)}${tag}`;
+              const model = getPartModel(pn);
+              return `${pn}${model ? ' · ' + model : ''}: ${fmtY(c.parsed.y)}${tag}`;
             }
           } }
         }
@@ -3087,7 +3100,7 @@ function renderChartCompare() {
       options: {
         responsive: true, maintainAspectRatio: false,
         layout: { padding: { bottom: 60 } },
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'nearest', intersect: true },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
           y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
@@ -3106,7 +3119,9 @@ function renderChartCompare() {
               },
               label: c => {
                 if (c.parsed.y <= 0) return null;
-                return `${c.dataset._ds || ''} • ${c.dataset._part || c.dataset.label}: ${fmtY(c.parsed.y)}`;
+                const pn = c.dataset._part || c.dataset.label;
+                const model = getPartModel(pn);
+                return `${c.dataset._ds || ''} • ${pn}${model ? ' · ' + model : ''}: ${fmtY(c.parsed.y)}`;
               }
             }
           }

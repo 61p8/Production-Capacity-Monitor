@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.2] — 2026-07-08
+
+### Changed
+- **Stacked-by-Part tooltip shows only the hovered part, plus its Model.** Hovering a stacked bar
+  listed every part in that column; it now shows just the segment under the cursor and appends the
+  part's Model from the Master matrix (e.g. `TG-001 · M100: 12.3 h`). Applies to the Single and
+  Compare views. (`getPartModel()` looks the Model up from `state.master`, cached per upload.)
+
 ## [3.2.1] — 2026-07-08
 
 ### Changed
