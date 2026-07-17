@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.1] — 2026-07-09
+
+### Fixed
+- **Thin part segments no longer vanish in the Stacked-by-Part chart.** The 1px white separator added
+  in 3.2.3 was drawn *inside* each bar segment, so a part with a small quantity in a given month
+  (a 1–2px tall slice) was completely covered by its own border and rendered invisible — it looked
+  like work "disappeared" in some months and reappeared in others as the allocation changed between
+  steps. Removed the white border; parts are still distinguished by the (3.2.3) colour hash.
+
 ## [3.4] — 2026-07-09
 
 ### Added
