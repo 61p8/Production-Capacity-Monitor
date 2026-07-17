@@ -91,6 +91,11 @@ A wide-format table with parts in rows and months in columns:
 
 Header rows can include `PRTNO` or `Part No.` — the parser auto-detects the header row within the first 15 rows.
 
+Month columns accept `Apr 2027`, `Apr'27`, `2027-04`, real Excel dates, **and fiscal-year columns**
+`FY27` / `FY 28` / `FY2029`. A fiscal-year column is expected to already hold a **monthly-average**
+figure, so it's treated like any other month (same hours math and thresholds); the chart labels it
+`FY27` and groups it under its calendar year.
+
 ### Raw_Data sheet (optional auto-import)
 
 Instead of filling the Monthly_Req grid by hand, add a sheet named **`Raw_Data`** and paste raw

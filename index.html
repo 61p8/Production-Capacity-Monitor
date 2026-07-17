@@ -1004,7 +1004,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.3.1';
+const APP_VERSION = '3.4';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1319,6 +1319,9 @@ function parseMaster(wb, map) {
 function parseMonthLabel(value) {
   if (value instanceof Date) return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][value.getMonth()]}'${String(value.getFullYear()).slice(-2)}`;
   if (typeof value === 'string') {
+    // Fiscal-year columns (already a monthly-average figure): "FY27", "FY 27", "FY2027", "FY'30".
+    const _fy = value.trim().match(/^FY\s*['’]?\s*(\d{2,4})$/i);
+    if (_fy) return 'FY' + _fy[1];
     const m = value.trim().match(/^([A-Za-z]{3,9})[\u0027'\u2019\s\-]*(\d{2,4})?$/);
     if (m) {
       const mn = m[1].slice(0, 3).toLowerCase();
@@ -1610,6 +1613,16 @@ function parseMonthYearFromLabel(label) {
   return null;
 }
 
+// Fiscal-year label → its calendar year (for X-axis year grouping only). Kept separate from
+// parseMonthYearFromLabel so FY columns stay "invalid" months (Max Cap uses the 30-day fallback).
+function parseFYLabel(label) {
+  const m = String(label || '').trim().match(/^FY\s*['’]?\s*(\d{2,4})$/i);
+  if (!m) return null;
+  let y = parseInt(m[1], 10);
+  if (y < 100) y += 2000;
+  return { year: y, fy: true };
+}
+
 function getDaysInMonth(year, monthIdx) { return new Date(year, monthIdx + 1, 0).getDate(); }
 
 function getMonthInfo(internalLabel) {
@@ -1786,7 +1799,8 @@ function computeXHierarchy(visibleLines, months) {
     let curYear = null, startIdx = null;
     for (let mi = 0; mi < months.length; mi++) {
       const idx = fromIdx + mi;
-      const parsed = parseMonthYearFromLabel(getDisplayLabel(months[mi])) || parseMonthYearFromLabel(months[mi]);
+      const parsed = parseMonthYearFromLabel(getDisplayLabel(months[mi])) || parseMonthYearFromLabel(months[mi])
+        || parseFYLabel(getDisplayLabel(months[mi])) || parseFYLabel(months[mi]);
       const year = parsed?.year ?? '?';
       if (year !== curYear) {
         if (startIdx !== null) yearGroups.push({ label: String(curYear), fromIdx: startIdx, toIdx: idx - 1 });
@@ -2257,6 +2271,7 @@ function applyMonthRange() {
   const eM = parseInt($('endMonth').value), eY = parseInt($('endYear').value);
   state.labelOverrides = {};
   months.forEach((m, i) => {
+    if (parseFYLabel(m)) { state.labelOverrides[m] = m; return; }  // keep FY columns labelled as-is
     const tot = sM + i;
     state.labelOverrides[m] = `${MONTH_NAMES[((tot % 12) + 12) % 12]} ${sY + Math.floor(tot / 12)}`;
   });

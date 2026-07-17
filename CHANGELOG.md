@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4] — 2026-07-09
+
+### Added
+- **Fiscal-year columns (`FY27`, `FY 28`, `FY2029`, …) are now supported.** Previously the parser only
+  accepted month/date headers, so an `FY27` column was silently dropped. These columns already hold a
+  monthly-average figure, so they're now parsed and treated exactly like a normal month — same hours
+  calculation, same step/Max-Cap thresholds, and they can be balanced — with the X-axis label showing
+  `FY27` and the year tier grouping it under its calendar year (FY27 → 2027). Max Cap for an FY column
+  uses the 30-day fallback, and the Start→End sequential re-label leaves FY labels untouched.
+
 ## [3.3.1] — 2026-07-08
 
 ### Fixed
