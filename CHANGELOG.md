@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.2] — 2026-07-17
+
+### Fixed
+- **Balancing used the wrong hours formula when Fluctuation ≠ 1 — parts appeared to lose work when
+  moved.** The move/chain-push/Manual code computed a part's hours as `qty×CT/3600 ÷ (OA×Fluct)`,
+  but the correct formula (used by the initial allocation) is `qty×CT/3600 ÷ OA × Fluct`. With
+  `Fluct = 1.5` a moved part's hours on the destination line came out ~2.3× too small, so its bar
+  shrank (looked like the work "disappeared") and — because the numbers were wrong — Smart Balance
+  also **over-moved**, pushing far more off the source line than needed. Pieces were always conserved,
+  but the hours (and the balance decisions) were wrong. Fixed the divisor to `OA/Fluct` in
+  `simulateDirectMove`, `simulateChainPush`, `limitMoveByHours`, and the Manual tab. Files with
+  `Fluct = 1` were unaffected. **Re-run Calculate/Balance (and re-export any snapshot) to get corrected
+  numbers.**
+
 ## [3.4.1] — 2026-07-09
 
 ### Fixed

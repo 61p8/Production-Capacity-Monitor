@@ -1004,7 +1004,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.4.1';
+const APP_VERSION = '3.4.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1961,7 +1961,7 @@ function simulateDirectMove(procData, proc, month, pn, alloc, primCfg, bk, pd, t
   const bkHrs = procData.hours[bk.name]?.[month] || 0;
   const bkRem = target - bkHrs;
   if (bkRem <= 0.01) return null;
-  const fact = pd.oa * pd.fluct;
+  const fact = pd.oa / pd.fluct;   // hours = qty*CT/3600 /OA *Fluct  ⇒  single divisor is OA/Fluct
   const fromCT = getEffectiveCT(pn, proc, primCfg.name, month, primCfg.ct);
   const toCT = getEffectiveCT(pn, proc, bk.name, month, bk.ct);
   const pHr = fromCT / 3600 / fact;
@@ -1983,7 +1983,7 @@ function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, b
   const bkRem = target - bkHrs;
   if (bkRem > 0.01) return null; // No need to chain — direct works
 
-  const fact = pd.oa * pd.fluct;
+  const fact = pd.oa / pd.fluct;   // hours = qty*CT/3600 /OA *Fluct  ⇒  single divisor is OA/Fluct
   const fromCT = getEffectiveCT(pn, proc, primCfg.name, month, primCfg.ct);
   const toCT = getEffectiveCT(pn, proc, bk.name, month, bk.ct);
   const pHr = fromCT / 3600 / fact;
@@ -2010,7 +2010,7 @@ function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, b
     let bestSub = null;
     for (const ob of otherBackups) {
       const otherFromCT = getEffectiveCT(otherPn, proc, otherPrimCfg.name, month, otherPrimCfg.ct);
-      const sub = simulateDirectMove(procData, proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, target, otherAlloc.qty * (otherFromCT / 3600 / (otherPd.oa * otherPd.fluct)));
+      const sub = simulateDirectMove(procData, proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, target, otherAlloc.qty * (otherFromCT / 3600 / (otherPd.oa / otherPd.fluct)));
       if (sub) {
         if (sub.operations[0].hrsFrom > need - 0.01) {
           // Limit qty to need
@@ -2024,7 +2024,7 @@ function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, b
       if (!bestSub) {
         // Try chain push 1 level deeper
         const nextSeen = new Set(seen); nextSeen.add(otherPn);
-        const recur = simulateChainPush(procData, partMap, proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, target, otherAlloc.qty * (otherFromCT / 3600 / (otherPd.oa * otherPd.fluct)), depth + 1, nextSeen);
+        const recur = simulateChainPush(procData, partMap, proc, month, otherPn, otherAlloc, otherPrimCfg, ob, otherPd, target, otherAlloc.qty * (otherFromCT / 3600 / (otherPd.oa / otherPd.fluct)), depth + 1, nextSeen);
         if (recur && !recur.error && recur.hoursFromOver > 0) {
           if (!bestSub || recur.hoursFromOver > (bestSub.hrsFrom || 0)) {
             ops.push(...recur.operations);
@@ -2052,7 +2052,7 @@ function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, b
 }
 
 function limitMoveByHours(proc, month, partNo, alloc, fromCfg, toCfg, pd, maxHrsFrom) {
-  const fact = pd.oa * pd.fluct;
+  const fact = pd.oa / pd.fluct;   // hours = qty*CT/3600 /OA *Fluct  ⇒  single divisor is OA/Fluct
   const fromCT = getEffectiveCT(partNo, proc, fromCfg.name, month, fromCfg.ct);
   const toCT = getEffectiveCT(partNo, proc, toCfg.name, month, toCfg.ct);
   const pHr = fromCT / 3600 / fact;
@@ -5741,7 +5741,7 @@ function manEval(pn, line, month, floorVal) {
   const fromCfg = pd.lines.find(l => l.name === line); if (!fromCfg) return null;
   const allocQty = (data.partAlloc[line] && data.partAlloc[line][month] && data.partAlloc[line][month][pn] || {}).qty || 0;
   if (allocQty <= 0.01) return null;
-  const fact = pd.oa * pd.fluct;
+  const fact = pd.oa / pd.fluct;   // hours = qty*CT/3600 /OA *Fluct  ⇒  single divisor is OA/Fluct
   const pHr = getEffectiveCT(pn, proc, line, month, fromCfg.ct) / 3600 / fact;
   const cutHrs = Math.min(allocQty * pHr, srcHours - floorVal);  // hours removed from the source line
   const qty = cutHrs / pHr;                                       // qty moved (same for every target)
@@ -5810,7 +5810,7 @@ function manApplyMove(pn, from, month, to, floorVal) {
   const pd = part.processes[proc];
   const fromCfg = pd.lines.find(l => l.name === from), toCfg = pd.lines.find(l => l.name === to);
   if (!fromCfg || !toCfg) return;
-  const fact = pd.oa * pd.fluct;
+  const fact = pd.oa / pd.fluct;   // hours = qty*CT/3600 /OA *Fluct  ⇒  single divisor is OA/Fluct
   const pHr = getEffectiveCT(pn, proc, from, month, fromCfg.ct) / 3600 / fact;
   const bHr = getEffectiveCT(pn, proc, to, month, toCfg.ct) / 3600 / fact;
   const srcHours = data.hours[from] && data.hours[from][month] || 0;
