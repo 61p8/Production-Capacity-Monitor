@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5] — 2026-07-17
+
+### Changed
+- **Pieces mode is now whole-system and matches the hours view.** Switching the Y-axis to
+  Pieces/month now also converts the **data table** (per-line cells and totals show pieces; colour
+  still reflects the hours-vs-target ratio). The biggest fix is the **threshold line**: it used one
+  process-wide average cycle time, so a fast line like Tube (412h, well under 497h) could show its
+  piece bars *above* the flat piece-threshold — a line looked over capacity in pieces while being
+  under in hours. Each step/Max-Cap threshold is now converted **per line** using that line's own
+  hours-per-piece, so a line's over/under status is identical in pieces and hours (verified across
+  all Lathe lines). Non-variant steps use the line's all-months average (flat within the line's
+  group); variant steps and Max Cap convert per month. The By-Line chart keeps the process-wide
+  average (a single line there can't match every line at once). Diff table stays in hours.
+
 ## [3.4.2] — 2026-07-17
 
 ### Fixed

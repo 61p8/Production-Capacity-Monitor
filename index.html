@@ -1004,7 +1004,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.4.2';
+const APP_VERSION = '3.5';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2498,18 +2498,21 @@ function renderTableSingle(process) {
   html += `<thead><tr><th class="line-name">${t('line_col')}</th>`;
   for (const m of months) html += `<th>${getDisplayLabel(m)}</th>`;
   html += `<th>${t('total_col')}</th></tr></thead><tbody>`;
+  const pcs = getYUnit() === 'pcs';
   for (const line of visibleLines) {
     html += `<tr><td class="line-name">${line}</td>`;
     let total = 0;
     for (const m of months) {
       const hrs = data.hours[line]?.[m] || 0;
-      total += hrs;
-      const tgt = getStepTarget(result.stepIdx, setting, m);
-      const cls = getStatusClass(hrs, tgt);
-      const display = hrs > 0 ? formatHours(hrs) : '—';
-      html += `<td class="${cls}" title="${getDisplayLabel(m)}: ${formatHours(hrs)} / target ${formatHours(tgt)}">${display}</td>`;
+      const val = pcs ? lineQtyTotal(data, line, m) : hrs;   // display value in the active unit
+      total += val;
+      const tgt = getStepTarget(result.stepIdx, setting, m);  // hour target
+      const cls = getStatusClass(hrs, tgt);                   // colour by the hours ratio (== pcs ratio)
+      const display = hrs > 0 ? fmtCellY(val) : '—';
+      const tgtDisp = pcs ? (lineHrsPerPiece(data, line, m) ? Math.round(tgt / lineHrsPerPiece(data, line, m)).toLocaleString() + ' pcs' : '—') : formatHours(tgt);
+      html += `<td class="${cls}" title="${getDisplayLabel(m)}: ${fmtCellY(val)} / target ${tgtDisp}">${display}</td>`;
     }
-    html += `<td class="month-total">${formatHours(total)}</td></tr>`;
+    html += `<td class="month-total">${fmtCellY(total)}</td></tr>`;
   }
   html += '</tbody></table>';
   return html;
@@ -2553,10 +2556,12 @@ function renderTableCompare(process) {
     for (const m of months) {
       for (const ds of compareDs) {
         const r = getCurrentResult(ds);
-        const hrs = r?.byProcess[process]?.hours[line]?.[m] || 0;
+        const bpd = r?.byProcess[process];
+        const hrs = bpd?.hours[line]?.[m] || 0;
         const tgt = r ? getStepTarget(r.stepIdx, r.settings, m) : 417;
         const cls = getStatusClass(hrs, tgt);
-        const display = hrs > 0 ? formatHours(hrs) : '—';
+        const val = (getYUnit() === 'pcs' && bpd) ? lineQtyTotal(bpd, line, m) : hrs;
+        const display = hrs > 0 ? fmtCellY(val) : '—';
         html += `<td class="${cls}">${display}</td>`;
       }
     }
@@ -2709,6 +2714,19 @@ function thPieces(hourVal, hpp) {
 function thHpp(th, data, month, hppAvg) {
   return th.variable ? procHrsPerPiece(data, month) : hppAvg;
 }
+// Per-LINE hrs/piece (exact for that line's own product mix) — used to convert an hour threshold to
+// pieces per line, so the pcs threshold matches each line's bars exactly like the hours view does.
+function lineHrsPerPiece(data, line, month) {
+  const q = lineQtyTotal(data, line, month);
+  return q > 0 ? (data.hours[line]?.[month] || 0) / q : null;
+}
+function lineHrsPerPieceAvg(data, line, months) {
+  let h = 0, q = 0;
+  for (const m of months) { h += data.hours[line]?.[m] || 0; q += lineQtyTotal(data, line, m); }
+  return q > 0 ? h / q : null;
+}
+// Compact table-cell formatter following the active Y unit (no unit suffix, to keep cells narrow).
+function fmtCellY(v) { return getYUnit() === 'pcs' ? Math.round(v).toLocaleString() : formatHours(v); }
 
 // ===== Threshold hover detail (tooltip) =====
 // Effective step config for a month (per-month overrides fall back to the step's base values).
@@ -3009,16 +3027,19 @@ function renderChartSingle() {
       });
     }
 
-    const hppAvg = procHrsPerPieceAvg(data, months);
+    const lineAvgHpp = {}; for (const line of visibleLines) lineAvgHpp[line] = lineHrsPerPieceAvg(data, line, months);
     for (const th of getStepThresholds(setting)) {
       if (!th.show) continue;
       const arr = [], tip = [];
-      for (const line of visibleLines) for (const m of months) { arr.push(thPieces(th.valueFor(m), thHpp(th, data, m, hppAvg))); tip.push(stepTipLines(th.idx, setting, m)); }
+      for (const line of visibleLines) for (const m of months) {
+        const hpp = th.variable ? lineHrsPerPiece(data, line, m) : lineAvgHpp[line];
+        arr.push(thPieces(th.valueFor(m), hpp)); tip.push(stepTipLines(th.idx, setting, m));
+      }
       datasets.push(attachTip(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx), tip));
     }
     if (opts.showMaxCap) {
       const mcData = [], mcTip = [];
-      for (const line of visibleLines) for (const m of months) { mcData.push(thPieces(calculateMaxCap(setting, m), procHrsPerPiece(data, m))); mcTip.push(mcTipLines(setting, m)); }
+      for (const line of visibleLines) for (const m of months) { mcData.push(thPieces(calculateMaxCap(setting, m), lineHrsPerPiece(data, line, m))); mcTip.push(mcTipLines(setting, m)); }
       datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), mcTip), stack: 'th_mc' });
     }
 
@@ -3166,16 +3187,19 @@ function renderChartCompare() {
     }
 
     const refData = refResult.byProcess[process];
-    const hppAvgC = procHrsPerPieceAvg(refData, months);
+    const refLineAvgHpp = {}; for (const line of visibleLines) refLineAvgHpp[line] = lineHrsPerPieceAvg(refData, line, months);
     for (const th of getStepThresholds(refResult.settings)) {
       if (!th.show) continue;
       const arr = [], tip = [];
-      for (const line of visibleLines) for (const m of months) { arr.push(thPieces(th.valueFor(m), thHpp(th, refData, m, hppAvgC))); tip.push(stepTipLines(th.idx, refResult.settings, m)); }
+      for (const line of visibleLines) for (const m of months) {
+        const hpp = th.variable ? lineHrsPerPiece(refData, line, m) : refLineAvgHpp[line];
+        arr.push(thPieces(th.valueFor(m), hpp)); tip.push(stepTipLines(th.idx, refResult.settings, m));
+      }
       datasets.push(attachTip(thresholdLineDataset(th.label, th.value, th.color, th.dash, arr, 'step' + th.idx), tip));
     }
     if (opts.showMaxCap) {
       const mcData = [], mcTip = [];
-      for (const line of visibleLines) for (const m of months) { mcData.push(thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPiece(refData, m))); mcTip.push(mcTipLines(refResult.settings, m)); }
+      for (const line of visibleLines) for (const m of months) { mcData.push(thPieces(calculateMaxCap(refResult.settings, m), lineHrsPerPiece(refData, line, m))); mcTip.push(mcTipLines(refResult.settings, m)); }
       datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), mcTip), stack: 'th_mc' });
     }
 
@@ -4838,7 +4862,7 @@ function setupEvents() {
   $('yUnit').onchange = () => {
     state.yUnit = $('yUnit').value === 'pcs' ? 'pcs' : 'hours';
     saveStorage({ yUnit: state.yUnit });
-    if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderChart(); renderChartLegendMini(); }
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderTableArea(); renderChart(); renderChartLegendMini(); }
   };
 
   ['rangeFrom','rangeTo'].forEach(id => {
