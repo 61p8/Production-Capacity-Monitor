@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.6] — 2026-07-17
+
+### Changed
+- **Fluctuation is now a per-part demand multiplier in the Volume file, not a Matrix column.** It was
+  a line-side factor in the hours rate, which meant two lines with the *same* CT and OA could show
+  very different piece capacities purely because one ran high-Fluctuation parts. Fluctuation now lives
+  in the **Monthly/Raw_Data file** as an optional `Fluct` column (per part, blank = 1.0) and multiplies
+  the demand: `hours = qty × Fluct × CT / 3600 / OA` (mathematically identical, so **hours and the
+  balancing are unchanged**). Consequences:
+  - The Matrix no longer has a Fluct column (Master parser ignores it; the Setup "Fluctuation column"
+    mapping moved to the Volume side). **Add a `Fluct` column to your Volume file** — otherwise every
+    part defaults to 1.0 (the old Matrix Fluct is intentionally *not* used).
+  - Pieces mode plots the base `qty` (solid) plus the `qty×(Fluct−1)` **buffer** as a dotted overlay
+    in the same colour, with a "Fluctuation buffer" legend entry; the data table shows the adjusted
+    total. Because Fluctuation is out of the capacity rate, the per-line piece threshold depends only
+    on CT and OA — so lines with equal CT/OA now show the **same** piece capacity.
+  - Allocations carry `adjQty = qty × Fluct` through balancing (verified: conserved across steps).
+  - Templates updated (Master drops Fluct → v3.0; Monthly/Raw_Data gain a `Fluct` column → v3.0);
+    `monthlyData.fluct` persists in localStorage + snapshots.
+
 ## [3.5] — 2026-07-17
 
 ### Changed

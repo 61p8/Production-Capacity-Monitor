@@ -41,6 +41,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 | Chart helpers | `xHierarchyPlugin`, `computeXHierarchy()`, `shouldUseNumericMonths()`, `getMonthOnly()` |
 | Parsers | `parseMaster(wb, map)`, `parseMonthly(wb, map)`, `parseRawData(wb, map)` — all take `state.importMap`; blank fields fall back to auto-detection. `matchSheetPrefix()` resolves the process-sheet prefix |
 | Import mapping | `state.importMap` (`{master, volume}`, see `DEFAULT_IMPORT_MAP`) — user config on Setup for what the parsers look for. `renderImportMapMaster/Volume()`, `reparseMaster/Volume()`, `setupImportMap()`, `wbHeaderCandidates()`. Persisted (localStorage + snapshot) |
+| Fluctuation | Now a **demand multiplier from the Volume file** (`monthlyData.fluct`, per part), NOT a Matrix column. `resolvePartsFluct()` folds it into `pd.fluct` at calc time (hours unchanged: `qty×Fluct×CT/3600/OA`). Allocs store `adjQty = qty×Fluct` (`addToAlloc`/moves carry it); pcs mode plots `qty` (base) + `adjQty−qty` (Fluct buffer, dotted). Missing → 1.0 (never the Matrix value) |
 | Calculation: Initial | `calculateInitialAllocation()` — assigns each part to its `Pri=1` line per process |
 | Smart Balance | `calculateForStep()`, `smartBalanceV2()`, `simulateDirectMove()`, `simulateChainPush()`, `limitMoveByHours()` |
 | Rendering | `renderPreview()`, `renderCalendarGrid()`, `renderTableArea()`, `renderChart()`, `renderResults()`, etc. |
@@ -96,7 +97,10 @@ Every change that ships must bump `APP_VERSION` and add a matching `CHANGELOG.md
 
 ```
 Hours per part per month per line:
-  hours = (qty × CT / 3600) / OA × Fluctuation
+  hours = (qty × Fluctuation × CT / 3600) / OA
+  where  Fluctuation is a per-part DEMAND multiplier from the Volume file (monthlyData.fluct),
+         default 1.0. adjQty = qty × Fluctuation = the planned pieces (what pcs mode plots).
+         Note: OA and CT stay per line/process (Matrix); Fluctuation is NOT a Matrix column anymore.
 
 Monthly max capacity:
   MaxCap = days_in_month × (hrs_per_shift + maxCapOT) × shifts

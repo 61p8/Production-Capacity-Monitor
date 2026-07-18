@@ -190,6 +190,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .chart-legend-mini .swatch { display: inline-block; width: 14px; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: middle; border: 1px solid #B4B2A9; box-sizing: border-box; }
 .chart-legend-mini .swatch.solid { background: #888780; }
 .chart-legend-mini .swatch.hatch { background: repeating-linear-gradient(45deg, #888780 0 3px, #FFF 3px 6px); }
+.chart-legend-mini .swatch.dot { background: #888780 radial-gradient(circle at 3px 3px, #FFF 0 1.2px, transparent 1.3px); background-size: 6px 6px; }
 
 .balance-info { font-size: 12px; color: #5F5E5A; }
 .balance-error { font-size: 12px; color: #791F1F; font-weight: 500; }
@@ -384,8 +385,6 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
             <input type="text" id="mapMPri" placeholder="Pri">
             <label data-i18n="map_oa_col">OA column</label>
             <select id="mapMOa"></select>
-            <label data-i18n="map_fluct_col">Fluctuation column</label>
-            <select id="mapMFluct"></select>
           </div>
           <div class="import-map-hint" id="mapMHint"></div>
         </div>
@@ -417,6 +416,8 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
             <select id="mapVMonth" class="vol-raw-only"></select>
             <label class="vol-raw-only" data-i18n="map_qty_col">Qty column</label>
             <select id="mapVQty" class="vol-raw-only"></select>
+            <label data-i18n="map_fluct_col">Fluctuation column</label>
+            <select id="mapVFluct"></select>
             <label data-i18n="map_part_prefix">Only parts starting with</label>
             <input type="text" id="mapVPrefix" placeholder="(all)">
           </div>
@@ -590,6 +591,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     <div class="chart-legend-mini" id="chartLegendMini">
       <span><span class="swatch solid"></span><span data-i18n="legend_natural">Natural (Pri 1)</span></span>
       <span><span class="swatch hatch"></span><span data-i18n="legend_balanced">Balanced (moved)</span></span>
+      <span id="legendFluctSwatch" style="display:none"><span class="swatch dot"></span><span data-i18n="fluct_buffer">Fluctuation buffer</span></span>
     </div>
 
     <div class="chart-wrap">
@@ -751,7 +753,7 @@ const I18N = {
     no_overflow:'No overflow — capacity sufficient',
     show_trend:'Trend', show_line_axis:'Line name',
     cant_parse_month:'Cannot parse — set year', days_info:'{d} days • HD = {h}',
-    trend_label:'Trend', legend_natural:'Natural (Pri 1)', legend_balanced:'Balanced (moved)',
+    trend_label:'Trend', legend_natural:'Natural (Pri 1)', legend_balanced:'Balanced (moved)', fluct_buffer:'Fluctuation buffer',
     legend_ds_border:'Border = Dataset', legend_hover_hint:'(hover chip to highlight)',
     cannot_balance:'No more balance steps available', confirm_clear_all:'Clear ALL saved data (Master + datasets + settings)?', confirm_clear_datasets:'Clear all Monthly Req datasets? (Master and settings will be kept)',
     auto_loaded:'Loaded {n} dataset(s) from previous session',
@@ -843,7 +845,7 @@ const I18N = {
     no_overflow:'ไม่มีจุดล้น — capacity เพียงพอ',
     show_trend:'แนวโน้ม', show_line_axis:'ชื่อไลน์',
     cant_parse_month:'อ่าน label ไม่ได้ — ใส่ปีให้ชัด', days_info:'{d} วัน • HD = {h}',
-    trend_label:'แนวโน้ม', legend_natural:'ธรรมชาติ (Pri 1)', legend_balanced:'ถูกย้าย (Balanced)',
+    trend_label:'แนวโน้ม', legend_natural:'ธรรมชาติ (Pri 1)', legend_balanced:'ถูกย้าย (Balanced)', fluct_buffer:'ส่วน Fluctuation',
     legend_ds_border:'ขอบ = Dataset', legend_hover_hint:'(hover ที่ chip เพื่อเน้น)',
     cannot_balance:'ไม่มี step balance ต่อแล้ว', confirm_clear_all:'ล้างข้อมูลทั้งหมด (Master + datasets + settings)?', confirm_clear_datasets:'ล้าง Monthly Req datasets ทั้งหมด? (เก็บ Master กับ settings ไว้)',
     auto_loaded:'โหลด {n} dataset(s) จากครั้งที่แล้ว',
@@ -935,7 +937,7 @@ const I18N = {
     no_overflow:'オーバーフローなし',
     show_trend:'トレンド', show_line_axis:'ライン名',
     cant_parse_month:'解析不可', days_info:'{d}日 • HD = {h}',
-    trend_label:'トレンド', legend_natural:'通常 (Pri 1)', legend_balanced:'バランス済み',
+    trend_label:'トレンド', legend_natural:'通常 (Pri 1)', legend_balanced:'バランス済み', fluct_buffer:'変動バッファ',
     legend_ds_border:'枠線 = データセット', legend_hover_hint:'(chipにhoverで強調)',
     cannot_balance:'これ以上のバランス不可', confirm_clear_all:'全データを消去(Master+データセット+設定)?', confirm_clear_datasets:'月次データセットを全消去?(Masterと設定は保持)',
     auto_loaded:'前回の{n}データセットを読み込みました',
@@ -1004,7 +1006,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.5';
+const APP_VERSION = '3.6';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1021,8 +1023,7 @@ const DEFAULT_IMPORT_MAP = {
     partCol: '',               // '' = auto (header labels are case-insensitive exact match otherwise)
     partNameCol: 'Part Name',
     modelCol: 'Model',
-    oaCol: '',                 // '' = auto
-    fluctCol: '',              // '' = auto
+    oaCol: '',                 // '' = auto (OA stays a line/capacity property in the Matrix)
     priToken: 'Pri'            // row-2 marker that starts a Pri/CT line pair
   },
   volume: {
@@ -1031,6 +1032,7 @@ const DEFAULT_IMPORT_MAP = {
     partCol: '',               // '' = auto (PRTNO/Part No. for wide, pattern for raw)
     monthCol: '',              // raw mode only; '' = auto
     qtyCol: '',                // raw mode only; '' = auto
+    fluctCol: '',              // Fluctuation (demand multiplier), per part; '' = auto (else 1.0)
     partPrefix: ''             // keep only parts whose No. starts with this ('' = keep all)
   }
 };
@@ -1229,7 +1231,6 @@ function parseMaster(wb, map) {
     const partNameCol = findCol(mm.partNameCol);
     const modelCol = findCol(mm.modelCol);
     const oaCol = findColAuto(mm.oaCol, ['OA', 'O.A.']);
-    const fluctCol = findColAuto(mm.fluctCol, ['Fluct', 'Fluctuation']);
     if (partCol < 0) continue;
     sheetsWithPartCol++;
     const priTok = String(mm.priToken || 'Pri').trim().toLowerCase();
@@ -1259,7 +1260,7 @@ function parseMaster(wb, map) {
         if (!part.model && row[modelCol]) part.model = row[modelCol];
       }
       const oa = parseFloat(row[oaCol]) || 0.85;
-      const fluct = parseFloat(row[fluctCol]) || 1.0;
+      const fluct = 1.0;   // Fluctuation now comes from the Volume file (see monthlyData.fluct); Matrix no longer supplies it
       const lines = [];
       for (const lg of lineGroups) {
         const pri = parseInt(row[lg.priCol]);
@@ -1354,21 +1355,23 @@ function parseRawData(wb, map) {
   const PART_RE = /^(part\s*no\.?|prtno|partno|part\s*number|part|item|material|p\/n)$/i;
   const MONTH_RE = /^(month|date|delivery(\s*date)?|due(\s*date)?|period|prod(uction)?\s*(month|date)|เดือน|วันที่|月|日付)$/i;
   const QTY_RE = /^(qty\.?|q'ty|quantity|amount|volume|plan(\s*qty)?|pcs|demand|ยอด|จำนวน|数量)$/i;
+  const FLUCT_RE = /^(fluct\.?|fluctuation|変動|ความผันผวน)$/i;
   const eqCol = (cell, label) => label && String(cell).trim().toLowerCase() === String(label).trim().toLowerCase();
   const prefix = String(vm.partPrefix || '').trim();
-  let headerRowIdx = -1, partCol = -1, monthCol = -1, qtyCol = -1;
+  let headerRowIdx = -1, partCol = -1, monthCol = -1, qtyCol = -1, fluctCol = -1;
   for (let r = 0; r < Math.min(20, rows.length); r++) {
     const row = rows[r]; if (!row) continue;
-    let p = -1, m = -1, q = -1;
+    let p = -1, m = -1, q = -1, f = -1;
     for (let c = 0; c < row.length; c++) {
       const cell = row[c]; if (typeof cell !== 'string') continue;
       const s = cell.trim();
       // Explicit column overrides win; otherwise fall back to pattern detection.
       if (p < 0 && (vm.partCol ? eqCol(s, vm.partCol) : PART_RE.test(s))) p = c;
+      else if (f < 0 && (vm.fluctCol ? eqCol(s, vm.fluctCol) : FLUCT_RE.test(s))) f = c;
       else if (m < 0 && (vm.monthCol ? eqCol(s, vm.monthCol) : MONTH_RE.test(s))) m = c;
       else if (q < 0 && (vm.qtyCol ? eqCol(s, vm.qtyCol) : QTY_RE.test(s))) q = c;
     }
-    if (p >= 0 && q >= 0) { headerRowIdx = r; partCol = p; monthCol = m; qtyCol = q; break; }
+    if (p >= 0 && q >= 0) { headerRowIdx = r; partCol = p; monthCol = m; qtyCol = q; fluctCol = f; break; }
   }
   if (headerRowIdx < 0) return null;
   // No labelled month column → pick the column whose values most often parse as months/dates.
@@ -1386,12 +1389,13 @@ function parseRawData(wb, map) {
     if (best >= 0) monthCol = best;
   }
   if (monthCol < 0) return null;
-  const data = new Map(), monthSet = new Set();
+  const data = new Map(), monthSet = new Set(), fluct = new Map();
   for (let r = headerRowIdx + 1; r < rows.length; r++) {
     const row = rows[r]; if (!row) continue;
     const pnRaw = row[partCol]; if (pnRaw == null || pnRaw === '') continue;
     const pn = String(pnRaw).trim(); if (!pn) continue;
     if (prefix && !pn.startsWith(prefix)) continue;
+    if (fluctCol >= 0 && !fluct.has(pn)) { const fv = parseFloat(row[fluctCol]); if (fv > 0) fluct.set(pn, fv); }
     const label = parseMonthLabel(row[monthCol]); if (!label) continue;
     const q = parseFloat(row[qtyCol]); if (!(q > 0)) continue;
     monthSet.add(label);
@@ -1407,7 +1411,7 @@ function parseRawData(wb, map) {
     if (!pb) return -1;
     return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
   });
-  return { months, data, sheetName: name, headerRowIdx };
+  return { months, data, fluct, sheetName: name, headerRowIdx };
 }
 
 function parseMonthly(wb, map) {
@@ -1451,9 +1455,20 @@ function parseMonthly(wb, map) {
     }
     if (headerRowIdx < 0) continue;
     const headerRow = rows[headerRowIdx];
+    // Optional Fluctuation column (demand multiplier, per part).
+    const FLUCT_RE = /^(fluct\.?|fluctuation|変動|ความผันผวน)$/i;
+    let fluctColIdx = -1;
+    for (let c = 0; c < headerRow.length; c++) {
+      const cell = headerRow[c];
+      if (typeof cell === 'string') {
+        const s = cell.trim();
+        if (vm.fluctCol ? (s.toLowerCase() === String(vm.fluctCol).trim().toLowerCase()) : FLUCT_RE.test(s)) { fluctColIdx = c; break; }
+      }
+    }
     const monthCols = [];
     const seen = new Set();
     for (let c = partColIdx + 1; c < headerRow.length; c++) {
+      if (c === fluctColIdx) continue;
       const cell = headerRow[c]; if (cell == null) continue;
       let label = parseMonthLabel(cell);
       if (label) {
@@ -1464,7 +1479,7 @@ function parseMonthly(wb, map) {
       }
     }
     if (monthCols.length === 0) continue;
-    const data = new Map();
+    const data = new Map(), fluct = new Map();
     const months = monthCols.map(mc => mc.label);
     for (let r = headerRowIdx + 1; r < rows.length; r++) {
       const row = rows[r]; if (!row) continue;
@@ -1473,6 +1488,7 @@ function parseMonthly(wb, map) {
       const tr = String(pn).trim();
       if (!tr) continue;
       if (prefix && !tr.startsWith(prefix)) continue;
+      if (fluctColIdx >= 0 && !fluct.has(tr)) { const fv = parseFloat(row[fluctColIdx]); if (fv > 0) fluct.set(tr, fv); }
       const mq = data.get(tr) || {};
       for (const mc of monthCols) {
         const q = parseFloat(row[mc.col]) || 0;
@@ -1480,7 +1496,7 @@ function parseMonthly(wb, map) {
       }
       data.set(tr, mq);
     }
-    return { months, data, sheetName, headerRowIdx };
+    return { months, data, fluct, sheetName, headerRowIdx };
   }
   return null;
 }
@@ -1841,7 +1857,7 @@ function calculateInitialAllocation(masterParts, monthlyData) {
         if (qty <= 0) continue;
         const effCT = getEffectiveCT(partNo, proc, primary.name, month, primary.ct);
         const hrs = (qty * effCT / 3600) / pd.oa * pd.fluct;
-        addToAlloc(byProcess[proc], primary.name, month, partNo, qty, hrs);
+        addToAlloc(byProcess[proc], primary.name, month, partNo, qty, hrs, qty * pd.fluct);
       }
     }
   }
@@ -1849,14 +1865,18 @@ function calculateInitialAllocation(masterParts, monthlyData) {
   return { byProcess, months, matched, unmatched, partMap };
 }
 
-function addToAlloc(procData, line, month, partNo, qty, hrs) {
+// adjQty = fluctuation-adjusted pieces (qty × Fluct). Defaults to qty (Fluct 1) if not supplied,
+// so callers that don't care still work. Stored per alloc so pcs display + the CT/OA-only threshold
+// rate (hours ÷ Σ adjQty) are exact without re-deriving Fluct at render time.
+function addToAlloc(procData, line, month, partNo, qty, hrs, adjQty) {
+  if (adjQty == null) adjQty = qty;
   if (!procData.hours[line]) procData.hours[line] = {};
   procData.hours[line][month] = (procData.hours[line][month] || 0) + hrs;
   if (!procData.partAlloc[line]) procData.partAlloc[line] = {};
   if (!procData.partAlloc[line][month]) procData.partAlloc[line][month] = {};
-  if (!procData.partAlloc[line][month][partNo]) procData.partAlloc[line][month][partNo] = { qty: 0, hours: 0 };
-  procData.partAlloc[line][month][partNo].qty += qty;
-  procData.partAlloc[line][month][partNo].hours += hrs;
+  if (!procData.partAlloc[line][month][partNo]) procData.partAlloc[line][month][partNo] = { qty: 0, adjQty: 0, hours: 0 };
+  const e = procData.partAlloc[line][month][partNo];
+  e.qty += qty; e.adjQty += adjQty; e.hours += hrs;
   if (!(procData.lines instanceof Set)) {
     if (!procData.lines.includes(line)) procData.lines.push(line);
   } else {
@@ -1864,11 +1884,13 @@ function addToAlloc(procData, line, month, partNo, qty, hrs) {
   }
 }
 
-function removeFromAlloc(procData, line, month, partNo, qty, hrs) {
+function removeFromAlloc(procData, line, month, partNo, qty, hrs, adjQty) {
+  if (adjQty == null) adjQty = qty;
   if (procData.hours[line]) procData.hours[line][month] = Math.max(0, (procData.hours[line][month] || 0) - hrs);
   const a = procData.partAlloc[line]?.[month]?.[partNo];
   if (a) {
     a.qty = Math.max(0, a.qty - qty);
+    a.adjQty = Math.max(0, (a.adjQty || 0) - adjQty);
     a.hours = Math.max(0, a.hours - hrs);
     if (a.qty < 0.01) delete procData.partAlloc[line][month][partNo];
   }
@@ -1970,7 +1992,7 @@ function simulateDirectMove(procData, proc, month, pn, alloc, primCfg, bk, pd, t
   if (qMove <= 0.01) return null;
   const hF = qMove * pHr, hA = qMove * bHr;
   return {
-    operations: [{ from: primCfg.name, to: bk.name, partNo: pn, qty: qMove, hrsFrom: hF, hrsTo: hA }],
+    operations: [{ from: primCfg.name, to: bk.name, partNo: pn, qty: qMove, adjQty: qMove * pd.fluct, hrsFrom: hF, hrsTo: hA }],
     hoursFromOver: hF
   };
 }
@@ -2036,7 +2058,7 @@ function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, b
       }
     }
     if (bestSub) {
-      ops.push({ from: bk.name, to: bestSub.to, partNo: otherPn, qty: bestSub.qty, hrsFrom: bestSub.hrsFrom, hrsTo: bestSub.hrsTo });
+      ops.push({ from: bk.name, to: bestSub.to, partNo: otherPn, qty: bestSub.qty, adjQty: bestSub.adjQty, hrsFrom: bestSub.hrsFrom, hrsTo: bestSub.hrsTo });
       pushedHrs += bestSub.hrsFrom;
     }
   }
@@ -2047,7 +2069,7 @@ function simulateChainPush(procData, partMap, proc, month, pn, alloc, primCfg, b
   const finalQ = Math.min(wantQty, pushedHrs / bHr);
   if (finalQ <= 0.01) return null;
   const finalHF = finalQ * pHr, finalHA = finalQ * bHr;
-  ops.push({ from: primCfg.name, to: bk.name, partNo: pn, qty: finalQ, hrsFrom: finalHF, hrsTo: finalHA });
+  ops.push({ from: primCfg.name, to: bk.name, partNo: pn, qty: finalQ, adjQty: finalQ * pd.fluct, hrsFrom: finalHF, hrsTo: finalHA });
   return { operations: ops, hoursFromOver: finalHF, chainDepth: depth + 1 };
 }
 
@@ -2059,7 +2081,7 @@ function limitMoveByHours(proc, month, partNo, alloc, fromCfg, toCfg, pd, maxHrs
   const bHr = toCT / 3600 / fact;
   const qMove = Math.min(alloc.qty, maxHrsFrom / pHr);
   if (qMove <= 0.01) return null;
-  return { from: fromCfg.name, to: toCfg.name, partNo, qty: qMove, hrsFrom: qMove * pHr, hrsTo: qMove * bHr };
+  return { from: fromCfg.name, to: toCfg.name, partNo, qty: qMove, adjQty: qMove * pd.fluct, hrsFrom: qMove * pHr, hrsTo: qMove * bHr };
 }
 
 function executeMove(procData, move) {
@@ -2074,8 +2096,8 @@ function executeMove(procData, move) {
 // Better executeMove — operations include month (we'll add month to ops)
 function applyMove(procData, month, move) {
   for (const op of move.operations) {
-    removeFromAlloc(procData, op.from, month, op.partNo, op.qty, op.hrsFrom);
-    addToAlloc(procData, op.to, month, op.partNo, op.qty, op.hrsTo);
+    removeFromAlloc(procData, op.from, month, op.partNo, op.qty, op.hrsFrom, op.adjQty);
+    addToAlloc(procData, op.to, month, op.partNo, op.qty, op.hrsTo, op.adjQty);
   }
 }
 
@@ -2108,9 +2130,25 @@ function smartBalanceV2(byProcess, partMap, setting, months, target, isMaxCap) {
   return { chainExceeded };
 }
 
+// Fluctuation now lives in the Volume file (a demand multiplier, per part). Fold it into each part's
+// process configs so the whole calc/balance chain (which reads pd.fluct) uses it — hours stay
+// mathematically identical to putting Fluct in the hours formula. Missing → 1.0 (NOT the Matrix value).
+function getVolFluct(monthlyData, partNo) {
+  const f = monthlyData && monthlyData.fluct && monthlyData.fluct.get(partNo);
+  return f > 0 ? f : 1;
+}
+function resolvePartsFluct(masterParts, monthlyData) {
+  return masterParts.map(p => {
+    const f = getVolFluct(monthlyData, p.partNo);
+    const processes = {};
+    for (const k in p.processes) processes[k] = { ...p.processes[k], fluct: f };
+    return { ...p, processes };
+  });
+}
+
 // ===== Calculate full result for a step =====
 function calculateForStep(masterParts, monthlyData, setting, stepIdx) {
-  const initial = calculateInitialAllocation(masterParts, monthlyData);
+  const initial = calculateInitialAllocation(resolvePartsFluct(masterParts, monthlyData), monthlyData);
   let chainExceeded = false;
   if (stepIdx > 0) {
     const cfg = getStepDefs()[stepIdx];
@@ -2337,6 +2375,22 @@ function getHatchPattern(color) {
   ctx.moveTo(-4, 4); ctx.lineTo(4, -4);
   ctx.moveTo(4, 12); ctx.lineTo(12, 4);
   ctx.stroke();
+  const pat = ctx.createPattern(c, 'repeat');
+  state.patternCache.set(key, pat);
+  return pat;
+}
+
+// Dotted pattern (same colour) — marks the Fluctuation-buffer portion of a bar in pcs mode.
+function getDotPattern(color) {
+  const key = 'dot|' + color;
+  if (state.patternCache.has(key)) return state.patternCache.get(key);
+  const c = document.createElement('canvas');
+  c.width = 6; c.height = 6;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 6, 6);
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.beginPath(); ctx.arc(3, 3, 1.15, 0, Math.PI * 2); ctx.fill();
   const pat = ctx.createPattern(c, 'repeat');
   state.patternCache.set(key, pat);
   return pat;
@@ -2686,10 +2740,14 @@ function getYUnit() { return state.yUnit === 'pcs' ? 'pcs' : 'hours'; }
 function yAxisTitle() { return getYUnit() === 'pcs' ? t('pcs_axis') : t('hours_axis'); }
 function fmtY(v) { return getYUnit() === 'pcs' ? Math.round(v).toLocaleString() + ' ' + t('pcs_unit') : formatHours(v); }
 function allocBarVal(a) { if (!a) return 0; return getYUnit() === 'pcs' ? Math.round(a.qty) : Math.round(a.hours * 10) / 10; }
+// Total *fluctuation-adjusted* pieces on a line/month (qty×Fluct). This is what pcs mode plots and
+// what the CT/OA-only threshold rate divides by (hours ÷ Σ adjQty = CT/3600/OA).
 function lineQtyTotal(data, line, month) {
   const alloc = data.partAlloc[line]?.[month] || {};
-  let q = 0; for (const pn in alloc) q += alloc[pn].qty || 0; return q;
+  let q = 0; for (const pn in alloc) { const a = alloc[pn]; q += (a.adjQty != null ? a.adjQty : a.qty) || 0; } return q;
 }
+// The Fluctuation buffer portion (adjQty − qty) of one alloc entry, in pcs mode (0 in hours mode).
+function allocBufVal(a) { if (!a || getYUnit() !== 'pcs') return 0; return Math.round((a.adjQty != null ? a.adjQty : a.qty) - a.qty); }
 function lineBarVal(data, line, month) {
   return getYUnit() === 'pcs' ? Math.round(lineQtyTotal(data, line, month)) : Math.round(data.hours[line]?.[month] || 0);
 }
@@ -2995,14 +3053,18 @@ function renderChartSingle() {
     }
     const xHier = computeXHierarchy(visibleLines, months);
 
+    const pcs = getYUnit() === 'pcs';
     for (const pn of partList) {
-      const arr = [];
+      const arr = [], bufArr = [];
       const colorArr = [];
       const solidColor = getPartColor(pn);
       const hatchPattern = getHatchPattern(solidColor);
+      const dotPattern = getDotPattern(solidColor);
+      let anyBuf = false;
       for (const line of visibleLines) for (const m of months) {
         const a = data.partAlloc[line]?.[m]?.[pn];
         arr.push(allocBarVal(a));
+        const buf = allocBufVal(a); bufArr.push(buf); if (buf > 0) anyBuf = true;
         const origin = data.partOrigin?.[pn];
         const isBalanced = origin && origin !== line;
         colorArr.push(isBalanced ? hatchPattern : solidColor);
@@ -3012,6 +3074,13 @@ function renderChartSingle() {
         backgroundColor: colorArr, borderWidth: 0,
         stack: 'parts', order: 2
       });
+      if (pcs && anyBuf) {
+        datasets.push({
+          type: 'bar', label: pn, data: bufArr,
+          backgroundColor: dotPattern, borderWidth: 0,
+          stack: 'parts', order: 2, _isBuffer: true
+        });
+      }
     }
 
     if (opts.showTrend) {
@@ -3056,7 +3125,7 @@ function renderChartSingle() {
         },
         plugins: {
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
-          legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+          legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 }, filter: (li, d) => !d.datasets[li.datasetIndex]?._isBuffer } },
           tooltip: { callbacks: {
             title: items => {
               if (!items.length) return '';
@@ -3069,13 +3138,14 @@ function renderChartSingle() {
               if (c.dataset._tip) return c.dataset._tip[c.dataIndex];
               if (c.parsed.y <= 0) return null;
               const pn = c.dataset.label;
+              const model = getPartModel(pn);
+              if (c.dataset._isBuffer) return `${pn}${model ? ' · ' + model : ''} — ${t('fluct_buffer')}: +${fmtY(c.parsed.y)}`;
               const origin = data.partOrigin?.[pn];
               const idx = c.dataIndex;
               const lineIdx = Math.floor(idx / months.length);
               const curLine = visibleLines[lineIdx];
               const balanced = origin && origin !== curLine;
               const tag = balanced ? ` (balanced from ${origin.replace(/^Shaft /, '')})` : '';
-              const model = getPartModel(pn);
               return `${pn}${model ? ' · ' + model : ''}: ${fmtY(c.parsed.y)}${tag}`;
             }
           } }
@@ -3161,14 +3231,18 @@ function renderChartCompare() {
       const data = r?.byProcess[process];
       if (!data) continue;
       const dsBorderColor = getDatasetColor(ds.id);
+      const pcs = getYUnit() === 'pcs';
       for (const pn of partList) {
-        const arr = [];
+        const arr = [], bufArr = [];
         const colorArr = [];
         const solidColor = getPartColor(pn);
         const hatchPattern = getHatchPattern(solidColor);
+        const dotPattern = getDotPattern(solidColor);
+        let anyBuf = false;
         for (const line of visibleLines) for (const m of months) {
           const a = data.partAlloc[line]?.[m]?.[pn];
           arr.push(allocBarVal(a));
+          const buf = allocBufVal(a); bufArr.push(buf); if (buf > 0) anyBuf = true;
           const origin = data.partOrigin?.[pn];
           const isBalanced = origin && origin !== line;
           colorArr.push(isBalanced ? hatchPattern : solidColor);
@@ -3183,6 +3257,15 @@ function renderChartCompare() {
           _ds: ds.name, _part: pn,
           _dsId: ds.id, _origBackground: colorArr, _origBorder: dsBorderColor
         });
+        if (pcs && anyBuf) {
+          datasets.push({
+            type: 'bar', label: `${pn} [${ds.name}]`, data: bufArr,
+            backgroundColor: dotPattern, borderColor: dsBorderColor,
+            borderWidth: { top: 1.5, left: 1.5, right: 1.5, bottom: 0 }, borderSkipped: false,
+            stack: `${ds.id}_parts`, order: 2, _ds: ds.name, _part: pn, _isBuffer: true,
+            _dsId: ds.id, _origBackground: dotPattern, _origBorder: dsBorderColor
+          });
+        }
       }
     }
 
@@ -3231,6 +3314,7 @@ function renderChartCompare() {
                 if (c.parsed.y <= 0) return null;
                 const pn = c.dataset._part || c.dataset.label;
                 const model = getPartModel(pn);
+                if (c.dataset._isBuffer) return `${c.dataset._ds || ''} • ${pn}${model ? ' · ' + model : ''} — ${t('fluct_buffer')}: +${fmtY(c.parsed.y)}`;
                 return `${c.dataset._ds || ''} • ${pn}${model ? ' · ' + model : ''}: ${fmtY(c.parsed.y)}`;
               }
             }
@@ -3441,7 +3525,8 @@ function renderChartLegendMini() {
     if (mode === 'byPart') {
       el.style.display = '';
       el.innerHTML = `<span><span class="swatch solid"></span>${t('legend_natural')}</span>
-        <span><span class="swatch hatch"></span>${t('legend_balanced')}</span>`;
+        <span><span class="swatch hatch"></span>${t('legend_balanced')}</span>` +
+        (getYUnit() === 'pcs' ? `<span><span class="swatch dot"></span>${t('fluct_buffer')}</span>` : '');
     } else {
       el.style.display = 'none';
     }
@@ -4075,7 +4160,6 @@ function renderImportMapMaster() {
   $('mapMPri').value = mm.priToken || '';
   fillMapSelect($('mapMPart'), headers, mm.partCol, t('map_auto'));
   fillMapSelect($('mapMOa'), headers, mm.oaCol, t('map_auto'));
-  fillMapSelect($('mapMFluct'), headers, mm.fluctCol, t('map_auto'));
   const st = state.master && state.master.stats;
   $('mapMHint').textContent = state.master
     ? t('map_master_hint', { proc: (state.master.processList || []).length, lines: (st && st.totalLines) || 0 })
@@ -4101,6 +4185,7 @@ function renderImportMapVolume() {
   fillMapSelect($('mapVPart'), headers, vm.partCol, t('map_auto'));
   fillMapSelect($('mapVMonth'), headers, vm.monthCol, t('map_auto'));
   fillMapSelect($('mapVQty'), headers, vm.qtyCol, t('map_auto'));
+  fillMapSelect($('mapVFluct'), headers, vm.fluctCol, t('map_auto'));
   const ds = state.datasets.find(d => d.id === state._volDsId);
   $('mapVHint').textContent = ds && ds.monthlyData
     ? t('map_vol_hint', { sheet: ds.monthlyData.sheetName || '?', n: ds.monthlyData.data.size, m: ds.monthlyData.months.length })
@@ -4113,7 +4198,6 @@ function readMasterMapFromUI() {
   mm.priToken = $('mapMPri').value.trim() || 'Pri';
   mm.partCol = $('mapMPart').value;   // '' = auto
   mm.oaCol = $('mapMOa').value;
-  mm.fluctCol = $('mapMFluct').value;
 }
 
 function readVolumeMapFromUI() {
@@ -4123,6 +4207,7 @@ function readVolumeMapFromUI() {
   vm.partCol = $('mapVPart').value || '';
   vm.monthCol = $('mapVMonth').value || '';
   vm.qtyCol = $('mapVQty').value || '';
+  vm.fluctCol = $('mapVFluct').value || '';
   vm.partPrefix = $('mapVPrefix').value.trim();
 }
 
@@ -4162,11 +4247,11 @@ function setupImportMap() {
   const mReRender = () => { readMasterMapFromUI(); renderImportMapMaster(); reparseMaster(); saveImportMap(); };
   const mApply = () => { readMasterMapFromUI(); reparseMaster(); saveImportMap(); };
   ['mapMSheet','mapMPri'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', mReRender); });
-  ['mapMPart','mapMOa','mapMFluct'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', mApply); });
+  ['mapMPart','mapMOa'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', mApply); });
   const vReRender = () => { readVolumeMapFromUI(); renderImportMapVolume(); reparseVolume(); saveImportMap(); };
   const vApply = () => { readVolumeMapFromUI(); reparseVolume(); saveImportMap(); };
   ['mapVMode','mapVSheet'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', vReRender); });
-  ['mapVPart','mapVMonth','mapVQty'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', vApply); });
+  ['mapVPart','mapVMonth','mapVQty','mapVFluct'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', vApply); });
   const pf = $('mapVPrefix'); if (pf) pf.addEventListener('change', vApply);
 }
 
@@ -4268,6 +4353,7 @@ function serializeDataset(ds) {
     monthlyData: {
       months: ds.monthlyData.months,
       data: Array.from(ds.monthlyData.data.entries()),
+      fluct: Array.from((ds.monthlyData.fluct || new Map()).entries()),
       sheetName: ds.monthlyData.sheetName,
       headerRowIdx: ds.monthlyData.headerRowIdx
     }
@@ -4281,6 +4367,7 @@ function deserializeDataset(serialized) {
     monthlyData: {
       months: serialized.monthlyData.months,
       data: new Map(serialized.monthlyData.data),
+      fluct: new Map(serialized.monthlyData.fluct || []),
       sheetName: serialized.monthlyData.sheetName,
       headerRowIdx: serialized.monthlyData.headerRowIdx
     },
@@ -4361,6 +4448,7 @@ function buildSnapshotPayload(authorName) {
       monthlyData: {
         months: ds.monthlyData.months,
         data: Array.from(ds.monthlyData.data.entries()),
+        fluct: Array.from((ds.monthlyData.fluct || new Map()).entries()),
         sheetName: ds.monthlyData.sheetName,
         headerRowIdx: ds.monthlyData.headerRowIdx
       },
@@ -4510,6 +4598,7 @@ function loadSnapshotIfPresent() {
       monthlyData: {
         months: ds.monthlyData.months,
         data: new Map(ds.monthlyData.data),
+        fluct: new Map(ds.monthlyData.fluct || []),
         sheetName: ds.monthlyData.sheetName,
         headerRowIdx: ds.monthlyData.headerRowIdx
       },
@@ -4607,7 +4696,7 @@ function downloadMasterTemplate() {
   const wb = XLSX.utils.book_new();
   // README
   const readmeData = [
-    ['Master Data Matrix Template — v2.0'],
+    ['Master Data Matrix Template — v3.0'],
     [],
     ['3 sheets per process: "Matrix - Lathe", "Matrix - Rolling", "Matrix - IHA"'],
     ['1 row per (Part × Process). Same Part No. can appear in multiple sheets.'],
@@ -4617,19 +4706,20 @@ function downloadMasterTemplate() {
     ['  B: Part Name'],
     ['  C: Model'],
     ['  D: OA          — Operational Availability (default 0.85)'],
-    ['  E: Fluct       — Fluctuation factor (default 1.0)'],
-    ['  F-G:  Pri/CT for Line 1'],
-    ['  H-I:  Pri/CT for Line 2'],
-    ['  J-K:  Pri/CT for Line 3'],
-    ['  L-M:  Pri/CT for Line 4'],
-    ['  N-O:  Pri/CT for Line 5'],
-    ['  P-Q:  Pri/CT for Line 6'],
-    ['  R-S:  Pri/CT for Line 7'],
-    ['  T-U:  Pri/CT for Line 8'],
+    ['  E-F:  Pri/CT for Line 1'],
+    ['  G-H:  Pri/CT for Line 2'],
+    ['  I-J:  Pri/CT for Line 3'],
+    ['  K-L:  Pri/CT for Line 4'],
+    ['  M-N:  Pri/CT for Line 5'],
+    ['  O-P:  Pri/CT for Line 6'],
+    ['  Q-R:  Pri/CT for Line 7'],
+    ['  S-T:  Pri/CT for Line 8'],
     [],
     ['Pri = priority (1=primary, 2,3,...= backups). Empty = cannot run.'],
     ['CT = cycle time in seconds per piece.'],
-    ['Hours = (qty × CT / 3600) / OA × Fluct'],
+    ['NOTE: Fluctuation moved to the Volume file (a per-part "Fluct" column) — it is a demand'],
+    ['      multiplier now, not a Matrix/line value. This Master no longer has a Fluct column.'],
+    ['Hours = (qty × Fluct × CT / 3600) / OA'],
     [],
     ['Optional sheet "CT_Changes" — step-function CT updates over time:'],
     ['  Columns: Part No. | Process | Line | From | New CT'],
@@ -4643,23 +4733,23 @@ function downloadMasterTemplate() {
   const LINE_NAMES = ['Line 1','Line 2','Line 3','Line 4','Line 5','Line 6','Line 7','Line 8'];
   const samples = {
     'Lathe': [
-      ['PART-002','Sample Part B','Model-B',0.85,1.0,'','','','','','','','','','',1,34.2,'','','',''],
-      ['PART-001','Sample Part A','Model-A',0.85,1.0,1,28.5,2,30.0,'','','','','','','','','','','','','']
+      ['PART-002','Sample Part B','Model-B',0.85,'','','','','','','','','',1,34.2,'','','',''],
+      ['PART-001','Sample Part A','Model-A',0.85,1,28.5,2,30.0,'','','','','','','','','','','','']
     ],
-    'Rolling': [['PART-001','Sample Part A','Model-A',0.85,1.0,'','','','','','',1,40.0,'','','','','','','','','']],
-    'IHA': [['PART-001','Sample Part A','Model-A',0.85,1.0,'','','','','','','','','','','','','',1,40.0,'','']]
+    'Rolling': [['PART-001','Sample Part A','Model-A',0.85,'','','','','','',1,40.0,'','','','','','','','']],
+    'IHA': [['PART-001','Sample Part A','Model-A',0.85,'','','','','','','','','','','','','',1,40.0]]
   };
   for (const proc of PROCESSES) {
-    const header1 = ['Part No.','Part Name','Model','OA','Fluct'];
+    const header1 = ['Part No.','Part Name','Model','OA'];
     for (const ln of LINE_NAMES) { header1.push(ln); header1.push(''); }
-    const header2 = ['','','','',''];
+    const header2 = ['','','',''];
     for (let i = 0; i < 8; i++) { header2.push('Pri'); header2.push('C/T'); }
     const data = [header1, header2, ...(samples[proc] || [])];
     const ws = XLSX.utils.aoa_to_sheet(data);
-    // Merges for line headers
+    // Merges for line headers (Pri/CT pairs start at column E = index 4)
     if (!ws['!merges']) ws['!merges'] = [];
     for (let i = 0; i < 8; i++) {
-      const c = 5 + i * 2;
+      const c = 4 + i * 2;
       ws['!merges'].push({ s: { r: 0, c }, e: { r: 0, c: c + 1 } });
     }
     XLSX.utils.book_append_sheet(wb, ws, `Matrix - ${proc}`);
@@ -4683,43 +4773,45 @@ function downloadMasterTemplate() {
 function downloadMonthlyTemplate() {
   const wb = XLSX.utils.book_new();
   const readmeData = [
-    ['Monthly Requirement Template — v2.0'],
+    ['Monthly Requirement Template — v3.0'],
     [],
     ['Sheet name should contain "monthly", "req", or "demand"'],
     [],
     ['Required header (any row in first 20 rows):'],
     ['  • Column with text "Part No." (or "PRTNO")'],
+    ['  • Optional column "Fluct" (Fluctuation) — a per-part demand multiplier (default 1.0)'],
     ['  • Right-side columns = monthly demand'],
+    [],
+    ['Fluctuation moved here from the Matrix: it multiplies the demand (planned pcs = qty × Fluct),'],
+    ['so Hours = (qty × Fluct × CT / 3600) / OA. Blank Fluct = 1.0.'],
     [],
     ['Month label formats accepted:'],
     ['  • Apr 2026 / Apr 26 / Apr\'26'],
     ['  • Date cells (auto-detect)'],
-    ['  • 2026-04 / 2026/4'],
-    [],
-    ['Part numbers must start with "TG"'],
+    ['  • 2026-04 / 2026/4  • Fiscal-year columns FY27 / FY28 (already a monthly-average figure)'],
     [],
     ['For Compare/Diff feature: keep months and part list consistent across files.'],
     ['Suggested filename: YYYYMM_Label_v#.xlsx (e.g. 202604_Apr_v1.xlsx)'],
     [],
     ['OPTIONAL — "Raw_Data" sheet (auto-import):'],
     ['  Paste raw records from your production system: one row = Part / Month (or Date) / Qty.'],
-    ['  The app detects the columns, sums duplicates, and pivots to months automatically.'],
+    ['  A "Fluct" column here works too (per part). The app detects columns, sums duplicates, pivots.'],
     ['  If a Raw_Data sheet exists it is used INSTEAD of Monthly_Req.']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(readmeData), 'README');
 
   const months = ['Apr 2026','May 2026','Jun 2026','Jul 2026','Aug 2026','Sep 2026'];
-  const data = [['Part No.', ...months]];
-  data.push(['TG021211-2080', 12000, 11500, 13000, 12800, 12200, 11800]);
-  data.push(['PART-001', 8500, 9000, 8800, 9200, 8600, 9100]);
-  data.push(['PART-002', 5200, 5100, 5400, 5300, 5500, 5200]);
+  const data = [['Part No.', 'Fluct', ...months]];
+  data.push(['TG021211-2080', 1.0, 12000, 11500, 13000, 12800, 12200, 11800]);
+  data.push(['PART-001', 1.5, 8500, 9000, 8800, 9200, 8600, 9100]);
+  data.push(['PART-002', 1.0, 5200, 5100, 5400, 5300, 5500, 5200]);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Monthly_Req');
 
   // Raw_Data scaffold — ships EMPTY below the header so Monthly_Req stays in charge
   // until the user actually pastes records here (empty Raw_Data parses to null → fallback).
   const rawData = [
-    ['Paste raw records under the header (1 row = 1 record, e.g. PART-001 | Apr 2026 | 5000). Duplicates are summed. Once rows exist here, this sheet is used INSTEAD of Monthly_Req.'],
-    ['Part No.', 'Month', 'Qty']
+    ['Paste raw records under the header (1 row = 1 record, e.g. PART-001 | 1.0 | Apr 2026 | 5000). Duplicates are summed. Once rows exist here, this sheet is used INSTEAD of Monthly_Req.'],
+    ['Part No.', 'Fluct', 'Month', 'Qty']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rawData), 'Raw_Data');
 
