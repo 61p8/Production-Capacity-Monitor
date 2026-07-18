@@ -1006,7 +1006,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.6';
+const APP_VERSION = '3.6.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2739,7 +2739,14 @@ function thresholdLineDataset(label, val, color, dash, dataArr, stackId) {
 function getYUnit() { return state.yUnit === 'pcs' ? 'pcs' : 'hours'; }
 function yAxisTitle() { return getYUnit() === 'pcs' ? t('pcs_axis') : t('hours_axis'); }
 function fmtY(v) { return getYUnit() === 'pcs' ? Math.round(v).toLocaleString() + ' ' + t('pcs_unit') : formatHours(v); }
-function allocBarVal(a) { if (!a) return 0; return getYUnit() === 'pcs' ? Math.round(a.qty) : Math.round(a.hours * 10) / 10; }
+// Base (non-Fluct) portion of an alloc in the active unit. In hours mode the bar's hours are split
+// qty : buffer proportionally, so base + buffer still sum to the full hours.
+function allocBarVal(a) {
+  if (!a) return 0;
+  const adj = a.adjQty != null ? a.adjQty : a.qty;
+  if (getYUnit() === 'pcs') return Math.round(a.qty);
+  return adj > 0 ? Math.round(a.hours * (a.qty / adj) * 10) / 10 : Math.round(a.hours * 10) / 10;
+}
 // Total *fluctuation-adjusted* pieces on a line/month (qty×Fluct). This is what pcs mode plots and
 // what the CT/OA-only threshold rate divides by (hours ÷ Σ adjQty = CT/3600/OA).
 function lineQtyTotal(data, line, month) {
@@ -2747,7 +2754,15 @@ function lineQtyTotal(data, line, month) {
   let q = 0; for (const pn in alloc) { const a = alloc[pn]; q += (a.adjQty != null ? a.adjQty : a.qty) || 0; } return q;
 }
 // The Fluctuation buffer portion (adjQty − qty) of one alloc entry, in pcs mode (0 in hours mode).
-function allocBufVal(a) { if (!a || getYUnit() !== 'pcs') return 0; return Math.round((a.adjQty != null ? a.adjQty : a.qty) - a.qty); }
+// Fluctuation-buffer portion of an alloc in the active unit (pcs = adjQty−qty; hours = the
+// proportional slice of the bar's hours). 0 when the part has no Fluct buffer.
+function allocBufVal(a) {
+  if (!a) return 0;
+  const adj = a.adjQty != null ? a.adjQty : a.qty;
+  const bufFrac = adj > 0 ? (adj - a.qty) / adj : 0;
+  if (bufFrac <= 0.0000001) return 0;
+  return getYUnit() === 'pcs' ? Math.round(adj - a.qty) : Math.round(a.hours * bufFrac * 10) / 10;
+}
 function lineBarVal(data, line, month) {
   return getYUnit() === 'pcs' ? Math.round(lineQtyTotal(data, line, month)) : Math.round(data.hours[line]?.[month] || 0);
 }
@@ -3074,7 +3089,7 @@ function renderChartSingle() {
         backgroundColor: colorArr, borderWidth: 0,
         stack: 'parts', order: 2
       });
-      if (pcs && anyBuf) {
+      if (anyBuf) {
         datasets.push({
           type: 'bar', label: pn, data: bufArr,
           backgroundColor: dotPattern, borderWidth: 0,
@@ -3257,7 +3272,7 @@ function renderChartCompare() {
           _ds: ds.name, _part: pn,
           _dsId: ds.id, _origBackground: colorArr, _origBorder: dsBorderColor
         });
-        if (pcs && anyBuf) {
+        if (anyBuf) {
           datasets.push({
             type: 'bar', label: `${pn} [${ds.name}]`, data: bufArr,
             backgroundColor: dotPattern, borderColor: dsBorderColor,
@@ -3524,9 +3539,11 @@ function renderChartLegendMini() {
   if (state.viewMode === 'single') {
     if (mode === 'byPart') {
       el.style.display = '';
+      const ds = getActiveDataset();
+      const hasFluct = ds && ds.monthlyData.fluct && [...ds.monthlyData.fluct.values()].some(v => v > 1);
       el.innerHTML = `<span><span class="swatch solid"></span>${t('legend_natural')}</span>
         <span><span class="swatch hatch"></span>${t('legend_balanced')}</span>` +
-        (getYUnit() === 'pcs' ? `<span><span class="swatch dot"></span>${t('fluct_buffer')}</span>` : '');
+        (hasFluct ? `<span><span class="swatch dot"></span>${t('fluct_buffer')}</span>` : '');
     } else {
       el.style.display = 'none';
     }

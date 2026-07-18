@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.6.1] — 2026-07-17
+
+### Changed
+- **The Fluctuation buffer is now shown in Hours mode too** (Stacked-by-Part). Previously the dotted
+  buffer only appeared in Pieces mode; in Hours the bar showed the total but didn't separate the
+  Fluctuation part. The bar's hours are now split proportionally (qty : buffer) into a solid base and
+  a dotted Fluctuation slice that still sum to the full hours, and the "Fluctuation buffer" legend
+  entry shows in both units whenever the dataset has any Fluct > 1.
+
 ## [3.6] — 2026-07-17
 
 ### Changed
