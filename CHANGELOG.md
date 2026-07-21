@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.7.0] — 2026-07-21
+
+### Added
+- **Configurable bar tooltip** (Results chart, Stacked-by-Part). A new **Tooltip** menu on the chart
+  toolbar lets you choose which fields the hover tooltip shows — Line & month, Dataset, Part No.,
+  Model, Value, C/T (sec/pc), Balanced from, and Fluctuation buffer — with **All / None** shortcuts.
+  The choice persists (localStorage + snapshot) and now also applies **inside snapshots** (the menu
+  setup runs in both live and snapshot mode). Feature originally contributed by **Sittisak Chuseng
+  (PE)**; merged into the main build, fully internationalised (EN/TH/JP), and wired into both the
+  Single and Compare chart tooltips.
+- **Author credit** in the header subtitle: *Created by Sittisak Chuseng (PE)*.
+
 ## [3.6.2] — 2026-07-21
 
 ### Fixed

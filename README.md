@@ -14,6 +14,7 @@ A single-file HTML application for production capacity planning. Compares monthl
 - **Smart Balance algorithm** — automatically redistributes load to alternate lines (priority 2, 3, ...) when primary lines exceed capacity targets
 - **Step-based progression** — Step 0 (initial) → configurable OT-driven targets → MaxCap, with chain-push depth up to 5. Add/remove steps and tune each target from working-day/holiday OT in Settings.
 - **Hours ⇄ Pieces Y-axis** — flip the Results chart between load-hours and pieces/month; threshold lines convert via the volume-weighted average cycle time
+- **Configurable bar tooltip** — pick which fields the Results chart tooltip shows (part, model, value, C/T, balanced-from, fluctuation buffer, …) from a toolbar menu; the choice is remembered and applies inside snapshots too
 - **CT step function** — cycle times can change over time via Excel `CT_Changes` sheet or in-app overrides
 - **Snapshot export** — share results as self-contained read-only HTML with embedded data
 - **Sticky notes (PPT-style text boxes)** — annotate the dashboard with optional arrow pointers

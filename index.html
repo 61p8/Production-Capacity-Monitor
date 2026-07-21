@@ -19,6 +19,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .app-header.compact .lang-selector { padding: 2px; }
 .app-header h1 { font-size: 20px; font-weight: 500; }
 .app-header .subtitle { font-size: 12px; color: #5F5E5A; }
+.app-header .subtitle .credit { color: #0F6E56; font-weight: 500; }
 .section-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .lang-selector { display: flex; gap: 4px; background: #F5F4F0; padding: 3px; border-radius: 6px; }
 .lang-btn { background: transparent; color: #5F5E5A; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; font-family: inherit; }
@@ -186,6 +187,14 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .chart-toolbar label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .chart-toolbar input[type="checkbox"] { cursor: pointer; }
 .chart-toolbar select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 4px 8px; font-size: 12px; background: white; font-family: inherit; }
+.tooltip-fields { position: relative; }
+.tooltip-fields summary { list-style: none; cursor: pointer; border: 1px solid #B4B2A9; border-radius: 4px; padding: 4px 9px; background: white; color: #5F5E5A; user-select: none; font-size: 12px; }
+.tooltip-fields summary::-webkit-details-marker { display: none; }
+.tooltip-fields[open] summary { border-color: #1D9E75; color: #0F6E56; background: #F1FBF7; }
+.tooltip-fields-panel { position: absolute; right: 0; top: calc(100% + 5px); z-index: 80; min-width: 210px; padding: 9px 11px; background: white; border: 1px solid #B4B2A9; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.16); display: grid; gap: 6px; }
+.tooltip-fields-head { font-size: 11px; font-weight: 600; color: #888780; text-transform: uppercase; letter-spacing: .3px; padding-bottom: 2px; }
+.tooltip-fields-panel label { display: flex; align-items: center; gap: 7px; white-space: nowrap; cursor: pointer; font-size: 12px; color: #2C2C2A; }
+.tooltip-fields-actions { display: flex; gap: 6px; padding-top: 6px; margin-top: 2px; border-top: 1px solid #E5E3DB; }
 .chart-legend-mini { font-size: 11px; color: #5F5E5A; padding: 4px 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .chart-legend-mini .swatch { display: inline-block; width: 14px; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: middle; border: 1px solid #B4B2A9; box-sizing: border-box; }
 .chart-legend-mini .swatch.solid { background: #888780; }
@@ -304,7 +313,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
   <div class="app-header">
     <div>
       <h1 data-i18n="app_title">Capacity Planning Tool</h1>
-      <div class="subtitle"><span data-i18n="app_subtitle">Compare line demand vs capacity</span> • <span id="appVersion"></span></div>
+      <div class="subtitle"><span data-i18n="app_subtitle">Compare line demand vs capacity</span> • <span id="appVersion"></span> • <span class="credit">Created by Sittisak Chuseng (PE)</span></div>
     </div>
     <div class="section-actions">
       <div class="lang-selector">
@@ -586,6 +595,24 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <option value="byPart" data-i18n="chart_by_part">Stacked by Part</option>
         <option value="byLine" data-i18n="chart_by_line">By Line (totals)</option>
       </select>
+      <details class="tooltip-fields" id="tooltipFieldsMenu">
+        <summary>🛈 <span data-i18n="tip_fields">Tooltip</span> ▾</summary>
+        <div class="tooltip-fields-panel">
+          <div class="tooltip-fields-head" data-i18n="tip_fields_head">Show in bar tooltip</div>
+          <label><input type="checkbox" data-tip-field="title"> <span data-i18n="tip_f_title">Line &amp; month</span></label>
+          <label><input type="checkbox" data-tip-field="dataset"> <span data-i18n="tip_f_dataset">Dataset</span></label>
+          <label><input type="checkbox" data-tip-field="part"> <span data-i18n="tip_f_part">Part No.</span></label>
+          <label><input type="checkbox" data-tip-field="model"> <span data-i18n="tip_f_model">Model</span></label>
+          <label><input type="checkbox" data-tip-field="value"> <span data-i18n="tip_f_value">Value</span></label>
+          <label><input type="checkbox" data-tip-field="ct"> <span data-i18n="tip_f_ct">C/T (sec/pc)</span></label>
+          <label><input type="checkbox" data-tip-field="balanced"> <span data-i18n="tip_f_balanced">Balanced from</span></label>
+          <label><input type="checkbox" data-tip-field="buffer"> <span data-i18n="tip_f_buffer">Fluctuation buffer</span></label>
+          <div class="tooltip-fields-actions">
+            <button class="btn-small" id="tooltipAllBtn" type="button" data-i18n="tip_all">All</button>
+            <button class="btn-small" id="tooltipNoneBtn" type="button" data-i18n="tip_none">None</button>
+          </div>
+        </div>
+      </details>
     </div>
 
     <div class="chart-legend-mini" id="chartLegendMini">
@@ -799,6 +826,7 @@ const I18N = {
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
+    tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
     balance_done:'{step} done', nothing_changed:'Nothing changed (no backup options)',
@@ -891,6 +919,7 @@ const I18N = {
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
+    tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
     balance_done:'{step} เสร็จ', nothing_changed:'ไม่มีอะไรเปลี่ยน (ไม่มี backup ให้ใช้)',
@@ -983,6 +1012,7 @@ const I18N = {
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
+    tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
     balance_done:'{step} 完了', nothing_changed:'変化なし',
@@ -1006,7 +1036,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.6.2';
+const APP_VERSION = '3.7.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1078,6 +1108,9 @@ const state = {
   compareDatasetIds: [], // for compare/diff mode
   viewMode: 'single',    // 'single' | 'compare' | 'diff'
   yUnit: 'hours',        // 'hours' | 'pcs' — Results chart Y-axis unit
+  // Which fields the bar tooltip shows (Results chart, Stacked-by-Part). Configurable in the
+  // "Tooltip fields" menu on the chart toolbar. Persisted (localStorage + snapshot).
+  tooltipFields: { title:true, dataset:true, part:true, model:true, value:true, ct:true, balanced:true, buffer:true },
   currentTab: 'Lathe',
   chart: null,
   monthOverrides: {},
@@ -2684,6 +2717,64 @@ function renderTableArea() {
 }
 
 
+// ===== Configurable bar tooltip (Stacked-by-Part) =====
+// Feature originally contributed by Sittisak Chuseng (PE); merged & i18n-ised here.
+// state.tooltipFields toggles which lines the bar tooltip shows.
+function tipOn(field) { return !state.tooltipFields || state.tooltipFields[field] !== false; }
+function effectiveCtForTooltip(partNo, process, line, month) {
+  const part = state.master && state.master.parts && state.master.parts.find(p => p.partNo === partNo);
+  const pd = part && part.processes && part.processes[process];
+  const lineCfg = pd && pd.lines && pd.lines.find(l => l.name === line);
+  return lineCfg ? getEffectiveCT(partNo, process, line, month, lineCfg.ct) : null;
+}
+function barTooltipTitle(items, visibleLines, months) {
+  if (!tipOn('title') || !items.length) return '';
+  const idx = items[0].dataIndex;
+  const lineIdx = Math.floor(idx / months.length);
+  const monthIdx = idx % months.length;
+  return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
+}
+function barTooltipLines(c, data, process, visibleLines, months, datasetName) {
+  if (c.dataset._tip) return c.dataset._tip[c.dataIndex];
+  if (c.parsed.y <= 0) return null;
+  const pn = c.dataset._part || c.dataset.label;
+  const idx = c.dataIndex;
+  const lineIdx = Math.floor(idx / months.length);
+  const monthIdx = idx % months.length;
+  const line = visibleLines[lineIdx];
+  const month = months[monthIdx];
+  const lines = [];
+  const dsName = datasetName || c.dataset._ds;
+  if (dsName && tipOn('dataset')) lines.push(`${t('dataset_label')} ${dsName}`);
+  if (tipOn('part')) lines.push(`${t('tip_f_part')}: ${pn}`);
+  const model = getPartModel(pn);
+  if (model && tipOn('model')) lines.push(`${t('tip_f_model')}: ${model}`);
+  if (tipOn('value')) {
+    const prefix = c.dataset._isBuffer && tipOn('buffer') ? `${t('fluct_buffer')}: +` : `${t('tip_value')}: `;
+    lines.push(prefix + fmtY(c.parsed.y));
+  } else if (c.dataset._isBuffer && tipOn('buffer')) {
+    lines.push(t('fluct_buffer'));
+  }
+  const ct = effectiveCtForTooltip(pn, process, line, month);
+  if (ct != null && tipOn('ct')) lines.push(`C/T: ${Number(ct).toLocaleString(undefined, {maximumFractionDigits:3})} sec/pc`);
+  const origin = data.partOrigin && data.partOrigin[pn];
+  if (!c.dataset._isBuffer && origin && origin !== line && tipOn('balanced')) lines.push(`${t('tip_balanced_from')} ${origin.replace(/^Shaft /, '')}`);
+  return lines.length ? lines : null;
+}
+function setupTooltipFields() {
+  const menu = $('tooltipFieldsMenu');
+  if (!menu) return;
+  const sync = () => menu.querySelectorAll('[data-tip-field]').forEach(cb => { cb.checked = tipOn(cb.dataset.tipField); });
+  const save = () => { saveStorage({ tooltipFields: state.tooltipFields }); renderChart(); };
+  sync();
+  menu.querySelectorAll('[data-tip-field]').forEach(cb => cb.addEventListener('change', () => {
+    state.tooltipFields[cb.dataset.tipField] = cb.checked; save();
+  }));
+  $('tooltipAllBtn').onclick = e => { e.preventDefault(); Object.keys(state.tooltipFields).forEach(k => state.tooltipFields[k] = true); sync(); save(); };
+  $('tooltipNoneBtn').onclick = e => { e.preventDefault(); Object.keys(state.tooltipFields).forEach(k => state.tooltipFields[k] = false); sync(); save(); };
+  document.addEventListener('click', e => { if (menu.open && !menu.contains(e.target)) menu.removeAttribute('open'); });
+}
+
 // ===== Render: Chart =====
 function renderChart() {
   if (state.chart) { state.chart.destroy(); state.chart = null; }
@@ -3151,27 +3242,8 @@ function renderChartSingle() {
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
           legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 }, filter: (li, d) => !d.datasets[li.datasetIndex]?._isBuffer } },
           tooltip: { callbacks: {
-            title: items => {
-              if (!items.length) return '';
-              const idx = items[0].dataIndex;
-              const lineIdx = Math.floor(idx / months.length);
-              const monthIdx = idx % months.length;
-              return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
-            },
-            label: c => {
-              if (c.dataset._tip) return c.dataset._tip[c.dataIndex];
-              if (c.parsed.y <= 0) return null;
-              const pn = c.dataset.label;
-              const model = getPartModel(pn);
-              if (c.dataset._isBuffer) return `${pn}${model ? ' · ' + model : ''} — ${t('fluct_buffer')}: +${fmtY(c.parsed.y)}`;
-              const origin = data.partOrigin?.[pn];
-              const idx = c.dataIndex;
-              const lineIdx = Math.floor(idx / months.length);
-              const curLine = visibleLines[lineIdx];
-              const balanced = origin && origin !== curLine;
-              const tag = balanced ? ` (balanced from ${origin.replace(/^Shaft /, '')})` : '';
-              return `${pn}${model ? ' · ' + model : ''}: ${fmtY(c.parsed.y)}${tag}`;
-            }
+            title: items => barTooltipTitle(items, visibleLines, months),
+            label: c => barTooltipLines(c, data, process, visibleLines, months, null)
           } }
         }
       }
@@ -3326,21 +3398,8 @@ function renderChartCompare() {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title: items => {
-                if (!items.length) return '';
-                const idx = items[0].dataIndex;
-                const lineIdx = Math.floor(idx / months.length);
-                const monthIdx = idx % months.length;
-                return `${visibleLines[lineIdx]} • ${getDisplayLabel(months[monthIdx])}`;
-              },
-              label: c => {
-                if (c.dataset._tip) return c.dataset._tip[c.dataIndex];
-                if (c.parsed.y <= 0) return null;
-                const pn = c.dataset._part || c.dataset.label;
-                const model = getPartModel(pn);
-                if (c.dataset._isBuffer) return `${c.dataset._ds || ''} • ${pn}${model ? ' · ' + model : ''} — ${t('fluct_buffer')}: +${fmtY(c.parsed.y)}`;
-                return `${c.dataset._ds || ''} • ${pn}${model ? ' · ' + model : ''}: ${fmtY(c.parsed.y)}`;
-              }
+              title: items => barTooltipTitle(items, visibleLines, months),
+              label: c => barTooltipLines(c, { partOrigin: {} }, process, visibleLines, months, null)
             }
           }
         }
@@ -4426,6 +4485,7 @@ function loadSavedDatasets() {
     state.compareDatasetIds = Array.isArray(d.compareDatasetIds) ? d.compareDatasetIds.filter(id => state.datasets.find(x => x.id === id)) : [];
     if (d.viewMode && ['single','compare','diff'].includes(d.viewMode)) state.viewMode = d.viewMode;
     if (d.yUnit === 'pcs' || d.yUnit === 'hours') state.yUnit = d.yUnit;
+    if (d.tooltipFields && typeof d.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, d.tooltipFields);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     renderDatasetList();
@@ -4485,6 +4545,8 @@ function buildSnapshotPayload(authorName) {
     compareDatasetIds: state.compareDatasetIds,
     viewMode: state.viewMode,
     currentTab: state.currentTab,
+    yUnit: state.yUnit,
+    tooltipFields: state.tooltipFields,
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
     labelOverrides: state.labelOverrides,
@@ -4635,6 +4697,8 @@ function loadSnapshotIfPresent() {
     state.compareDatasetIds = data.compareDatasetIds || [];
     state.viewMode = data.viewMode || 'single';
     state.currentTab = data.currentTab || 'Lathe';
+    if (data.yUnit === 'pcs' || data.yUnit === 'hours') state.yUnit = data.yUnit;
+    if (data.tooltipFields && typeof data.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, data.tooltipFields);
     state.monthOverrides = data.monthOverrides || {};
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];
@@ -6119,6 +6183,7 @@ function init() {
     b.classList.toggle('active', b.dataset.view === state.viewMode);
   });
   if ($('yUnit')) $('yUnit').value = state.yUnit;
+  setupTooltipFields();  // common to both branches (snapshots get a configurable tooltip too)
 
   // Sticky header — toggle compact mode when scrolled
   const header = document.querySelector('.app-header');
