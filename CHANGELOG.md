@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.6.2] — 2026-07-21
+
+### Fixed
+- **Line filter chips now work when line names contain embedded newlines.** Excel line-header cells
+  that wrap onto multiple lines produced line names with embedded CR/LF (e.g. `Shaft P Drive⏎P-Type`).
+  The filter chips stored the raw name in a `data-line` HTML attribute, but the browser normalises
+  `\r\n` → `\n` on attribute read-back, so `chip.dataset.line` no longer matched the raw name in
+  `data.lines` and the toggle key never hit — clicking a chip did nothing. Chips now key by **index**
+  (`data-idx`) into the lines array instead of round-tripping the name through an attribute, in both
+  the Results (`renderLineFilter`) and Manual (`renderManLineFilter`) filters. The Master parser also
+  collapses internal whitespace in line names at parse time (`replace(/\s+/g,' ').trim()`) so names
+  stay stable across the app.
+
 ## [3.6.1] — 2026-07-17
 
 ### Changed
