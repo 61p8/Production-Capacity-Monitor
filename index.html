@@ -1036,7 +1036,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.7.0';
+const APP_VERSION = '3.7.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1442,11 +1442,11 @@ function parseRawData(wb, map) {
   }
   if (data.size === 0 || monthSet.size === 0) return null;
   const months = Array.from(monthSet).sort((a, b) => {
-    const pa = parseMonthYearFromLabel(a), pb = parseMonthYearFromLabel(b);
-    if (!pa && !pb) return 0;
-    if (!pa) return 1;
-    if (!pb) return -1;
-    return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+    const oa = monthOrdinal(a), ob = monthOrdinal(b);
+    if (oa == null && ob == null) return 0;
+    if (oa == null) return 1;
+    if (ob == null) return -1;
+    return oa - ob;
   });
   return { months, data, fluct, sheetName: name, headerRowIdx };
 }
@@ -1698,11 +1698,23 @@ function getDatasetColor(id) {
 
 // ===== CT step-function helper (Comment #3) =====
 // Resolution order: App override > Excel CT_Changes > Matrix base CT
+// A single comparable ordinal for any month label. Real months order chronologically;
+// fiscal-year columns (FY27, FY28, …) are averaged future years that always sit AFTER every real
+// month (matching how they're sorted onto the X-axis) and order among themselves by year. Returns
+// null only for a genuinely unrecognisable label.
+const FY_ORDINAL_BASE = 100000000;  // guaranteed larger than any real year*12+monthIdx
+function monthOrdinal(label) {
+  const p = parseMonthYearFromLabel(getDisplayLabel(label)) || parseMonthYearFromLabel(label);
+  if (p) return p.year * 12 + p.monthIdx;
+  const fy = parseFYLabel(getDisplayLabel(label)) || parseFYLabel(label);
+  if (fy) return FY_ORDINAL_BASE + fy.year * 12;
+  return null;
+}
+
 function compareMonths(monthLabelA, monthLabelB) {
-  const pa = parseMonthYearFromLabel(getDisplayLabel(monthLabelA)) || parseMonthYearFromLabel(monthLabelA);
-  const pb = parseMonthYearFromLabel(getDisplayLabel(monthLabelB)) || parseMonthYearFromLabel(monthLabelB);
-  if (!pa || !pb) return 0;
-  return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+  const oa = monthOrdinal(monthLabelA), ob = monthOrdinal(monthLabelB);
+  if (oa == null || ob == null) return 0;
+  return oa - ob;
 }
 
 function getEffectiveCT(partNo, process, lineName, monthLabel, baseCT) {
@@ -2969,12 +2981,11 @@ function allDataMonths() {
   const set = new Set();
   for (const ds of state.datasets) for (const m of ds.monthlyData.months) set.add(m);
   return Array.from(set).sort((a, b) => {
-    const pa = parseMonthYearFromLabel(getDisplayLabel(a)) || parseMonthYearFromLabel(a);
-    const pb = parseMonthYearFromLabel(getDisplayLabel(b)) || parseMonthYearFromLabel(b);
-    if (!pa && !pb) return 0;
-    if (!pa) return 1;
-    if (!pb) return -1;
-    return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+    const oa = monthOrdinal(a), ob = monthOrdinal(b);
+    if (oa == null && ob == null) return 0;
+    if (oa == null) return 1;
+    if (ob == null) return -1;
+    return oa - ob;
   });
 }
 
@@ -3696,12 +3707,11 @@ function renderCalendarGrid() {
   const allMonths = new Set();
   for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
   const months = Array.from(allMonths).sort((a, b) => {
-    const pa = parseMonthYearFromLabel(getDisplayLabel(a)) || parseMonthYearFromLabel(a);
-    const pb = parseMonthYearFromLabel(getDisplayLabel(b)) || parseMonthYearFromLabel(b);
-    if (!pa && !pb) return 0;
-    if (!pa) return 1;
-    if (!pb) return -1;
-    return (pa.year * 12 + pa.monthIdx) - (pb.year * 12 + pb.monthIdx);
+    const oa = monthOrdinal(a), ob = monthOrdinal(b);
+    if (oa == null && ob == null) return 0;
+    if (oa == null) return 1;
+    if (ob == null) return -1;
+    return oa - ob;
   });
   const setting = readSettings();
   g.innerHTML = months.map(m => {

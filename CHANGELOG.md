@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.7.1] — 2026-07-22
+
+### Fixed
+- **CT Period Overrides "From FY28" no longer apply to every month.** A CT change gated on a
+  fiscal-year column (`From FY28 → CT = …`) was being applied to the **whole** line — every real
+  month plus FY27 — instead of only FY28 onwards. Cause: `getEffectiveCT` gates each change with
+  `compareMonths(fromMonth, month)`, but `compareMonths` returned `0` (equal ⇒ "applies") whenever a
+  label didn't parse, and fiscal-year labels intentionally don't parse as calendar months. So
+  `compareMonths("FY28", anyMonth) <= 0` was always true and the override leaked into all months
+  (inflating the whole threshold/hours line in Pieces mode). Introduced a single `monthOrdinal()`
+  ordering — real months chronological, fiscal-year columns always **after** every real month and
+  ordered among themselves by year (matching how they sit on the X-axis) — and rebuilt
+  `compareMonths` on it. All month sorts (parser, calendar grid, range, snapshot) now share this one
+  ordering, so FY27 vs FY28 ordering is consistent everywhere.
+
 ## [3.7.0] — 2026-07-21
 
 ### Added
