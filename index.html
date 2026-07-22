@@ -195,6 +195,16 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .tooltip-fields-head { font-size: 11px; font-weight: 600; color: #888780; text-transform: uppercase; letter-spacing: .3px; padding-bottom: 2px; }
 .tooltip-fields-panel label { display: flex; align-items: center; gap: 7px; white-space: nowrap; cursor: pointer; font-size: 12px; color: #2C2C2A; }
 .tooltip-fields-actions { display: flex; gap: 6px; padding-top: 6px; margin-top: 2px; border-top: 1px solid #E5E3DB; }
+.part-color-panel { min-width: 260px; }
+.part-color-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-right: 2px; }
+.part-color-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.part-color-row input[type="color"] { width: 26px; height: 20px; padding: 0; border: 1px solid #B4B2A9; border-radius: 4px; background: none; cursor: pointer; flex: none; }
+.part-color-row .pc-label { flex: 1; font-size: 12px; color: #2C2C2A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.part-color-row .pc-label .pc-model { color: #888780; }
+.part-color-row .pc-reset { flex: none; border: none; background: none; color: #B4B2A9; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+.part-color-row .pc-reset:hover { color: #791F1F; }
+.part-color-row.customised .pc-reset { color: #1D9E75; }
+.part-color-empty { font-size: 12px; color: #888780; padding: 6px 2px; }
 .chart-legend-mini { font-size: 11px; color: #5F5E5A; padding: 4px 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
 .chart-legend-mini .swatch { display: inline-block; width: 14px; height: 12px; border-radius: 2px; margin-right: 4px; vertical-align: middle; border: 1px solid #B4B2A9; box-sizing: border-box; }
 .chart-legend-mini .swatch.solid { background: #888780; }
@@ -613,6 +623,16 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
           </div>
         </div>
       </details>
+      <details class="tooltip-fields" id="partColorMenu">
+        <summary>🎨 <span data-i18n="colors_menu">Colors</span> ▾</summary>
+        <div class="tooltip-fields-panel part-color-panel">
+          <div class="tooltip-fields-head" data-i18n="colors_head">Custom part colours</div>
+          <div class="part-color-list" id="partColorList"></div>
+          <div class="tooltip-fields-actions">
+            <button class="btn-small" id="partColorResetAll" type="button" data-i18n="colors_reset_all">Reset all</button>
+          </div>
+        </div>
+      </details>
     </div>
 
     <div class="chart-legend-mini" id="chartLegendMini">
@@ -827,6 +847,7 @@ const I18N = {
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
     tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
+    colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
     balance_done:'{step} done', nothing_changed:'Nothing changed (no backup options)',
@@ -920,6 +941,7 @@ const I18N = {
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
     tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
+    colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
     balance_done:'{step} เสร็จ', nothing_changed:'ไม่มีอะไรเปลี่ยน (ไม่มี backup ให้ใช้)',
@@ -1013,6 +1035,7 @@ const I18N = {
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
     tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
+    colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
     balance_done:'{step} 完了', nothing_changed:'変化なし',
@@ -1036,7 +1059,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.7.2';
+const APP_VERSION = '3.8.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1117,6 +1140,7 @@ const state = {
   labelOverrides: {},
   hiddenLines: new Set(),
   partColors: new Map(),
+  partColorOverrides: {},   // { [partNo]: '#rrggbb' } — user custom colours; win over the hash. Persisted.
   patternCache: new Map(),
   hoveredDsId: null,
   isSnapshot: false,
@@ -1163,8 +1187,28 @@ function generatePartColor(partNo) {
 }
 
 function getPartColor(partNo) {
+  // User override wins (invariant #1 still holds — one colour per Part No. everywhere).
+  const ov = state.partColorOverrides && state.partColorOverrides[partNo];
+  if (ov) return ov;
   if (!state.partColors.has(partNo)) state.partColors.set(partNo, generatePartColor(partNo));
   return state.partColors.get(partNo);
+}
+
+// The part's effective colour as a #rrggbb hex (native <input type=color> needs hex).
+function getPartColorHex(partNo) {
+  const c = getPartColor(partNo);
+  if (/^#[0-9a-f]{6}$/i.test(c)) return c;
+  const m = c.match(/^hsl\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)%,\s*(\d+(?:\.\d+)?)%\)$/i);
+  if (m) return hslToHex(+m[1], +m[2], +m[3]);
+  return '#888780';
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => { const v = l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return Math.round(255 * v); };
+  const toHex = v => v.toString(16).padStart(2, '0');
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 }
 
 // Lookup a part's Model (from the Master matrix), cached by Part No. Empty string if unknown.
@@ -2784,6 +2828,61 @@ function setupTooltipFields() {
   }));
   $('tooltipAllBtn').onclick = e => { e.preventDefault(); Object.keys(state.tooltipFields).forEach(k => state.tooltipFields[k] = true); sync(); save(); };
   $('tooltipNoneBtn').onclick = e => { e.preventDefault(); Object.keys(state.tooltipFields).forEach(k => state.tooltipFields[k] = false); sync(); save(); };
+  document.addEventListener('click', e => { if (menu.open && !menu.contains(e.target)) menu.removeAttribute('open'); });
+}
+
+// ===== Custom part colours =====
+// Parts of the current process tab (colour applies globally, but scope the list to the active tab).
+function getColorPickerParts() {
+  const proc = state.currentTab;
+  const set = new Set();
+  if (state.master && Array.isArray(state.master.parts)) {
+    for (const p of state.master.parts) if (p.processes && p.processes[proc]) set.add(p.partNo);
+  }
+  return Array.from(set).sort();
+}
+function persistPartColors() { saveStorage({ partColorOverrides: state.partColorOverrides }); }
+function renderPartColorList() {
+  const box = $('partColorList'); if (!box) return;
+  const parts = getColorPickerParts();
+  box._parts = parts;
+  if (!parts.length) { box.innerHTML = `<div class="part-color-empty">${t('colors_empty')}</div>`; return; }
+  box.innerHTML = parts.map((pn, i) => {
+    const hex = getPartColorHex(pn);
+    const custom = !!(state.partColorOverrides && state.partColorOverrides[pn]);
+    const model = getPartModel(pn);
+    const safePn = String(pn).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    return `<div class="part-color-row ${custom ? 'customised' : ''}" data-pn-idx="${i}">
+      <input type="color" value="${hex}" data-pc-input>
+      <span class="pc-label" title="${safePn}">${safePn}${model ? ` <span class="pc-model">· ${model}</span>` : ''}</span>
+      <button class="pc-reset" type="button" data-pc-reset title="${t('colors_reset')}">${custom ? '↺' : '·'}</button>
+    </div>`;
+  }).join('');
+}
+function setupPartColorMenu() {
+  const menu = $('partColorMenu'); if (!menu) return;
+  const list = $('partColorList');
+  const pnOf = el => { const row = el.closest('[data-pn-idx]'); return row && list._parts ? list._parts[+row.dataset.pnIdx] : null; };
+  // 'change' commits when the picker closes (avoids re-rendering the chart on every drag tick).
+  list.addEventListener('change', e => {
+    const inp = e.target.closest('[data-pc-input]'); if (!inp) return;
+    const pn = pnOf(inp); if (!pn) return;
+    state.partColorOverrides[pn] = inp.value; persistPartColors();
+    const row = inp.closest('[data-pn-idx]'); row.classList.add('customised');
+    const rst = row.querySelector('[data-pc-reset]'); if (rst) rst.textContent = '↺';
+    renderChart();
+  });
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('[data-pc-reset]'); if (!btn) return;
+    const pn = pnOf(btn); if (!pn || !state.partColorOverrides[pn]) return;
+    delete state.partColorOverrides[pn]; persistPartColors();
+    const row = btn.closest('[data-pn-idx]'); row.classList.remove('customised');
+    const inp = row.querySelector('[data-pc-input]'); if (inp) inp.value = getPartColorHex(pn);
+    btn.textContent = '·';
+    renderChart();
+  });
+  $('partColorResetAll').onclick = e => { e.preventDefault(); state.partColorOverrides = {}; persistPartColors(); renderPartColorList(); renderChart(); };
+  menu.addEventListener('toggle', () => { if (menu.open) renderPartColorList(); });
   document.addEventListener('click', e => { if (menu.open && !menu.contains(e.target)) menu.removeAttribute('open'); });
 }
 
@@ -4479,6 +4578,7 @@ function loadSavedDatasets() {
     if (d.viewMode && ['single','compare','diff'].includes(d.viewMode)) state.viewMode = d.viewMode;
     if (d.yUnit === 'pcs' || d.yUnit === 'hours') state.yUnit = d.yUnit;
     if (d.tooltipFields && typeof d.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, d.tooltipFields);
+    if (d.partColorOverrides && typeof d.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, d.partColorOverrides);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     renderDatasetList();
@@ -4540,6 +4640,7 @@ function buildSnapshotPayload(authorName) {
     currentTab: state.currentTab,
     yUnit: state.yUnit,
     tooltipFields: state.tooltipFields,
+    partColorOverrides: state.partColorOverrides,
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
     labelOverrides: state.labelOverrides,
@@ -4692,6 +4793,7 @@ function loadSnapshotIfPresent() {
     state.currentTab = data.currentTab || 'Lathe';
     if (data.yUnit === 'pcs' || data.yUnit === 'hours') state.yUnit = data.yUnit;
     if (data.tooltipFields && typeof data.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, data.tooltipFields);
+    if (data.partColorOverrides && typeof data.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, data.partColorOverrides);
     state.monthOverrides = data.monthOverrides || {};
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];
@@ -6177,6 +6279,7 @@ function init() {
   });
   if ($('yUnit')) $('yUnit').value = state.yUnit;
   setupTooltipFields();  // common to both branches (snapshots get a configurable tooltip too)
+  setupPartColorMenu();
 
   // Sticky header — toggle compact mode when scrolled
   const header = document.querySelector('.app-header');

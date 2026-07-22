@@ -54,7 +54,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 ## Critical invariants — do not break
 
-1. **Same Part No. = same color across all lines, all charts, all datasets.** Implemented via deterministic HSL hash in `getPartColor()`. Cached in `state.partColors`. Never assign random colors to parts; never override this elsewhere.
+1. **Same Part No. = same color across all lines, all charts, all datasets.** Implemented via deterministic HSL hash in `getPartColor()`. Cached in `state.partColors`. Never assign random colors to parts; never override this elsewhere. The **only** sanctioned override is a user custom colour in `state.partColorOverrides` (`{ [partNo]: '#hex' }`, edited via the 🎨 Colors menu on the chart toolbar) — `getPartColor()` checks it first, so a custom colour still maps one Part No. → one colour everywhere. Persisted in localStorage + snapshot; `getPartColorHex()`/`hslToHex()` back the `<input type=color>`.
 
 2. **i18n keys stay in sync.** Whenever you add user-facing text, add the key to `I18N.en`, `I18N.th`, AND `I18N.jp`. A missing key falls back to the key string itself, which is bad UX.
 

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.8.0] — 2026-07-22
+
+### Added
+- **Custom part colours.** A new **🎨 Colors** menu on the chart toolbar lists the parts of the
+  current process, each with a colour picker — override the auto-generated colour for any part when
+  two hash-picked colours land too close to tell apart. The custom colour still obeys the
+  "one Part No. → one colour everywhere" rule (`getPartColor()` checks `state.partColorOverrides`
+  first), so it applies across every line, chart, dataset, and the Manual tab. Per-part **Reset to
+  auto** (↺) and a **Reset all** button revert to the deterministic hash colour. Choices persist in
+  localStorage and in exported snapshots.
+
 ## [3.7.2] — 2026-07-22
 
 ### Changed
