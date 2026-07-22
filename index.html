@@ -196,6 +196,9 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .tooltip-fields-panel label { display: flex; align-items: center; gap: 7px; white-space: nowrap; cursor: pointer; font-size: 12px; color: #2C2C2A; }
 .tooltip-fields-actions { display: flex; gap: 6px; padding-top: 6px; margin-top: 2px; border-top: 1px solid #E5E3DB; }
 .part-color-panel { min-width: 260px; }
+.pattern-style-row { display: flex; flex-direction: column; gap: 5px; }
+.pattern-style-row label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #2C2C2A; }
+.pattern-style-row select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 3px 6px; font-size: 12px; background: white; font-family: inherit; }
 .part-color-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-right: 2px; }
 .part-color-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
 .part-color-row input[type="color"] { width: 26px; height: 20px; padding: 0; border: 1px solid #B4B2A9; border-radius: 4px; background: none; cursor: pointer; flex: none; }
@@ -626,7 +629,12 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <details class="tooltip-fields" id="partColorMenu">
         <summary>🎨 <span data-i18n="colors_menu">Colors</span> ▾</summary>
         <div class="tooltip-fields-panel part-color-panel">
-          <div class="tooltip-fields-head" data-i18n="colors_head">Custom part colours</div>
+          <div class="tooltip-fields-head" data-i18n="pat_styles_head">Balanced / buffer style</div>
+          <div class="pattern-style-row">
+            <label><span data-i18n="pat_balanced">Balanced (moved)</span><select id="balancedStyle" data-pat="balanced"></select></label>
+            <label><span data-i18n="pat_buffer">Fluctuation buffer</span><select id="bufferStyle" data-pat="buffer"></select></label>
+          </div>
+          <div class="tooltip-fields-head" data-i18n="colors_head" style="margin-top:8px">Custom part colours</div>
           <div class="part-color-list" id="partColorList"></div>
           <div class="tooltip-fields-actions">
             <button class="btn-small" id="partColorResetAll" type="button" data-i18n="colors_reset_all">Reset all</button>
@@ -848,6 +856,8 @@ const I18N = {
     y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
     tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
     colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
+    pat_styles_head:'Balanced / buffer style', pat_balanced:'Balanced (moved)', pat_buffer:'Fluctuation buffer',
+    style_solid:'Solid', style_hatch:'Diagonal ╱', style_hatchBack:'Diagonal ╲', style_cross:'Cross-hatch', style_grid:'Grid', style_horizontal:'Horizontal', style_vertical:'Vertical', style_dot:'Dots', style_dotLg:'Big dots',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
     balance_done:'{step} done', nothing_changed:'Nothing changed (no backup options)',
@@ -942,6 +952,8 @@ const I18N = {
     y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
     tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
     colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
+    pat_styles_head:'ลายของ Balanced / Buffer', pat_balanced:'Balanced (ย้าย)', pat_buffer:'Buffer ความผันผวน',
+    style_solid:'ทึบ', style_hatch:'ทแยง ╱', style_hatchBack:'ทแยง ╲', style_cross:'ตาราง ╳', style_grid:'ตาราง #', style_horizontal:'แนวนอน', style_vertical:'แนวตั้ง', style_dot:'จุด', style_dotLg:'จุดใหญ่',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
     balance_done:'{step} เสร็จ', nothing_changed:'ไม่มีอะไรเปลี่ยน (ไม่มี backup ให้ใช้)',
@@ -1036,6 +1048,8 @@ const I18N = {
     y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
     tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
     colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
+    pat_styles_head:'Balanced / バッファの柄', pat_balanced:'Balanced (移動)', pat_buffer:'変動バッファ',
+    style_solid:'ベタ', style_hatch:'斜線 ╱', style_hatchBack:'斜線 ╲', style_cross:'格子 ╳', style_grid:'グリッド', style_horizontal:'横線', style_vertical:'縦線', style_dot:'ドット', style_dotLg:'大ドット',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
     balance_done:'{step} 完了', nothing_changed:'変化なし',
@@ -1059,7 +1073,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.8.0';
+const APP_VERSION = '3.9.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1141,6 +1155,7 @@ const state = {
   hiddenLines: new Set(),
   partColors: new Map(),
   partColorOverrides: {},   // { [partNo]: '#rrggbb' } — user custom colours; win over the hash. Persisted.
+  patternStyles: { balanced: 'hatch', buffer: 'dot' },   // fill style for Balanced bars / Fluct buffer. Persisted.
   patternCache: new Map(),
   hoveredDsId: null,
   isSnapshot: false,
@@ -1238,6 +1253,7 @@ function applyLanguage() {
   if (state.master && state.datasets.length > 0 && !state.isSnapshot) renderPreview();
   if (state._masterWb) renderImportMapMaster();
   if (state._volWb) renderImportMapVolume();
+  if ($('balancedStyle')) renderPatternStyleControls();  // <option> labels are generated, not data-i18n
 }
 
 function toast(msg, type) {
@@ -2453,40 +2469,66 @@ function getRangeMonths() {
 }
 
 // ===== Pattern cache for hatched bars =====
-function getHatchPattern(color) {
-  const key = color;
-  if (state.patternCache.has(key)) return state.patternCache.get(key);
+// ===== Fill patterns (same colour, white overlay) — configurable style per role =====
+// The "Balanced (moved)" bars and the "Fluctuation buffer" slice each pick a style from this set.
+const PATTERN_STYLES = ['solid', 'hatch', 'hatchBack', 'cross', 'grid', 'horizontal', 'vertical', 'dot', 'dotLg'];
+// Draw one repeating tile for a (colour, style) onto a fresh canvas.
+function buildPatternCanvas(color, style) {
+  const dot = style === 'dot' || style === 'dotLg';
+  const size = dot ? 6 : 8;
   const c = document.createElement('canvas');
-  c.width = 8; c.height = 8;
+  c.width = size; c.height = size;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 0, 8, 8);
-  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(0, 8); ctx.lineTo(8, 0);
-  ctx.moveTo(-4, 4); ctx.lineTo(4, -4);
-  ctx.moveTo(4, 12); ctx.lineTo(12, 4);
+  ctx.fillStyle = color; ctx.fillRect(0, 0, size, size);
+  if (dot) {
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    ctx.beginPath(); ctx.arc(3, 3, style === 'dotLg' ? 1.9 : 1.15, 0, Math.PI * 2); ctx.fill();
+    return c;
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 1.6; ctx.beginPath();
+  const fwd = () => { ctx.moveTo(0, 8); ctx.lineTo(8, 0); ctx.moveTo(-4, 4); ctx.lineTo(4, -4); ctx.moveTo(4, 12); ctx.lineTo(12, 4); };
+  const back = () => { ctx.moveTo(0, 0); ctx.lineTo(8, 8); ctx.moveTo(-4, 4); ctx.lineTo(4, 12); ctx.moveTo(4, -4); ctx.lineTo(12, 4); };
+  switch (style) {
+    case 'hatch': fwd(); break;
+    case 'hatchBack': back(); break;
+    case 'cross': fwd(); back(); break;
+    case 'grid': ctx.moveTo(0, 4); ctx.lineTo(8, 4); ctx.moveTo(4, 0); ctx.lineTo(4, 8); break;
+    case 'horizontal': ctx.moveTo(0, 2.5); ctx.lineTo(8, 2.5); ctx.moveTo(0, 6.5); ctx.lineTo(8, 6.5); break;
+    case 'vertical': ctx.moveTo(2.5, 0); ctx.lineTo(2.5, 8); ctx.moveTo(6.5, 0); ctx.lineTo(6.5, 8); break;
+    default: fwd();
+  }
   ctx.stroke();
-  const pat = ctx.createPattern(c, 'repeat');
+  return c;
+}
+function makePattern(color, style) {
+  if (!style || style === 'solid') return color;   // solid = just the flat colour
+  const key = style + '|' + color;
+  if (state.patternCache.has(key)) return state.patternCache.get(key);
+  const c = buildPatternCanvas(color, style);
+  const pat = c.getContext('2d').createPattern(c, 'repeat');
   state.patternCache.set(key, pat);
   return pat;
 }
-
-// Dotted pattern (same colour) — marks the Fluctuation-buffer portion of a bar in pcs mode.
-function getDotPattern(color) {
-  const key = 'dot|' + color;
-  if (state.patternCache.has(key)) return state.patternCache.get(key);
-  const c = document.createElement('canvas');
-  c.width = 6; c.height = 6;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 0, 6, 6);
-  ctx.fillStyle = 'rgba(255,255,255,0.8)';
-  ctx.beginPath(); ctx.arc(3, 3, 1.15, 0, Math.PI * 2); ctx.fill();
-  const pat = ctx.createPattern(c, 'repeat');
-  state.patternCache.set(key, pat);
-  return pat;
+function balancedStyle() { return (state.patternStyles && state.patternStyles.balanced) || 'hatch'; }
+function bufferStyle() { return (state.patternStyles && state.patternStyles.buffer) || 'dot'; }
+// "Balanced (moved)" fill for a part colour — style is user-configurable (default diagonal hatch).
+function getHatchPattern(color) { return makePattern(color, balancedStyle()); }
+// "Fluctuation buffer" fill for a part colour — style is user-configurable (default dots).
+function getDotPattern(color) { return makePattern(color, bufferStyle()); }
+// A data: URL of the tile on a neutral grey base — used for the mini-legend swatches.
+function patternDataURL(style) {
+  if (!style || style === 'solid') return '';
+  return buildPatternCanvas('#888780', style).toDataURL();
+}
+// Keep the mini-legend "Balanced" / "Fluctuation buffer" swatches in sync with the chosen styles.
+function updateLegendSwatches() {
+  const bal = patternDataURL(balancedStyle()), buf = patternDataURL(bufferStyle());
+  document.querySelectorAll('.chart-legend-mini .swatch.hatch').forEach(el => {
+    el.style.backgroundImage = bal ? `url(${bal})` : 'none'; el.style.backgroundRepeat = 'repeat';
+  });
+  document.querySelectorAll('.chart-legend-mini .swatch.dot').forEach(el => {
+    el.style.backgroundImage = buf ? `url(${buf})` : 'none'; el.style.backgroundRepeat = 'repeat';
+  });
 }
 
 // ===== Render: Step history =====
@@ -2859,9 +2901,23 @@ function renderPartColorList() {
     </div>`;
   }).join('');
 }
+function renderPatternStyleControls() {
+  for (const which of ['balanced', 'buffer']) {
+    const sel = $(which + 'Style'); if (!sel) continue;
+    const cur = which === 'balanced' ? balancedStyle() : bufferStyle();
+    sel.innerHTML = PATTERN_STYLES.map(s => `<option value="${s}" ${s === cur ? 'selected' : ''}>${t('style_' + s)}</option>`).join('');
+  }
+}
 function setupPartColorMenu() {
   const menu = $('partColorMenu'); if (!menu) return;
   const list = $('partColorList');
+  renderPatternStyleControls();
+  updateLegendSwatches();
+  menu.querySelectorAll('[data-pat]').forEach(sel => sel.addEventListener('change', () => {
+    state.patternStyles[sel.dataset.pat] = sel.value;
+    saveStorage({ patternStyles: state.patternStyles });
+    updateLegendSwatches(); renderChart();
+  }));
   const pnOf = el => { const row = el.closest('[data-pn-idx]'); return row && list._parts ? list._parts[+row.dataset.pnIdx] : null; };
   // 'change' commits when the picker closes (avoids re-rendering the chart on every drag tick).
   list.addEventListener('change', e => {
@@ -2882,7 +2938,7 @@ function setupPartColorMenu() {
     renderChart();
   });
   $('partColorResetAll').onclick = e => { e.preventDefault(); state.partColorOverrides = {}; persistPartColors(); renderPartColorList(); renderChart(); };
-  menu.addEventListener('toggle', () => { if (menu.open) renderPartColorList(); });
+  menu.addEventListener('toggle', () => { if (menu.open) { renderPatternStyleControls(); renderPartColorList(); } });
   document.addEventListener('click', e => { if (menu.open && !menu.contains(e.target)) menu.removeAttribute('open'); });
 }
 
@@ -3728,6 +3784,7 @@ function renderChartLegendMini() {
     html += `<span style="font-style:italic;color:#888780;">${t('legend_hover_hint')}</span>`;
     el.innerHTML = html;
   }
+  updateLegendSwatches();  // swatches were just rebuilt — re-apply the chosen pattern styles
 }
 
 // ===== Render: Preview =====
@@ -4579,6 +4636,7 @@ function loadSavedDatasets() {
     if (d.yUnit === 'pcs' || d.yUnit === 'hours') state.yUnit = d.yUnit;
     if (d.tooltipFields && typeof d.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, d.tooltipFields);
     if (d.partColorOverrides && typeof d.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, d.partColorOverrides);
+    if (d.patternStyles && typeof d.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, d.patternStyles);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     renderDatasetList();
@@ -4641,6 +4699,7 @@ function buildSnapshotPayload(authorName) {
     yUnit: state.yUnit,
     tooltipFields: state.tooltipFields,
     partColorOverrides: state.partColorOverrides,
+    patternStyles: state.patternStyles,
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
     labelOverrides: state.labelOverrides,
@@ -4794,6 +4853,7 @@ function loadSnapshotIfPresent() {
     if (data.yUnit === 'pcs' || data.yUnit === 'hours') state.yUnit = data.yUnit;
     if (data.tooltipFields && typeof data.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, data.tooltipFields);
     if (data.partColorOverrides && typeof data.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, data.partColorOverrides);
+    if (data.patternStyles && typeof data.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, data.patternStyles);
     state.monthOverrides = data.monthOverrides || {};
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];

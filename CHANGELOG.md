@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.9.0] — 2026-07-22
+
+### Added
+- **Choose the fill style for "Balanced (moved)" and "Fluctuation buffer".** They were fixed to a
+  diagonal hatch and dots; now the 🎨 Colors menu has two dropdowns to pick each role's pattern from
+  nine styles — Solid, Diagonal ╱, Diagonal ╲, Cross-hatch, Grid, Horizontal, Vertical, Dots, Big
+  dots — so the two overlays can be told apart at a glance. The pattern still uses each part's own
+  colour (a white overlay), the mini-legend swatches update to match, and the choice persists in
+  localStorage + snapshot. i18n EN/TH/JP.
+
 ## [3.8.0] — 2026-07-22
 
 ### Added

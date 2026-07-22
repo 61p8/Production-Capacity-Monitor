@@ -36,7 +36,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 |---|---|
 | State + Constants | `state` object (incl. `state.stepConfigs`, `state.maxCapOT`), `PROCESSES`, `LINE_NAMES`, `DEFAULT_STEP_CONFIGS`, `STEP_LINE_STYLES`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
 | I18N | `I18N.en` / `I18N.th` / `I18N.jp` dictionaries — **all keys must exist in all three** |
-| Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, hatch pattern cache |
+| Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, fill-pattern engine (`PATTERN_STYLES`, `buildPatternCanvas()`, `makePattern()`; `getHatchPattern()`/`getDotPattern()` resolve the user-chosen `state.patternStyles.balanced`/`.buffer`; `patternDataURL()`/`updateLegendSwatches()` sync the mini-legend), pattern cache |
 | CT Step Function | `getEffectiveCT()` resolves CT in priority order: App override → Excel CT_Changes → Matrix base |
 | Chart helpers | `xHierarchyPlugin`, `computeXHierarchy()`, `shouldUseNumericMonths()`, `getMonthOnly()` |
 | Parsers | `parseMaster(wb, map)`, `parseMonthly(wb, map)`, `parseRawData(wb, map)` — all take `state.importMap`; blank fields fall back to auto-detection. `matchSheetPrefix()` resolves the process-sheet prefix |
