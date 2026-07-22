@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.7.2] — 2026-07-22
+
+### Changed
+- **Pieces mode: every threshold line now reflects a CT change, not just Max Cap.** In Pieces/month
+  view the step thresholds (417 / 447 / 497 …) were converted to pieces with each line's **all-months
+  average** hrs/piece — a single flat value — so a mid-timeline CT change (e.g. a `From FY28` override)
+  only moved the per-month **Max Cap** line while the step lines stayed flat. All threshold lines
+  (steps **and** Max Cap) now convert **per month** — byPart per line via `lineHrsPerPiece`, byLine
+  process-wide via `procHrsPerPiece` — so the FY28 CT drop steps up **every** line together, matching
+  Max Cap. Lines still read flat while CT and product mix are stable; they step only where the rate
+  actually changes. Removed the now-unused averaging helpers (`procHrsPerPieceAvg`,
+  `lineHrsPerPieceAvg`, `thHpp`). Hours mode is unaffected.
+
 ## [3.7.1] — 2026-07-22
 
 ### Fixed
