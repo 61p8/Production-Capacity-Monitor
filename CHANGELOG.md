@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.11.0] — 2026-07-23
+
+### Changed
+- **Pieces-mode threshold lines are straight again — but still step at a CT change.** Since v3.7.2 the
+  step thresholds converted to pieces with each month's *actual* product mix, which made the lines
+  wiggle month to month as demand shifted. They now convert with a **fixed product mix** (each part
+  weighted by its total pieces over the shown range) while still using **each month's own CT**. So a
+  threshold line stays flat while the cycle time is stable and steps cleanly only where CT actually
+  changes (e.g. a `From FY28` override) — you get the straight line back *and* the FY28 step. Applies
+  to every threshold line (steps + Max Cap) in byPart/byLine and Single/Compare. Bars still use the
+  real monthly mix and cell colour is by the hours ratio, so over/under stays truthful. New helpers
+  `lineHrsPerPieceStable`/`procHrsPerPieceStable` (`lineMixWeights`/`mixHpp`/`getPartOA`).
+
 ## [3.10.1] — 2026-07-23
 
 ### Fixed
