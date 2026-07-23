@@ -284,6 +284,21 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .main-tabs button:hover:not(.active) { color: #2C2C2A; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
+.revct-hint { font-size: 12px; color: #5F5E5A; margin: 0 0 10px; }
+.revct-result { font-size: 13px; }
+.revct-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; margin-bottom: 10px; }
+.revct-summary .rc-stat { font-size: 12px; color: #5F5E5A; }
+.revct-summary .rc-stat b { color: #2C2C2A; font-size: 13px; }
+.revct-badge { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 12px; }
+.revct-badge.over { background: #FCEBEB; color: #991F1F; }
+.revct-badge.ok { background: #E7F7F0; color: #0F6E56; }
+.revct-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.revct-table th, .revct-table td { padding: 5px 9px; text-align: right; border-bottom: 1px solid #EEEDE8; white-space: nowrap; }
+.revct-table th { color: #888780; font-weight: 600; text-align: right; border-bottom: 1px solid #D3D1C7; }
+.revct-table th:first-child, .revct-table td:first-child { text-align: left; }
+.revct-table td.rc-req { font-weight: 600; color: #0F6E56; }
+.revct-table td.rc-up { color: #185FA5; }
+.revct-empty { font-size: 12px; color: #888780; padding: 6px 0; }
 .manual-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .manual-toolbar select { border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 12px; background: white; font-family: inherit; }
 .manual-canvas-wrap { position: relative; height: 560px; margin-top: 8px; }
@@ -666,6 +681,21 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     </h2>
     <div class="alert-list" id="alertList"></div>
   </div>
+
+  <div class="section" id="revCtSection" style="display:none">
+    <h2>
+      <span class="step-num">🧮</span><span data-i18n="sec_revct">Reverse CT calculator</span>
+    </h2>
+    <p class="revct-hint" data-i18n="revct_hint">Given a target hours cap (a threshold line), find the C/T each part on a line needs.</p>
+    <div class="manual-toolbar">
+      <label class="lay-field"><span data-i18n="man_process">Process</span><select id="revProc"></select></label>
+      <label class="lay-field"><span data-i18n="rev_line">Line</span><select id="revLine"></select></label>
+      <label class="lay-field"><span data-i18n="rev_month">Month</span><select id="revMonth"></select></label>
+      <label class="lay-field"><span data-i18n="rev_target">Target ≤</span><select id="revTarget"></select></label>
+      <label class="lay-field" id="revCustomWrap" style="display:none"><input type="number" id="revCustomH" min="1" step="1" style="width:90px"> <span data-i18n="hours_unit">h</span></label>
+    </div>
+    <div id="revCtResult" class="revct-result"></div>
+  </div>
   </div><!-- /tab-panel results -->
 
   <div class="tab-panel" data-panel="manual">
@@ -858,6 +888,10 @@ const I18N = {
     colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
     pat_styles_head:'Balanced / buffer style', pat_balanced:'Balanced (moved)', pat_buffer:'Fluctuation buffer',
     style_solid:'Solid', style_hatch:'Diagonal ╱', style_hatchBack:'Diagonal ╲', style_cross:'Cross-hatch', style_grid:'Grid', style_horizontal:'Horizontal', style_vertical:'Vertical', style_dot:'Dots', style_dotLg:'Big dots',
+    sec_revct:'Reverse C/T calculator', revct_hint:'Pick a line, month and a target hours cap (a threshold) — see the C/T each part needs to keep the line under it.', rev_line:'Line', rev_month:'Month', rev_target:'Target ≤', hours_unit:'h', rev_custom:'Custom…',
+    rev_need_calc:'Run Calculate first to load line data.', rev_bad_target:'Enter a target above 0.', rev_no_load:'This line has no load in the selected month.', rev_no_parts:'No parts on this line this month.',
+    rev_over:'OVER — needs faster C/T', rev_within:'Within target', rev_target_h:'Target', rev_current_h:'Current load', rev_cut:'Cut every C/T by {pct}% (×{k}) to hit the target', rev_room:'Room to spare — C/T could rise {pct}% (×{k})',
+    rev_pcs:'Pcs/mo', rev_cur_ct:'Current C/T', rev_req_ct:'Required C/T',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} months • from sheet: "{s}"',
     not_matched:'{n} not matched', all_matched:'(all parts matched)', calc_done:'Step 0 (initial) done',
     balance_done:'{step} done', nothing_changed:'Nothing changed (no backup options)',
@@ -954,6 +988,10 @@ const I18N = {
     colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
     pat_styles_head:'ลายของ Balanced / Buffer', pat_balanced:'Balanced (ย้าย)', pat_buffer:'Buffer ความผันผวน',
     style_solid:'ทึบ', style_hatch:'ทแยง ╱', style_hatchBack:'ทแยง ╲', style_cross:'ตาราง ╳', style_grid:'ตาราง #', style_horizontal:'แนวนอน', style_vertical:'แนวตั้ง', style_dot:'จุด', style_dotLg:'จุดใหญ่',
+    sec_revct:'คำนวณ C/T ย้อนกลับ', revct_hint:'เลือกไลน์ เดือน และเป้าชั่วโมงสูงสุด (เส้น threshold) — ดูว่าแต่ละ Part ต้องใช้ C/T เท่าไหร่เพื่อให้ไลน์ไม่เกินเป้า', rev_line:'ไลน์', rev_month:'เดือน', rev_target:'เป้า ≤', hours_unit:'ชม.', rev_custom:'กำหนดเอง…',
+    rev_need_calc:'กด Calculate ก่อนเพื่อโหลดข้อมูลไลน์', rev_bad_target:'ใส่ค่าเป้ามากกว่า 0', rev_no_load:'ไลน์นี้ไม่มีโหลดในเดือนที่เลือก', rev_no_parts:'ไม่มี Part บนไลน์นี้ในเดือนนี้',
+    rev_over:'เกินเป้า — ต้องลด C/T', rev_within:'อยู่ในเป้า', rev_target_h:'เป้า', rev_current_h:'โหลดปัจจุบัน', rev_cut:'ต้องลด C/T ทุกตัวลง {pct}% (×{k}) จึงจะถึงเป้า', rev_room:'ยังมีที่เหลือ — C/T เพิ่มได้ {pct}% (×{k})',
+    rev_pcs:'ตัว/เดือน', rev_cur_ct:'C/T ปัจจุบัน', rev_req_ct:'C/T ที่ต้องใช้',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n} เดือน • อ่านจาก sheet: "{s}"',
     not_matched:'{n} ไม่จับคู่', all_matched:'(ทุก part จับคู่ได้)', calc_done:'คำนวณ Step 0 เสร็จ',
     balance_done:'{step} เสร็จ', nothing_changed:'ไม่มีอะไรเปลี่ยน (ไม่มี backup ให้ใช้)',
@@ -1050,6 +1088,10 @@ const I18N = {
     colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
     pat_styles_head:'Balanced / バッファの柄', pat_balanced:'Balanced (移動)', pat_buffer:'変動バッファ',
     style_solid:'ベタ', style_hatch:'斜線 ╱', style_hatchBack:'斜線 ╲', style_cross:'格子 ╳', style_grid:'グリッド', style_horizontal:'横線', style_vertical:'縦線', style_dot:'ドット', style_dotLg:'大ドット',
+    sec_revct:'C/T 逆算', revct_hint:'ライン・月・目標時間（しきい値）を選ぶと、ラインを目標内に収めるのに各品番へ必要な C/T が分かります', rev_line:'ライン', rev_month:'月', rev_target:'目標 ≤', hours_unit:'h', rev_custom:'カスタム…',
+    rev_need_calc:'先に Calculate を実行してください', rev_bad_target:'0 より大きい目標を入力', rev_no_load:'選択した月にこのラインの負荷がありません', rev_no_parts:'今月このラインに品番がありません',
+    rev_over:'超過 — C/T 短縮が必要', rev_within:'目標内', rev_target_h:'目標', rev_current_h:'現在の負荷', rev_cut:'全 C/T を {pct}% 短縮 (×{k}) で目標達成', rev_room:'余裕あり — C/T は {pct}% 増やせます (×{k})',
+    rev_pcs:'個/月', rev_cur_ct:'現在 C/T', rev_req_ct:'必要 C/T',
     line_total:'Lathe {l} • Rolling {r} • IHA {i}', months_sheet:'{n}月 • シート: "{s}"',
     not_matched:'{n} 未一致', all_matched:'(全一致)', calc_done:'Step 0 完了',
     balance_done:'{step} 完了', nothing_changed:'変化なし',
@@ -1073,7 +1115,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.9.0';
+const APP_VERSION = '3.10.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -3691,6 +3733,133 @@ function renderViewToggle() {
 }
 
 // ===== Render: Main =====
+// ===== Reverse CT calculator =====
+// "To keep a line's monthly load under a target (a threshold line), what C/T does each part need?"
+// Load scales linearly with C/T (hours = Σ qty·Fluct·CT/3600/OA), so if the line is at H hours and
+// the target is T, every part's C/T must be multiplied by k = T/H. reqCT = currentCT × k (exact,
+// independent of the line's product mix / differing OA).
+function getBaseCT(pn, process, line) {
+  const part = state.master && state.master.parts && state.master.parts.find(p => p.partNo === pn);
+  const pd = part && part.processes && part.processes[process];
+  const lc = pd && pd.lines && pd.lines.find(l => l.name === line);
+  return lc ? lc.ct : null;
+}
+function revTargetList(setting) {
+  const list = state.stepConfigs.map((c, i) => ({
+    key: 's' + i,
+    label: Math.round(computeStepThreshold(c, setting)) + (stepHasPerMonth(c) ? '~' : '') + ' h',
+    hoursFor: m => computeStepThresholdMonth(c, setting, m)
+  }));
+  list.push({ key: 'mc', label: 'Max Cap', hoursFor: m => calculateMaxCap(setting, m) });
+  list.push({ key: 'custom', label: t('rev_custom'), hoursFor: () => (parseFloat(($('revCustomH') || {}).value) || 0) });
+  return list;
+}
+function revPopulate() {
+  const sec = $('revCtSection'); if (!sec) return;
+  const ds = getActiveDataset();
+  const result = ds && getCurrentResult(ds);
+  if (!result) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  state.rev = state.rev || { proc: null, line: null, month: null, targetKey: null };
+  const rv = state.rev;
+  const procs = getProcesses().filter(p => result.byProcess[p] && result.byProcess[p].lines.length);
+  if (!procs.length) { sec.style.display = 'none'; return; }
+  if (!procs.includes(rv.proc)) rv.proc = procs.includes(state.currentTab) ? state.currentTab : procs[0];
+  $('revProc').innerHTML = procs.map(p => `<option value="${p}"${p === rv.proc ? ' selected' : ''}>${p}</option>`).join('');
+
+  const data = result.byProcess[rv.proc];
+  const lines = (Array.isArray(data.lines) ? data.lines : Array.from(data.lines || [])).slice().sort();
+  if (!lines.includes(rv.line)) rv.line = lines[0];
+  $('revLine').innerHTML = lines.map((l, i) => `<option value="${i}"${l === rv.line ? ' selected' : ''}>${String(l).replace(/\s+/g, ' ')}</option>`).join('');
+  $('revLine')._lines = lines;
+
+  const months = result.months || [];
+  if (!months.includes(rv.month)) rv.month = findCurrentMonthKey(months) || months[0];
+  $('revMonth').innerHTML = months.map((m, i) => `<option value="${i}"${m === rv.month ? ' selected' : ''}>${getDisplayLabel(m)}</option>`).join('');
+  $('revMonth')._months = months;
+
+  const setting = result.settings || readSettings();
+  const targets = revTargetList(setting);
+  if (!targets.some(tg => tg.key === rv.targetKey)) rv.targetKey = targets[0].key;
+  $('revTarget').innerHTML = targets.map(tg => `<option value="${tg.key}"${tg.key === rv.targetKey ? ' selected' : ''}>${tg.label}</option>`).join('');
+  $('revCustomWrap').style.display = rv.targetKey === 'custom' ? '' : 'none';
+
+  renderReverseCT();
+}
+function renderReverseCT() {
+  const box = $('revCtResult'); if (!box) return;
+  const rv = state.rev; const ds = getActiveDataset();
+  const result = ds && getCurrentResult(ds);
+  if (!result || !rv) { box.innerHTML = `<div class="revct-empty">${t('rev_need_calc')}</div>`; return; }
+  const data = result.byProcess[rv.proc];
+  if (!data) { box.innerHTML = `<div class="revct-empty">${t('rev_need_calc')}</div>`; return; }
+  const line = rv.line, month = rv.month;
+  const setting = result.settings || readSettings();
+  const target = revTargetList(setting).find(tg => tg.key === rv.targetKey);
+  const T = target ? target.hoursFor(month) : 0;
+  const H = (data.hours[line] && data.hours[line][month]) || 0;
+
+  if (!(T > 0)) { box.innerHTML = `<div class="revct-empty">${t('rev_bad_target')}</div>`; return; }
+  if (!(H > 0)) { box.innerHTML = `<div class="revct-empty">${t('rev_no_load')}</div>`; return; }
+
+  const k = T / H;
+  const over = H > T;
+  const pct = Math.round(Math.abs(1 - k) * 1000) / 10;
+  const alloc = (data.partAlloc[line] && data.partAlloc[line][month]) || {};
+  const rows = [];
+  for (const pn in alloc) {
+    const a = alloc[pn];
+    const adj = a.adjQty != null ? a.adjQty : a.qty;
+    if (!(a.hours > 0) && !(adj > 0)) continue;
+    const baseCT = getBaseCT(pn, rv.proc, line);
+    const curCT = getEffectiveCT(pn, rv.proc, line, month, baseCT);
+    if (curCT == null) continue;
+    rows.push({ pn, adj, curCT, reqCT: curCT * k, model: getPartModel(pn) });
+  }
+  rows.sort((a, b) => b.adj - a.adj);
+
+  const fmtCT = v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const badge = over
+    ? `<span class="revct-badge over">${t('rev_over')}</span>`
+    : `<span class="revct-badge ok">${t('rev_within')}</span>`;
+  const scaleMsg = over
+    ? t('rev_cut', { pct, k: k.toFixed(3) })
+    : t('rev_room', { pct, k: k.toFixed(3) });
+
+  let html = `<div class="revct-summary">
+    ${badge}
+    <span class="rc-stat">${t('rev_target_h')}: <b>${formatHours(T)} h</b></span>
+    <span class="rc-stat">${t('rev_current_h')}: <b>${formatHours(H)} h</b></span>
+    <span class="rc-stat">${scaleMsg}</span>
+  </div>`;
+  if (!rows.length) { html += `<div class="revct-empty">${t('rev_no_parts')}</div>`; box.innerHTML = html; return; }
+  html += `<table class="revct-table"><thead><tr>
+    <th>${t('tip_f_part')}</th><th>${t('rev_pcs')}</th><th>${t('rev_cur_ct')}</th><th>${t('rev_req_ct')}</th></tr></thead><tbody>`;
+  for (const r of rows) {
+    html += `<tr>
+      <td>${r.pn}${r.model ? ` <span style="color:#888780">· ${r.model}</span>` : ''}</td>
+      <td>${Math.round(r.adj).toLocaleString()}</td>
+      <td>${fmtCT(r.curCT)}</td>
+      <td class="${over ? 'rc-req' : 'rc-up'}">${fmtCT(r.reqCT)}</td>
+    </tr>`;
+  }
+  html += `</tbody></table>`;
+  box.innerHTML = html;
+}
+function setupReverseCT() {
+  const proc = $('revProc'); if (!proc) return;
+  state.rev = state.rev || { proc: null, line: null, month: null, targetKey: null };
+  proc.addEventListener('change', () => { state.rev.proc = proc.value; state.rev.line = null; revPopulate(); });
+  $('revLine').addEventListener('change', e => { const ls = e.target._lines || []; state.rev.line = ls[+e.target.value]; renderReverseCT(); });
+  $('revMonth').addEventListener('change', e => { const ms = e.target._months || []; state.rev.month = ms[+e.target.value]; renderReverseCT(); });
+  $('revTarget').addEventListener('change', e => {
+    state.rev.targetKey = e.target.value;
+    $('revCustomWrap').style.display = e.target.value === 'custom' ? '' : 'none';
+    renderReverseCT();
+  });
+  $('revCustomH').addEventListener('input', () => { if (state.rev.targetKey === 'custom') renderReverseCT(); });
+}
+
 function renderResults() {
   if (state.datasets.length === 0) return;
   $('resultsSection').style.display = '';
@@ -3730,6 +3899,7 @@ function renderResults() {
   renderStepToggles();
   renderChart();
   renderAlerts();
+  revPopulate();
 
   // Balance button — enable based on step level
   const nextStepIdx = ds.currentStepIdx + 1;
@@ -5065,7 +5235,7 @@ function downloadMonthlyTemplate() {
 
 // ===== Events & Init =====
 function setupCollapsibleSections() {
-  const sectionIds = ['uploadSection', 'previewSection', 'settingsSection', 'resultsSection', 'alertsSection'];
+  const sectionIds = ['uploadSection', 'previewSection', 'settingsSection', 'resultsSection', 'alertsSection', 'revCtSection'];
   const stored = loadStorage();
   const collapsed = stored.collapsedSections || {};
   for (const id of sectionIds) {
@@ -6340,6 +6510,7 @@ function init() {
   if ($('yUnit')) $('yUnit').value = state.yUnit;
   setupTooltipFields();  // common to both branches (snapshots get a configurable tooltip too)
   setupPartColorMenu();
+  setupReverseCT();
 
   // Sticky header — toggle compact mode when scrolled
   const header = document.querySelector('.app-header');

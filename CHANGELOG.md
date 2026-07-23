@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.10.0] — 2026-07-23
+
+### Added
+- **Reverse C/T calculator** (new section on the Results tab). Answers the inverse of the load
+  formula: *given a target hours cap, what C/T does each part need?* Pick a process, line, month and a
+  target (any configured step / Max Cap / a custom hours value); it reads the line's current monthly
+  load and, because load scales linearly with C/T (`hours = Σ qty·Fluct·CT/3600/OA`), reports the
+  factor `k = target ÷ current` and each part's **required C/T = current C/T × k**. Shows an OVER /
+  within-target badge and "cut every C/T by X%" (or head-room when under). Exact regardless of the
+  line's product mix or differing OA; a one-part line gives a single C/T answer. i18n EN/TH/JP.
+
 ## [3.9.0] — 2026-07-22
 
 ### Added

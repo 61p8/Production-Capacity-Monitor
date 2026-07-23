@@ -18,6 +18,7 @@ A single-file HTML application for production capacity planning. Compares monthl
 - **Custom part colours** — override any part's auto-generated colour from the 🎨 Colors menu when two hash colours look too alike; the choice applies everywhere that part appears and is remembered (localStorage + snapshot)
 - **Custom fill patterns** — pick the style for the "Balanced (moved)" and "Fluctuation buffer" overlays (solid, diagonal, cross-hatch, grid, lines, dots …) from the 🎨 Colors menu; the mini-legend follows and the choice is remembered
 - **CT step function** — cycle times can change over time via Excel `CT_Changes` sheet or in-app overrides
+- **Reverse C/T calculator** — pick a line, month and a target hours cap (a threshold), and see the cycle time each part needs to keep the line under it (with the % C/T cut required)
 - **Snapshot export** — share results as self-contained read-only HTML with embedded data
 - **Sticky notes (PPT-style text boxes)** — annotate the dashboard with optional arrow pointers
 - **Tri-lingual UI** — English / Thai / Japanese
