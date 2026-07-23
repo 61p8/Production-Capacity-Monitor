@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.10.1] — 2026-07-23
+
+### Fixed
+- **Threshold-line tooltip now shows pieces in Pieces mode.** When the Y-axis was set to
+  Pieces/month, hovering a threshold line (steps or Max Cap) still showed only the hour value even
+  though the line was plotted in pieces. The tooltip head now shows the plotted value in the active
+  unit — e.g. `12,345 pcs (≈ 417 h)` — keeping the hours in parentheses for reference; Hours mode is
+  unchanged. Applies to both chart types and Single/Compare; the always-hours Manual tab still shows
+  hours.
+
 ## [3.10.0] — 2026-07-23
 
 ### Added
