@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.12.1] — 2026-08-06
+
+### Fixed
+- **Wide-format Volume files with real *date* columns now enable Week/Day.** v3.12.0 only kept
+  day-level detail from the long `Raw_Data` format; a wide grid whose column headers are actual dates
+  (one column per day) fell through to the month parser, which collapsed every date to its month and
+  disambiguated the collisions as `Aug'26 (2)`, `Aug'26 (3)`… — so `monthlyData.daily` was never
+  built and the Period toggle stayed on Month. The wide parser now reads each column header as a real
+  date (`rawCellDate`, extended to accept `1-Aug-26` / `1 Aug 2026` / `Aug 1, 2026` text as well as
+  Excel dates), **sums** same-month day-columns into one clean month bucket, and records the daily
+  detail so Week/Day work. **Re-upload the Volume Excel** into this build to pick it up — an existing
+  snapshot can't be retrofitted because its daily detail was never captured.
+
 ## [3.12.0] — 2026-07-23
 
 ### Added
