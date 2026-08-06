@@ -521,6 +521,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <div style="display:flex; align-items:center; gap:10px; margin:16px 0 8px; flex-wrap:wrap;">
         <strong style="font-size:13px;" data-i18n="daycap_lines">Day / Week capacity lines</strong>
         <button class="btn-small" id="addSubStepBtn" type="button" data-i18n="add_line">+ Add line</button>
+        <button class="btn-small" id="add3ShiftBtn" type="button" data-i18n="add_3shift">+ 3-shift (24h)</button>
       </div>
       <div class="help-text" style="margin-top:0" data-i18n="daycap_help">Used only in Week/Day views. Each line = (hrs/shift + OT) × shifts per working day (× working days for a week). Holidays/working-day counts don't apply below a month.</div>
       <div id="subStepConfigTable"></div>
@@ -888,7 +889,7 @@ const I18N = {
     step_initial:'Step 0 — Initial', step_maxcap:'Max Cap', step:'Step',
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
     cap_steps_help:'Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.',
-    daycap_lines:'Day / Week capacity lines', add_line:'+ Add line', daycap_help:'Used only in Week/Day views. Each line = (hrs/shift + OT) × shifts per working day (× working days for a week). Holiday / working-day counts don’t apply below a month.', daycap_name:'Name', daycap_perday:'Per working day',
+    daycap_lines:'Day / Week capacity lines', add_line:'+ Add line', add_3shift:'+ 3-shift (24h)', daycap_help:'Used only in Week/Day views. Each line = (hrs/shift + OT + break-relief) × shifts per working day (× working days for a week), or a fixed hours/day. Holiday / working-day counts don’t apply below a month.', daycap_name:'Name', daycap_perday:'Per working day', daycap_br:'Break relief', daycap_br_full:'Break relief (สลับพัก): extra hours gained per shift by rotating breaks so the line keeps running', daycap_fixed:'Fixed h/day', daycap_fixed_full:'Fixed hours per working day (e.g. 3-shift = 24). Overrides OT & break-relief', daycap_fixed_note:'Disabled — Fixed h/day is set', daycap_3shift_name:'3 Shift',
     step_wd:'Work days', step_ot_days:'OT days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
     step_pm:'Per-month values (line varies by month)', step_pm_clear:'Clear per-month values',
     step_pm_hint:'Empty cell = use the step’s base value. Filled cells make this line vary month by month (marked with ~).',
@@ -990,7 +991,7 @@ const I18N = {
     step_initial:'Step 0 — เริ่มต้น', step_maxcap:'Max Cap', step:'ขั้น',
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
     cap_steps_help:'เป้าหมายแต่ละขั้น = [ วันทำงาน×(ชม./กะ + OT) + วันหยุด×(ชม./กะ + OT วันหยุด) ] × กะ — ปรับค่าเพื่อเลื่อนตำแหน่งเส้น threshold',
-    daycap_lines:'เส้นกำลังการผลิต วัน/สัปดาห์', add_line:'+ เพิ่มเส้น', daycap_help:'ใช้เฉพาะมุมมองสัปดาห์/วัน แต่ละเส้น = (ชม./กะ + OT) × กะ ต่อวันทำงาน (×วันทำงานสำหรับสัปดาห์) — วันหยุด/จำนวนวันทำงานไม่มีผลต่ำกว่าระดับเดือน', daycap_name:'ชื่อ', daycap_perday:'ต่อวันทำงาน',
+    daycap_lines:'เส้นกำลังการผลิต วัน/สัปดาห์', add_line:'+ เพิ่มเส้น', add_3shift:'+ 3 กะ (24 ชม.)', daycap_help:'ใช้เฉพาะมุมมองสัปดาห์/วัน แต่ละเส้น = (ชม./กะ + OT + สลับพัก) × กะ ต่อวันทำงาน (×วันทำงานสำหรับสัปดาห์) หรือกำหนดชั่วโมง/วันตรงๆ — วันหยุด/จำนวนวันทำงานไม่มีผลต่ำกว่าระดับเดือน', daycap_name:'ชื่อ', daycap_perday:'ต่อวันทำงาน', daycap_br:'สลับพัก', daycap_br_full:'สลับพัก: เวลาที่ได้เพิ่มต่อกะ จากการสลับคนพักเพื่อให้ไลน์เดินต่อเนื่อง', daycap_fixed:'กำหนด ชม./วัน', daycap_fixed_full:'กำหนดชั่วโมงต่อวันทำงานตรงๆ (เช่น 3 กะ = 24) — จะไม่คิด OT/สลับพัก', daycap_fixed_note:'ปิดอยู่ — เพราะตั้ง "กำหนด ชม./วัน" ไว้', daycap_3shift_name:'3 กะ',
     step_wd:'วันทำงาน', step_ot_days:'วัน OT', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
     step_pm:'ค่ารายเดือน (เส้นแปรตามเดือน)', step_pm_clear:'ล้างค่ารายเดือน',
     step_pm_hint:'ช่องว่าง = ใช้ค่าฐานของขั้นนี้ • ช่องที่กรอกจะทำให้เส้นนี้แปรตามเดือน (มีเครื่องหมาย ~)',
@@ -1092,7 +1093,7 @@ const I18N = {
     step_initial:'Step 0 — 初期', step_maxcap:'Max Cap', step:'ステップ',
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
     cap_steps_help:'各ステップ目標 = [ 稼働日×(時間/シフト + OT) + 休日×(時間/シフト + 休日OT) ] × シフト数。値を調整してしきい値線の位置を設定。',
-    daycap_lines:'日/週の能力ライン', add_line:'+ ライン追加', daycap_help:'週/日ビュー専用。各ライン = (時間/シフト + OT) × シフト（稼働日あたり、週は稼働日数を掛ける）。休日・稼働日数は月未満では適用されません。', daycap_name:'名称', daycap_perday:'稼働日あたり',
+    daycap_lines:'日/週の能力ライン', add_line:'+ ライン追加', add_3shift:'+ 3交代 (24h)', daycap_help:'週/日ビュー専用。各ライン = (時間/シフト + OT + 休憩交代) × シフト（稼働日あたり、週は稼働日数を掛ける）、または固定時間/日。休日・稼働日数は月未満では適用されません。', daycap_name:'名称', daycap_perday:'稼働日あたり', daycap_br:'休憩交代', daycap_br_full:'休憩交代：休憩をずらしてラインを止めずに稼働させ、シフトあたりで得られる追加時間', daycap_fixed:'固定 h/日', daycap_fixed_full:'稼働日あたりの固定時間（例：3交代 = 24）。OT・休憩交代より優先', daycap_fixed_note:'無効 — 「固定 h/日」が設定されています', daycap_3shift_name:'3交代',
     step_wd:'稼働日', step_ot_days:'OT日数', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
     step_pm:'月別値（月ごとに変動する線）', step_pm_clear:'月別値をクリア',
     step_pm_hint:'空欄 = ステップの基準値を使用。入力すると月ごとに変動（~ 表示）。',
@@ -1134,7 +1135,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.13.0';
+const APP_VERSION = '3.14.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1795,7 +1796,13 @@ function getStepDefs() {
 function computeStepThreshold(cfg, setting) {
   if (!cfg) return 0;
   const hp = setting.hrsPerShift, sh = setting.shifts;
-  if (isSubStep(cfg)) return (hp + (cfg.ot || 0)) * sh;   // day/week line: hours for ONE working day
+  if (isSubStep(cfg)) {
+    // Day/week line: hours for ONE working day. Either a fixed hours/day (e.g. 3-shift = 24h) or
+    // (hrs/shift + OT + break-relief) × shifts. break-relief (สลับพัก) = time recovered per shift by
+    // rotating breaks so the line keeps running.
+    if (cfg.hpd != null && cfg.hpd !== '') return +cfg.hpd || 0;
+    return (hp + (cfg.ot || 0) + (cfg.br || 0)) * sh;
+  }
   const wd = cfg.wd || 0;
   const otDays = (cfg.otDays != null) ? cfg.otDays : wd;
   return (wd * hp + otDays * (cfg.otNormal || 0) + (cfg.hdWorked || 0) * (hp + (cfg.otHoliday || 0))) * sh;
@@ -1807,8 +1814,8 @@ function stepHasPerMonth(cfg) { return !!(cfg && cfg.perMonth && Object.keys(cfg
 function computeStepThresholdMonth(cfg, setting, monthLabel) {
   if (!cfg) return 0;
   if (isSubStep(cfg)) {
-    // Day/Week line: (hrs/shift + ot) × shifts per working day × the period's working days.
-    const perWD = (setting.hrsPerShift + (cfg.ot || 0)) * setting.shifts;
+    // Day/Week line: per-working-day capacity × the period's working days.
+    const perWD = computeStepThreshold(cfg, setting);
     const t = periodType(monthLabel);
     if (t === 'day') return perWD;
     if (t === 'week') return perWD * periodWorkDays(monthLabel);
@@ -3231,8 +3238,7 @@ function getThresholdOpts() {
 function stepReprValue(cfg, setting) {
   const g = getGranularity();
   if (g === 'month' && !isSubStep(cfg)) return computeStepThreshold(cfg, setting);
-  const ot = isSubStep(cfg) ? (cfg.ot || 0) : (cfg.otNormal || 0);
-  const perWD = (setting.hrsPerShift + ot) * setting.shifts;
+  const perWD = isSubStep(cfg) ? computeStepThreshold(cfg, setting) : (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
   return g === 'week' ? perWD * 5 : perWD;
 }
 // One threshold-line descriptor per configured step, honouring its toggle checkbox.
@@ -3392,13 +3398,21 @@ function stepTipLines(idx, setting, month, dispVal) {
   const val = Math.round(computeStepThresholdMonth(cfg, setting, month));
   const type = periodType(month);
   if (type !== 'month' || isSubStep(cfg)) {
-    // Day/Week line: show the per-day OT formula (no monthly WD/holiday breakdown).
-    const ot = isSubStep(cfg) ? (cfg.ot || 0) : (cfg.otNormal || 0);
-    const perWD = (setting.hrsPerShift + ot) * setting.shifts;
+    // Day/Week line: show the per-day formula (no monthly WD/holiday breakdown).
     const nm = isSubStep(cfg) && cfg.name ? cfg.name + ' — ' : '';
+    const perWD = isSubStep(cfg) ? computeStepThreshold(cfg, setting) : (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
+    let formula;
+    if (isSubStep(cfg) && cfg.hpd != null && cfg.hpd !== '') {
+      formula = `${t('daycap_fixed')}: ${+cfg.hpd} h/${t('gran_day')}`;
+    } else {
+      const ot = isSubStep(cfg) ? (cfg.ot || 0) : (cfg.otNormal || 0);
+      const br = isSubStep(cfg) ? (cfg.br || 0) : 0;
+      const brTxt = br ? ` + ${br} ${t('daycap_br')}` : '';
+      formula = `(${setting.hrsPerShift} + ${ot} OT${brTxt}) × ${setting.shifts} ${t('shifts')} = ${Math.round(perWD * 100) / 100} h/${t('gran_day')}`;
+    }
     const lines = [
       `▬ ${nm}${thTipHead(val, dispVal)} · ${getDisplayLabel(month)}`,
-      `(${setting.hrsPerShift} + ${ot} OT) × ${setting.shifts} ${t('shifts')} = ${Math.round(perWD * 100) / 100} h/${t('gran_day')}`
+      formula
     ];
     if (type === 'week') lines.push(`× ${periodWorkDays(month)} ${t('step_wd')}`);
     return lines;
@@ -3629,13 +3643,20 @@ function renderSubStepConfigs() {
   const box = $('subStepConfigTable'); if (!box) return;
   const setting = readSettings();
   const ro = state.isSnapshot; const dis = ro ? ' disabled' : '';
-  const perDay = c => Math.round((setting.hrsPerShift + (c.ot || 0)) * setting.shifts * 100) / 100;
-  let html = `<table class="step-config-table"><thead><tr><th>#</th><th>${t('daycap_name')}</th><th>${t('step_ot_normal')}</th><th>${t('daycap_perday')}</th><th></th></tr></thead><tbody>`;
+  const perDay = c => Math.round(computeStepThreshold(c, setting) * 100) / 100;
+  let html = `<table class="step-config-table"><thead><tr>` +
+    `<th>#</th><th>${t('daycap_name')}</th><th title="${t('step_ot_normal')}">OT<br><span style="font-weight:400">h/${t('shifts')}</span></th>` +
+    `<th title="${t('daycap_br_full')}">${t('daycap_br')}<br><span style="font-weight:400">h/${t('shifts')}</span></th>` +
+    `<th title="${t('daycap_fixed_full')}">${t('daycap_fixed')}<br><span style="font-weight:400">h/${t('gran_day')}</span></th>` +
+    `<th>${t('daycap_perday')}</th><th></th></tr></thead><tbody>`;
   state.subStepConfigs.forEach((c, i) => {
+    const fixed = (c.hpd != null && c.hpd !== '');
     html += `<tr>` +
       `<td>${i + 1}</td>` +
       `<td><input type="text" value="${(c.name || '').replace(/"/g, '&quot;')}" data-sub-idx="${i}" data-sub-field="name"${dis} style="width:96px"></td>` +
-      `<td><input type="number" min="0" step="0.1" value="${c.ot || 0}" data-sub-idx="${i}" data-sub-field="ot"${dis}></td>` +
+      `<td><input type="number" min="0" step="0.1" value="${c.ot || 0}" data-sub-idx="${i}" data-sub-field="ot"${dis}${fixed ? ' disabled title="' + t('daycap_fixed_note') + '"' : ''}></td>` +
+      `<td><input type="number" min="0" step="0.01" value="${c.br || 0}" data-sub-idx="${i}" data-sub-field="br"${dis}${fixed ? ' disabled' : ''}></td>` +
+      `<td><input type="number" min="0" step="0.5" value="${fixed ? c.hpd : ''}" placeholder="—" data-sub-idx="${i}" data-sub-field="hpd"${dis} style="width:64px"></td>` +
       `<td class="step-threshold-val"><strong>${perDay(c)}</strong> h/${t('gran_day')}</td>` +
       `<td>${ro ? '' : `<button class="btn-small" data-sub-remove="${i}" type="button" title="${t('lay_delete')}">✕</button>`}</td>` +
       `</tr>`;
@@ -3646,7 +3667,10 @@ function renderSubStepConfigs() {
   box.querySelectorAll('input[data-sub-field]').forEach(inp => inp.addEventListener('change', () => {
     const c = state.subStepConfigs[+inp.dataset.subIdx]; const f = inp.dataset.subField;
     if (f === 'name') c.name = inp.value.trim();
-    else { let v = parseFloat(inp.value); if (isNaN(v) || v < 0) v = 0; c.ot = v; }
+    else if (f === 'hpd') {
+      const raw = inp.value.trim();
+      if (raw === '') delete c.hpd; else { let v = parseFloat(raw); if (isNaN(v) || v < 0) v = 0; c.hpd = v; }
+    } else { let v = parseFloat(inp.value); if (isNaN(v) || v < 0) v = 0; c[f] = v; }
     onSubStepConfigsChanged();
   }));
   box.querySelectorAll('button[data-sub-remove]').forEach(btn => btn.addEventListener('click', () => {
@@ -5726,7 +5750,11 @@ function setupEvents() {
     onStepConfigsChanged();
   };
   if ($('addSubStepBtn')) $('addSubStepBtn').onclick = () => {
-    state.subStepConfigs.push({ ot: 2.5, name: 'OT' + (state.subStepConfigs.length + 1) });
+    state.subStepConfigs.push({ ot: 2.5, br: 0, name: 'OT' + (state.subStepConfigs.length + 1) });
+    onSubStepConfigsChanged();
+  };
+  if ($('add3ShiftBtn')) $('add3ShiftBtn').onclick = () => {
+    state.subStepConfigs.push({ ot: 0, br: 0, hpd: 24, name: t('daycap_3shift_name') });
     onSubStepConfigsChanged();
   };
 

@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.14.0] — 2026-08-06
+
+### Added
+- **Break-relief and 3-shift (24h) options for the Day / Week capacity lines.** Each day/week line now
+  carries, besides its OT h/shift: a **Break relief** (สลับพัก) h/shift — extra time recovered per
+  shift by rotating breaks so the line keeps running — so a line = `(hrs/shift + OT + break-relief) ×
+  shifts`; and an optional **Fixed h/day** override for a flat line such as **3-shift = 24 h/working
+  day** (overrides OT/break-relief). The Settings editor gains the two columns plus a **+ 3-shift
+  (24h)** quick-add button; the threshold tooltip shows the active formula. Values scale by the
+  period's working days like the other day/week lines. Persisted; i18n EN/TH/JP. Month view unchanged.
+
 ## [3.13.0] — 2026-08-06
 
 ### Added

@@ -34,7 +34,7 @@ The single `<script>` block is structured into clearly-labeled sections. Search 
 
 | Section | Purpose |
 |---|---|
-| State + Constants | `state` object (incl. `state.stepConfigs` (monthly steps), `state.subStepConfigs` (day/week capacity lines — `{ot,name}`, used only in week/day via `activeStepConfigs()`/`isSubStep()`), `state.maxCapOT`), `PROCESSES`, `LINE_NAMES`, `DEFAULT_STEP_CONFIGS`, `DEFAULT_SUBSTEP_CONFIGS`, `STEP_LINE_STYLES`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
+| State + Constants | `state` object (incl. `state.stepConfigs` (monthly steps), `state.subStepConfigs` (day/week capacity lines — `{name, ot, br, hpd}`: OT h/shift, break-relief h/shift, or a fixed hours/working-day override; threshold = `hpd ?? (hrs/shift + ot + br) × shifts`; used only in week/day via `activeStepConfigs()`/`isSubStep()`), `state.maxCapOT`), `PROCESSES`, `LINE_NAMES`, `DEFAULT_STEP_CONFIGS`, `DEFAULT_SUBSTEP_CONFIGS`, `STEP_LINE_STYLES`, `DATASET_COLORS`, `MAX_CHAIN_DEPTH` |
 | I18N | `I18N.en` / `I18N.th` / `I18N.jp` dictionaries — **all keys must exist in all three** |
 | Helpers | `t()`, `$()`, `formatHours()`, `parseMonthLabel()`, `getDisplayLabel()`, `compareMonths()`, color hash, fill-pattern engine (`PATTERN_STYLES`, `buildPatternCanvas()`, `makePattern()`; `getHatchPattern()`/`getDotPattern()` resolve the user-chosen `state.patternStyles.balanced`/`.buffer`; `patternDataURL()`/`updateLegendSwatches()` sync the mini-legend), pattern cache |
 | CT Step Function | `getEffectiveCT()` resolves CT in priority order: App override → Excel CT_Changes → Matrix base |
