@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.12.2] — 2026-08-06
+
+### Fixed
+- **Day / Week threshold lines now use a physically correct per-day formula.** In sub-month views a
+  step threshold was derived by averaging the monthly target over its working days
+  (`monthly ÷ WD`), which over-stated any step that includes worked **holidays** — e.g. the 447 step
+  became 21.3 h/day, more than a normal day can actually run. A day/week line is now computed straight
+  from the day-level parameters: `(hrs/shift + OT) × shifts` per working day (× Mon–Fri count for a
+  week); the month-only WD-count and holiday terms are dropped. Steps that differ only by holidays
+  therefore collapse to the same day/week line (correct — a normal day is a normal day). The toolbar
+  toggle labels and the threshold tooltip now show the day/week value and formula instead of the
+  monthly `417/447/497` and its WD/OT/holiday breakdown. **Month view is unchanged.**
+
 ## [3.12.1] — 2026-08-06
 
 ### Fixed

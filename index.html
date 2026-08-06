@@ -1124,7 +1124,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.12.1';
+const APP_VERSION = '3.12.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1781,12 +1781,13 @@ function computeStepThresholdMonth(cfg, setting, monthLabel) {
   if (!cfg) return 0;
   const type = periodType(monthLabel);
   if (type !== 'month') {
-    // Sub-month view: express the monthly step target as an hours-per-working-day rate and multiply
-    // by the period's working days. Day = one working day's target (flat line); week = ~5. Per-month
-    // overrides don't apply below a month, so the base config is used.
-    const perWD = computeStepThreshold(cfg, setting) / (cfg.wd || 1);
-    if (type === 'day') return perWD;                 // a day IS the per-working-day target
-    return perWD * periodWorkDays(monthLabel);        // week: × Mon–Fri count
+    // Sub-month view: a single working day = (hrs/shift + OT) × shifts. WD-count and holidays are
+    // month-only concepts, so they're dropped here (a normal day is just a normal day) — this is why
+    // two monthly steps that differ only by holidays collapse to the same day/week line. Per-month
+    // overrides don't apply below a month, so the base config's OT is used.
+    const perWD = (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
+    if (type === 'day') return perWD;                 // one working day at this step's OT level
+    return perWD * periodWorkDays(monthLabel);        // week: × Mon–Fri count in that week
   }
   const ov = cfg.perMonth && cfg.perMonth[monthLabel];
   if (!ov) return computeStepThreshold(cfg, setting);
@@ -3190,13 +3191,21 @@ function getThresholdOpts() {
   };
 }
 
+// Representative label value for a step in the ACTIVE view: the monthly target in month view; a
+// working day / a 5-day week at the step's OT level in day/week view.
+function stepReprValue(cfg, setting) {
+  const g = getGranularity();
+  if (g === 'month') return computeStepThreshold(cfg, setting);
+  const perWD = (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
+  return g === 'week' ? perWD * 5 : perWD;
+}
 // One threshold-line descriptor per configured step, honouring its toggle checkbox.
 function getStepThresholds(setting) {
   return state.stepConfigs.map((c, i) => {
     const cb = $('showStep' + i);
     const style = stepLineStyle(i);
-    const base = Math.round(computeStepThreshold(c, setting));
-    const variable = stepHasPerMonth(c);
+    const base = Math.round(stepReprValue(c, setting));
+    const variable = getGranularity() === 'month' && stepHasPerMonth(c);   // per-month overrides are month-only
     return {
       idx: i, value: base, variable,
       label: variable ? `${base}~` : String(base),
@@ -3343,8 +3352,19 @@ function thTipHead(hourVal, dispVal) {
 function stepTipLines(idx, setting, month, dispVal) {
   const cfg = state.stepConfigs[idx];
   if (!cfg) return null;
-  const e = effStepCfg(cfg, month);
   const val = Math.round(computeStepThresholdMonth(cfg, setting, month));
+  const type = periodType(month);
+  if (type !== 'month') {
+    // Day/Week: the monthly WD/holiday breakdown doesn't apply — show the per-day OT formula instead.
+    const perWD = (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
+    const lines = [
+      `▬ ${thTipHead(val, dispVal)} · ${getDisplayLabel(month)}`,
+      `(${setting.hrsPerShift} + ${cfg.otNormal || 0} OT) × ${setting.shifts} ${t('shifts')} = ${Math.round(perWD * 100) / 100} h/${t('gran_day')}`
+    ];
+    if (type === 'week') lines.push(`× ${periodWorkDays(month)} ${t('step_wd')}`);
+    return lines;
+  }
+  const e = effStepCfg(cfg, month);
   return [
     `▬ ${thTipHead(val, dispVal)}${stepHasPerMonth(cfg) ? ' · ' + getDisplayLabel(month) : ''}`,
     `${t('step_wd')}: ${e.wd}`,
@@ -3375,7 +3395,7 @@ function renderStepToggles() {
   box.querySelectorAll('input[type=checkbox]').forEach(cb => { prev[cb.id] = cb.checked; });
   box.innerHTML = '';
   state.stepConfigs.forEach((c, i) => {
-    const val = Math.round(computeStepThreshold(c, setting)) + (stepHasPerMonth(c) ? '~' : '');
+    const val = Math.round(stepReprValue(c, setting)) + (getGranularity() === 'month' && stepHasPerMonth(c) ? '~' : '');
     const id = 'showStep' + i;
     const checked = (id in prev) ? prev[id] : true;
     const lbl = document.createElement('label');
