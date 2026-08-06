@@ -13,6 +13,7 @@ A single-file HTML application for production capacity planning. Compares monthl
 - **Multi-dataset comparison** — load up to 5 monthly requirement datasets and compare side-by-side
 - **Smart Balance algorithm** — automatically redistributes load to alternate lines (priority 2, 3, ...) when primary lines exceed capacity targets
 - **Step-based progression** — Step 0 (initial) → configurable OT-driven targets → MaxCap, with chain-push depth up to 5. Add/remove steps and tune each target from working-day/holiday OT in Settings.
+- **Month / Week / Day views** — a **Period** toggle re-buckets dated demand and recomputes every step at that granularity (chart, table, thresholds, Max Cap). Needs a `Raw_Data` sheet with real dates (see below); month-label-only files stay monthly
 - **Hours ⇄ Pieces Y-axis** — flip the Results chart between load-hours and pieces/month; threshold lines convert via the volume-weighted average cycle time
 - **Configurable bar tooltip** — pick which fields the Results chart tooltip shows (part, model, value, C/T, balanced-from, fluctuation buffer, …) from a toolbar menu; the choice is remembered and applies inside snapshots too
 - **Custom part colours** — override any part's auto-generated colour from the 🎨 Colors menu when two hash colours look too alike; the choice applies everywhere that part appears and is remembered (localStorage + snapshot)
@@ -123,7 +124,9 @@ records from your production system — one row per record, long format:
 - Columns are auto-detected by header (`Part No.`/`PRTNO`/`Item`/`Material`…, `Month`/`Date`…,
   `Qty`/`Quantity`/`Plan`…, optional `Fluct`/`Fluctuation` — Thai/Japanese equivalents also work).
   If the month column has no recognisable header, the column whose values parse as months/dates is used.
-- Month cells accept labels (`Apr 2026`, `Apr'26`, `2026-04`) or real Excel dates.
+- Month cells accept labels (`Apr 2026`, `Apr'26`, `2026-04`) or real Excel dates. **Use real dates
+  (or `YYYY-MM-DD`) to unlock the Week / Day views** — the app keeps day-level detail and rolls it up
+  to ISO weeks / months on demand via the **Period** toggle. Month-label cells stay month-only.
 - Duplicate part+month rows are **summed**, then everything is pivoted to parts × months.
 - If a non-empty `Raw_Data` sheet exists it is used **instead of** Monthly_Req; an empty one is
   ignored, so the template can ship the scaffold safely.

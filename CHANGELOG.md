@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.12.0] — 2026-07-23
+
+### Added
+- **Month / Week / Day views (Phase 1).** A new **Period** toggle on the Results toolbar re-buckets the
+  demand into months, ISO weeks, or days and recomputes every step at that granularity — chart, table,
+  thresholds, Max Cap, alerts and the Reverse-C/T panel all follow.
+  - **Data:** drives off real dates. A `Raw_Data` sheet whose date column holds actual Excel dates
+    (or `YYYY-MM-DD`) is now kept at day resolution (`monthlyData.daily`) and rolled up on demand;
+    files with only month labels stay month-only (Week/Day disabled, with a hint).
+  - **Capacity math is period-generic:** `calculateMaxCap` uses the period's calendar days (month =
+    days-in-month, week = 7, day = 1); step thresholds express the monthly target as an
+    hours-per-working-day rate and scale by the period's working days (day = 1, week = Mon–Fri count).
+  - **Engine:** period keys (`Apr'26` / `2026-W15` / `2026-04-15`) flow through the existing
+    month-agnostic pipeline; new helpers `periodType`/`isoWeekKey`/`keyStartDate`/`periodCalDays`/
+    `periodWorkDays`/`rebucketDataset`, `monthOrdinal` is now date-based so the three granularities are
+    mutually comparable (CT `From <month>` gating still works in week/day view), and the X-axis upper
+    tier shows the containing month in week/day view.
+  - Persisted in localStorage + snapshot (the daily source travels with the file).
+  - **Known limits (Phase 1):** fiscal-year columns (FY27…) have no real dates so they appear in month
+    view only; the per-month step-override editor (📅) and month-relabel range stay month-based; the
+    Manual tab reloads at its own granularity when you re-open it. Daily view over long ranges shows
+    many bars — use the range selector.
+
 ## [3.11.0] — 2026-07-23
 
 ### Changed

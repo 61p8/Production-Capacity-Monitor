@@ -613,6 +613,12 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <label><input type="checkbox" id="showMaxCap" checked> Max Cap</label>
       <label><input type="checkbox" id="showTrend"> <span data-i18n="show_trend">Trend</span></label>
       <span style="flex:1"></span>
+      <span style="font-weight:500" data-i18n="granularity">Period:</span>
+      <select id="granularity" title="">
+        <option value="month" data-i18n="gran_month">Month</option>
+        <option value="week" data-i18n="gran_week">Week</option>
+        <option value="day" data-i18n="gran_day">Day</option>
+      </select>
       <span style="font-weight:500" data-i18n="y_unit">Y-axis:</span>
       <select id="yUnit">
         <option value="hours" data-i18n="y_unit_hours">Hours</option>
@@ -884,6 +890,7 @@ const I18N = {
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
+    granularity:'Period:', gran_month:'Month', gran_week:'Week', gran_day:'Day', gran_need_dates:'Upload a Raw_Data sheet with real dates to enable Week/Day',
     tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
     colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
     pat_styles_head:'Balanced / buffer style', pat_balanced:'Balanced (moved)', pat_buffer:'Fluctuation buffer',
@@ -984,6 +991,7 @@ const I18N = {
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
+    granularity:'ช่วงเวลา:', gran_month:'รายเดือน', gran_week:'รายสัปดาห์', gran_day:'รายวัน', gran_need_dates:'อัปโหลดชีต Raw_Data ที่มีวันที่จริง เพื่อเปิดใช้รายสัปดาห์/รายวัน',
     tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
     colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
     pat_styles_head:'ลายของ Balanced / Buffer', pat_balanced:'Balanced (ย้าย)', pat_buffer:'Buffer ความผันผวน',
@@ -1084,6 +1092,7 @@ const I18N = {
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
+    granularity:'期間:', gran_month:'月', gran_week:'週', gran_day:'日', gran_need_dates:'週/日を有効にするには実日付付きの Raw_Data シートをアップロード',
     tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
     colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
     pat_styles_head:'Balanced / バッファの柄', pat_balanced:'Balanced (移動)', pat_buffer:'変動バッファ',
@@ -1115,7 +1124,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.11.0';
+const APP_VERSION = '3.12.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1187,6 +1196,7 @@ const state = {
   compareDatasetIds: [], // for compare/diff mode
   viewMode: 'single',    // 'single' | 'compare' | 'diff'
   yUnit: 'hours',        // 'hours' | 'pcs' — Results chart Y-axis unit
+  granularity: 'month',  // 'month' | 'week' | 'day' — time bucket for dated demand (see rebucketDataset)
   // Which fields the bar tooltip shows (Results chart, Stacked-by-Part). Configurable in the
   // "Tooltip fields" menu on the chart toolbar. Persisted (localStorage + snapshot).
   tooltipFields: { title:true, dataset:true, part:true, model:true, value:true, ct:true, balanced:true, buffer:true },
@@ -1528,7 +1538,7 @@ function parseRawData(wb, map) {
     if (best >= 0) monthCol = best;
   }
   if (monthCol < 0) return null;
-  const data = new Map(), monthSet = new Set(), fluct = new Map();
+  const data = new Map(), monthSet = new Set(), fluct = new Map(), daily = new Map();
   for (let r = headerRowIdx + 1; r < rows.length; r++) {
     const row = rows[r]; if (!row) continue;
     const pnRaw = row[partCol]; if (pnRaw == null || pnRaw === '') continue;
@@ -1541,6 +1551,15 @@ function parseRawData(wb, map) {
     const mq = data.get(pn) || {};
     mq[label] = (mq[label] || 0) + q;
     data.set(pn, mq);
+    // Keep the REAL date (when the cell is a true date / Excel serial) so the demand can later be
+    // re-bucketed to weeks/days. Month-label cells (no day component) can't feed sub-month views.
+    const jsDate = rawCellDate(row[monthCol]);
+    if (jsDate) {
+      const iso = isoDayKey(jsDate);
+      const dd = daily.get(pn) || {};
+      dd[iso] = (dd[iso] || 0) + q;
+      daily.set(pn, dd);
+    }
   }
   if (data.size === 0 || monthSet.size === 0) return null;
   const months = Array.from(monthSet).sort((a, b) => {
@@ -1550,7 +1569,26 @@ function parseRawData(wb, map) {
     if (ob == null) return -1;
     return oa - ob;
   });
-  return { months, data, fluct, sheetName: name, headerRowIdx };
+  const md = { months, data, fluct, sheetName: name, headerRowIdx };
+  if (daily.size) { md.daily = daily; md._srcIsMonthGrid = false; }  // dated source → week/day available
+  return md;
+}
+// A real JS Date from a Raw_Data cell, or null if the cell is only a month label (no day component).
+function rawCellDate(v) {
+  if (v instanceof Date) return v;
+  if (typeof v === 'number' && v > 30000 && v < 80000 && typeof XLSX !== 'undefined' && XLSX.SSF) {
+    const d = XLSX.SSF.parse_date_code(v);
+    if (d && d.d) return new Date(d.y, d.m - 1, d.d);
+  }
+  if (typeof v === 'string') {
+    const m = v.trim().match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/) || v.trim().match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (m) {
+      // YYYY-MM-DD or DD/MM/YYYY (assume day-first when the year is last)
+      if (m[1].length === 4) return new Date(+m[1], +m[2] - 1, +m[3]);
+      return new Date(+m[3], +m[2] - 1, +m[1]);
+    }
+  }
+  return null;
 }
 
 function parseMonthly(wb, map) {
@@ -1686,9 +1724,9 @@ function applyLayoutData(ld) {
 }
 
 function calculateMaxCap(setting, monthLabel) {
-  // Max Cap = every day in the month worked at (hrs/shift + Max Cap OT) × shifts.
-  const info = getMonthInfo(monthLabel);
-  const totalDays = info.valid ? info.days : 30;
+  // Max Cap = every calendar day in the period worked at (hrs/shift + Max Cap OT) × shifts.
+  // periodCalDays covers month (days-in-month), week (7) and day (1) alike.
+  const totalDays = periodCalDays(monthLabel);
   return totalDays * (setting.hrsPerShift + (setting.maxCapOT || 0)) * setting.shifts;
 }
 
@@ -1717,6 +1755,15 @@ function computeStepThreshold(cfg, setting) {
 function stepHasPerMonth(cfg) { return !!(cfg && cfg.perMonth && Object.keys(cfg.perMonth).length); }
 function computeStepThresholdMonth(cfg, setting, monthLabel) {
   if (!cfg) return 0;
+  const type = periodType(monthLabel);
+  if (type !== 'month') {
+    // Sub-month view: express the monthly step target as an hours-per-working-day rate and multiply
+    // by the period's working days. Day = one working day's target (flat line); week = ~5. Per-month
+    // overrides don't apply below a month, so the base config is used.
+    const perWD = computeStepThreshold(cfg, setting) / (cfg.wd || 1);
+    if (type === 'day') return perWD;                 // a day IS the per-working-day target
+    return perWD * periodWorkDays(monthLabel);        // week: × Mon–Fri count
+  }
   const ov = cfg.perMonth && cfg.perMonth[monthLabel];
   if (!ov) return computeStepThreshold(cfg, setting);
   return computeStepThreshold({
@@ -1806,17 +1853,105 @@ function getDatasetColor(id) {
 // null only for a genuinely unrecognisable label.
 const FY_ORDINAL_BASE = 100000000;  // guaranteed larger than any real year*12+monthIdx
 function monthOrdinal(label) {
-  const p = parseMonthYearFromLabel(getDisplayLabel(label)) || parseMonthYearFromLabel(label);
-  if (p) return p.year * 12 + p.monthIdx;
+  // Fiscal-year columns always sort after every real/dated period (matching the X-axis).
   const fy = parseFYLabel(getDisplayLabel(label)) || parseFYLabel(label);
   if (fy) return FY_ORDINAL_BASE + fy.year * 12;
-  return null;
+  // Every dated period (month/week/day) → a common days-since-epoch ordinal from its start date, so
+  // month-, week- and day-keys are mutually comparable (needed for CT-override "From <month>" gating
+  // while a week/day view is active). Monotonic with the old year*12+month, so month sorting is
+  // unchanged.
+  const d = keyStartDate(label);
+  return d ? Math.floor(d.getTime() / 86400000) : null;
 }
 
 function compareMonths(monthLabelA, monthLabelB) {
   const oa = monthOrdinal(monthLabelA), ob = monthOrdinal(monthLabelB);
   if (oa == null || ob == null) return 0;
   return oa - ob;
+}
+
+// ===== Time-granularity engine (month / week / day) =====
+// A "period key" is the atomic time bucket used everywhere the code says "month". Formats:
+//   month : "Apr'26" / "FY28"      (existing)
+//   week  : "2026-W15"             (ISO week-year + ISO week number)
+//   day   : "2026-04-15"           (ISO date)
+// Everything downstream (calc, thresholds, chart, table) is period-key agnostic; only the helpers
+// below know how to turn a key into a date range / label / days count. state.granularity picks which
+// buckets the dated demand is rolled up into (see rebucketDataset).
+const PERIOD_MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function pad2(n) { return String(n).padStart(2, '0'); }
+function periodType(key) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(key)) return 'day';
+  if (/^\d{4}-W\d{2}$/.test(key)) return 'week';
+  return 'month';
+}
+function dateFromIso(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+function isoDayKey(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function monthKeyFromDate(d) { return `${PERIOD_MON[d.getMonth()]}'${String(d.getFullYear()).slice(-2)}`; }
+// ISO-8601 week: week 1 contains the year's first Thursday; weeks start Monday.
+function isoWeekParts(d) {
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (t.getDay() + 6) % 7;            // Mon=0 … Sun=6
+  t.setDate(t.getDate() - day + 3);            // move to the Thursday of this week
+  const weekYear = t.getFullYear();
+  const firstThu = new Date(weekYear, 0, 4);
+  const firstThuDay = (firstThu.getDay() + 6) % 7;
+  firstThu.setDate(firstThu.getDate() - firstThuDay + 3);
+  const week = 1 + Math.round((t - firstThu) / (7 * 86400000));
+  return { weekYear, week };
+}
+function isoWeekKey(d) { const w = isoWeekParts(d); return `${w.weekYear}-W${pad2(w.week)}`; }
+function isoWeekStart(key) {
+  const m = key.match(/^(\d{4})-W(\d{2})$/); if (!m) return null;
+  const weekYear = +m[1], week = +m[2];
+  const jan4 = new Date(weekYear, 0, 4);
+  const jan4Day = (jan4.getDay() + 6) % 7;
+  const monday = new Date(jan4); monday.setDate(jan4.getDate() - jan4Day + (week - 1) * 7);
+  return monday;
+}
+// First calendar day of a period (used for cross-granularity ordering & grouping). null for FY.
+function keyStartDate(key) {
+  const t = periodType(key);
+  if (t === 'day') return dateFromIso(key);
+  if (t === 'week') return isoWeekStart(key);
+  const p = parseMonthYearFromLabel(getDisplayLabel(key)) || parseMonthYearFromLabel(key);
+  return p ? new Date(p.year, p.monthIdx, 1) : null;
+}
+// Calendar days spanned by a period.
+function periodCalDays(key) {
+  const t = periodType(key);
+  if (t === 'day') return 1;
+  if (t === 'week') return 7;
+  const info = getMonthInfo(key); return info.valid ? info.days : 30;
+}
+// Working days (Mon–Fri) inside a period — used only to scale sub-month step thresholds.
+function periodWorkDays(key) {
+  const t = periodType(key);
+  if (t === 'day') { const wd = dateFromIso(key).getDay(); return (wd === 0 || wd === 6) ? 0 : 1; }
+  if (t === 'week') { const s = isoWeekStart(key); let n = 0; for (let i = 0; i < 7; i++) { const d = new Date(s); d.setDate(s.getDate() + i); const w = d.getDay(); if (w !== 0 && w !== 6) n++; } return n; }
+  return null; // month uses cfg.wd
+}
+// The active granularity, guarded so month-only datasets never claim week/day.
+function getGranularity() { return state.granularity === 'week' || state.granularity === 'day' ? state.granularity : 'month'; }
+// Roll a dataset's dated demand (monthlyData.daily) up into the chosen granularity, (re)writing the
+// generic {months, data} the whole pipeline consumes. Always regenerated from `daily` (authoritative),
+// so switching granularity — or loading a snapshot saved in week/day view — is always consistent.
+// No-op when the source has no real dates (a plain monthly grid → month view only).
+function rebucketDataset(ds, gran) {
+  const md = ds && ds.monthlyData; if (!md) return;
+  if (!md.daily || !md.daily.size) return;
+  const data = new Map(); const set = new Set();
+  for (const [pn, days] of md.daily) {
+    const mq = {};
+    for (const iso in days) {
+      const d = dateFromIso(iso);
+      const key = gran === 'day' ? iso : gran === 'week' ? isoWeekKey(d) : monthKeyFromDate(d);
+      mq[key] = (mq[key] || 0) + days[iso]; set.add(key);
+    }
+    data.set(pn, mq);
+  }
+  md.months = Array.from(set).sort((a, b) => (monthOrdinal(a) ?? 0) - (monthOrdinal(b) ?? 0));
+  md.data = data;
 }
 
 function getEffectiveCT(partNo, process, lineName, monthLabel, baseCT) {
@@ -1846,8 +1981,11 @@ function getEffectiveCT(partNo, process, lineName, monthLabel, baseCT) {
 
 // ===== Chart helpers: month-only label + plugin for hierarchical X-axis (Comments #1, #2) =====
 function getMonthOnly(label, asNumber) {
-  const parsed = parseMonthYearFromLabel(label);
-  if (!parsed) return label;
+  const t = periodType(label);
+  if (t === 'day') { const d = dateFromIso(label); return asNumber ? String(d.getDate()) : String(d.getDate()); }  // day-of-month; month tier sits above
+  if (t === 'week') { const m = label.match(/-W(\d{2})$/); return m ? 'W' + m[1] : label; }
+  const parsed = parseMonthYearFromLabel(getDisplayLabel(label)) || parseMonthYearFromLabel(label);
+  if (!parsed) return getDisplayLabel(label);
   if (asNumber) return String(parsed.monthIdx + 1);
   return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parsed.monthIdx];
 }
@@ -1947,6 +2085,15 @@ const xHierarchyPlugin = {
   }
 };
 
+// Upper x-axis tier label for a period key: the year in month view; the containing "Mon 'YY" in
+// week/day view (so days/weeks stay anchored to their month), and just the year for FY columns.
+function xGroupLabel(key) {
+  const t = periodType(key);
+  if (t !== 'month') { const d = keyStartDate(key); return d ? `${PERIOD_MON[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}` : '?'; }
+  const parsed = parseMonthYearFromLabel(getDisplayLabel(key)) || parseMonthYearFromLabel(key)
+    || parseFYLabel(getDisplayLabel(key)) || parseFYLabel(key);
+  return parsed ? String(parsed.year) : '?';
+}
 // Compute x-axis hierarchy groups for byPart mode (visibleLines × months layout)
 function computeXHierarchy(visibleLines, months) {
   const lineGroups = [];
@@ -1962,20 +2109,18 @@ function computeXHierarchy(visibleLines, months) {
       bg: '#FAFAF7', color: lineColor
     });
     if (li > 0) separators.push(li * months.length);
-    // Year sub-groups within this line
-    let curYear = null, startIdx = null;
+    // Upper tier: year (month view) or containing "Mon 'YY" (week/day view).
+    let curGrp = null, startIdx = null;
     for (let mi = 0; mi < months.length; mi++) {
       const idx = fromIdx + mi;
-      const parsed = parseMonthYearFromLabel(getDisplayLabel(months[mi])) || parseMonthYearFromLabel(months[mi])
-        || parseFYLabel(getDisplayLabel(months[mi])) || parseFYLabel(months[mi]);
-      const year = parsed?.year ?? '?';
-      if (year !== curYear) {
-        if (startIdx !== null) yearGroups.push({ label: String(curYear), fromIdx: startIdx, toIdx: idx - 1 });
-        curYear = year;
+      const grp = xGroupLabel(months[mi]);
+      if (grp !== curGrp) {
+        if (startIdx !== null) yearGroups.push({ label: String(curGrp), fromIdx: startIdx, toIdx: idx - 1 });
+        curGrp = grp;
         startIdx = idx;
       }
     }
-    if (startIdx !== null) yearGroups.push({ label: String(curYear), fromIdx: startIdx, toIdx });
+    if (startIdx !== null) yearGroups.push({ label: String(curGrp), fromIdx: startIdx, toIdx });
   }
   return { lineGroups, yearGroups, separators };
 }
@@ -2384,7 +2529,11 @@ function getInitialResult(ds) {
 function findCurrentMonthKey(months) {
   const now = new Date();
   const cy = now.getFullYear(), cm = now.getMonth();
+  const nowDay = isoDayKey(now), nowWeek = isoWeekKey(now);
   for (const m of months) {
+    const t = periodType(m);
+    if (t === 'day') { if (m === nowDay) return m; continue; }
+    if (t === 'week') { if (m === nowWeek) return m; continue; }
     const p = parseMonthYearFromLabel(getDisplayLabel(m)) || parseMonthYearFromLabel(m);
     if (p && p.year === cy && p.monthIdx === cm) return m;
   }
@@ -2452,6 +2601,7 @@ function syncRangeControlsFromState() {
 
 // Apply Start/End: label columns sequentially from Start, set the visible window to Start..End.
 function applyMonthRange() {
+  if (getGranularity() !== 'month') return;  // month-relabel arithmetic is meaningless for week/day keys
   const ds = getActiveDataset();
   const result = getCurrentResult();
   const months = result ? result.months : (ds ? ds.monthlyData.months : null);
@@ -3181,8 +3331,7 @@ function stepTipLines(idx, setting, month, dispVal) {
   ];
 }
 function mcTipLines(setting, month, dispVal) {
-  const info = getMonthInfo(month);
-  const days = info.valid ? info.days : 30;
+  const days = periodCalDays(month);   // month days / week 7 / day 1
   const val = Math.round(calculateMaxCap(setting, month));
   return [
     `▬ Max Cap: ${thTipHead(val, dispVal)} · ${getDisplayLabel(month)}`,
@@ -3957,6 +4106,7 @@ function renderResults() {
   renderChart();
   renderAlerts();
   revPopulate();
+  syncGranularityControl();
 
   // Balance button — enable based on step level
   const nextStepIdx = ds.currentStepIdx + 1;
@@ -4069,9 +4219,14 @@ function renderCalendarGrid() {
     g.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 18px;"><div style="font-size: 13px;">${t('upload_first')}</div></div>`;
     return;
   }
-  // Union of months across all datasets
+  // Union of MONTH keys across all datasets — the per-month step editor is always month-based, even
+  // when the Results view is showing weeks/days (roll dated demand up to months for this list).
   const allMonths = new Set();
-  for (const ds of state.datasets) for (const m of ds.monthlyData.months) allMonths.add(m);
+  for (const ds of state.datasets) {
+    const md = ds.monthlyData;
+    if (md.daily && md.daily.size) { for (const [, days] of md.daily) for (const iso in days) allMonths.add(monthKeyFromDate(dateFromIso(iso))); }
+    else for (const m of md.months) allMonths.add(m);
+  }
   const months = Array.from(allMonths).sort((a, b) => {
     const oa = monthOrdinal(a), ob = monthOrdinal(b);
     if (oa == null && ob == null) return 0;
@@ -4223,6 +4378,32 @@ function recomputeAllSteps() {
     if (ds.currentStepIdx >= newHist.length) ds.currentStepIdx = newHist.length - 1;
   }
   renderResults();
+}
+
+// True when at least one loaded dataset carries dated demand (so week/day is meaningful).
+function anyDatasetHasDates() {
+  return state.datasets.some(ds => ds.monthlyData && ds.monthlyData.daily && ds.monthlyData.daily.size);
+}
+// Switch the time bucket (month/week/day): re-roll every dated dataset and recompute its steps.
+function setGranularity(g) {
+  g = (g === 'week' || g === 'day') ? g : 'month';
+  state.granularity = g;
+  if (!state.isSnapshot) saveStorage({ granularity: g });
+  for (const ds of state.datasets) rebucketDataset(ds, g);
+  // Month range labels are month-only arithmetic — clear them outside month view so keys show raw.
+  if (g !== 'month') { /* keep labelOverrides; getMonthOnly handles week/day labels directly */ }
+  if (state.datasets.some(ds => ds.resultsHistory && ds.resultsHistory.length)) recomputeAllSteps();
+  else renderResults();
+  syncGranularityControl();
+}
+// Reflect state + availability onto the toolbar <select> (disable week/day when no dated data).
+function syncGranularityControl() {
+  const sel = $('granularity'); if (!sel) return;
+  const has = anyDatasetHasDates();
+  sel.value = getGranularity();
+  for (const opt of sel.options) if (opt.value !== 'month') opt.disabled = !has;
+  sel.title = has ? '' : t('gran_need_dates');
+  if (!has && state.granularity !== 'month') { state.granularity = 'month'; sel.value = 'month'; }
 }
 
 // ===== Text Boxes (PPT-style — Comment redesign) =====
@@ -4698,9 +4879,11 @@ function reparseVolume() {
   const r = parseMonthly(state._volWb, state.importMap);
   if (!r) { toast(t('parse_error_monthly'), 'error'); return; }
   ds.monthlyData = r;
+  rebucketDataset(ds, getGranularity());
   ds.resultsHistory = []; ds.currentStepIdx = 0;
   renderDatasetList();
   renderPreview();
+  syncGranularityControl();
   saveDatasets();
 }
 
@@ -4791,11 +4974,13 @@ async function handleDatasetFile(file) {
     const id = `ds_${Date.now()}_${state.dsIdCounter}`;
     const baseName = file.name.replace(/\.(xlsx|xlsm)$/i, '');
     const ds = { id, name: baseName, monthlyData: r, resultsHistory: [], currentStepIdx: 0 };
+    rebucketDataset(ds, getGranularity());
     state.datasets.push(ds);
     state._volWb = wb;
     state._volDsId = id;
     if (!state.activeDatasetId) state.activeDatasetId = id;
     renderDatasetList();
+    syncGranularityControl();
     renderImportMapVolume();
     renderPreview();
     saveDatasets();
@@ -4815,6 +5000,7 @@ function serializeDataset(ds) {
       months: ds.monthlyData.months,
       data: Array.from(ds.monthlyData.data.entries()),
       fluct: Array.from((ds.monthlyData.fluct || new Map()).entries()),
+      daily: ds.monthlyData.daily ? Array.from(ds.monthlyData.daily.entries()) : null,
       sheetName: ds.monthlyData.sheetName,
       headerRowIdx: ds.monthlyData.headerRowIdx
     }
@@ -4829,6 +5015,7 @@ function deserializeDataset(serialized) {
       months: serialized.monthlyData.months,
       data: new Map(serialized.monthlyData.data),
       fluct: new Map(serialized.monthlyData.fluct || []),
+      daily: serialized.monthlyData.daily ? new Map(serialized.monthlyData.daily) : null,
       sheetName: serialized.monthlyData.sheetName,
       headerRowIdx: serialized.monthlyData.headerRowIdx
     },
@@ -4865,7 +5052,9 @@ function loadSavedDatasets() {
     if (d.partColorOverrides && typeof d.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, d.partColorOverrides);
     if (d.patternStyles && typeof d.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, d.patternStyles);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
+    if (d.granularity === 'week' || d.granularity === 'day' || d.granularity === 'month') state.granularity = d.granularity;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
+    for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     renderDatasetList();
     renderPreview();
     toast(t('auto_loaded', { n: state.datasets.length }), 'success');
@@ -4913,6 +5102,7 @@ function buildSnapshotPayload(authorName) {
         months: ds.monthlyData.months,
         data: Array.from(ds.monthlyData.data.entries()),
         fluct: Array.from((ds.monthlyData.fluct || new Map()).entries()),
+        daily: ds.monthlyData.daily ? Array.from(ds.monthlyData.daily.entries()) : null,
         sheetName: ds.monthlyData.sheetName,
         headerRowIdx: ds.monthlyData.headerRowIdx
       },
@@ -4927,6 +5117,7 @@ function buildSnapshotPayload(authorName) {
     tooltipFields: state.tooltipFields,
     partColorOverrides: state.partColorOverrides,
     patternStyles: state.patternStyles,
+    granularity: state.granularity,
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
     labelOverrides: state.labelOverrides,
@@ -5067,6 +5258,7 @@ function loadSnapshotIfPresent() {
         months: ds.monthlyData.months,
         data: new Map(ds.monthlyData.data),
         fluct: new Map(ds.monthlyData.fluct || []),
+        daily: ds.monthlyData.daily ? new Map(ds.monthlyData.daily) : null,
         sheetName: ds.monthlyData.sheetName,
         headerRowIdx: ds.monthlyData.headerRowIdx
       },
@@ -5081,6 +5273,8 @@ function loadSnapshotIfPresent() {
     if (data.tooltipFields && typeof data.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, data.tooltipFields);
     if (data.partColorOverrides && typeof data.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, data.partColorOverrides);
     if (data.patternStyles && typeof data.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, data.patternStyles);
+    if (data.granularity === 'week' || data.granularity === 'day' || data.granularity === 'month') state.granularity = data.granularity;
+    for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     state.monthOverrides = data.monthOverrides || {};
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];
@@ -5428,6 +5622,8 @@ function setupEvents() {
     saveStorage({ yUnit: state.yUnit });
     if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderTableArea(); renderChart(); renderChartLegendMini(); }
   };
+
+  if ($('granularity')) $('granularity').onchange = () => setGranularity($('granularity').value);
 
   ['rangeFrom','rangeTo'].forEach(id => {
     $(id).onchange = () => {
