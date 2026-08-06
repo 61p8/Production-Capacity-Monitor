@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.13.0] — 2026-08-06
+
+### Added
+- **Separate, editable Day / Week capacity lines.** The monthly steps (417/447/497, WD/OT/holiday)
+  didn't map onto a single day, and auto-deriving them from the monthly OT couldn't show a
+  *no-OT* line. Week/Day views now use their own line set (`state.subStepConfigs`), independent of the
+  monthly steps which are kept exactly as-is for month view. Seeded with **two** lines — **Normal**
+  = `hrs/shift × shifts` and **OT** = `(hrs/shift + OT) × shifts` — each scaled by the period's working
+  days (day = 1, week = Mon–Fri count). A new **Day / Week capacity lines** editor in Settings lets you
+  rename lines, set each line's OT hours, and add/remove lines; the toolbar toggles, threshold tooltip
+  and step sequence all follow the active view. Switching Period rebuilds the step sequence (the step
+  count can differ between month and day/week). Persisted in localStorage + snapshot; i18n EN/TH/JP.
+  Month view is unchanged.
+
 ## [3.12.2] — 2026-08-06
 
 ### Fixed

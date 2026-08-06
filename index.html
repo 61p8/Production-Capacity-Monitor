@@ -517,6 +517,13 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       </div>
       <div class="help-text" style="margin-top:0" data-i18n="cap_steps_help">Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.</div>
       <div id="stepConfigTable"></div>
+
+      <div style="display:flex; align-items:center; gap:10px; margin:16px 0 8px; flex-wrap:wrap;">
+        <strong style="font-size:13px;" data-i18n="daycap_lines">Day / Week capacity lines</strong>
+        <button class="btn-small" id="addSubStepBtn" type="button" data-i18n="add_line">+ Add line</button>
+      </div>
+      <div class="help-text" style="margin-top:0" data-i18n="daycap_help">Used only in Week/Day views. Each line = (hrs/shift + OT) × shifts per working day (× working days for a week). Holidays/working-day counts don't apply below a month.</div>
+      <div id="subStepConfigTable"></div>
     </div>
 
     <div style="margin-top:18px; padding-top:14px; border-top:1px solid #E5E3DB;">
@@ -881,6 +888,7 @@ const I18N = {
     step_initial:'Step 0 — Initial', step_maxcap:'Max Cap', step:'Step',
     cap_steps:'Capacity steps (threshold targets)', add_step:'+ Add step',
     cap_steps_help:'Each step target = [ WorkDays×(hrs/shift + OT) + Holidays×(hrs/shift + Holiday OT) ] × shifts. Adjust the values to move where each threshold line sits.',
+    daycap_lines:'Day / Week capacity lines', add_line:'+ Add line', daycap_help:'Used only in Week/Day views. Each line = (hrs/shift + OT) × shifts per working day (× working days for a week). Holiday / working-day counts don’t apply below a month.', daycap_name:'Name', daycap_perday:'Per working day',
     step_wd:'Work days', step_ot_days:'OT days', step_ot_normal:'OT h/shift', step_hd:'Holiday days', step_ot_holiday:'Holiday OT h/shift', step_threshold:'Target (h)', step_min_one:'At least one step is required',
     step_pm:'Per-month values (line varies by month)', step_pm_clear:'Clear per-month values',
     step_pm_hint:'Empty cell = use the step’s base value. Filled cells make this line vary month by month (marked with ~).',
@@ -982,6 +990,7 @@ const I18N = {
     step_initial:'Step 0 — เริ่มต้น', step_maxcap:'Max Cap', step:'ขั้น',
     cap_steps:'ขั้นกำลังการผลิต (เส้นเป้าหมาย)', add_step:'+ เพิ่มขั้น',
     cap_steps_help:'เป้าหมายแต่ละขั้น = [ วันทำงาน×(ชม./กะ + OT) + วันหยุด×(ชม./กะ + OT วันหยุด) ] × กะ — ปรับค่าเพื่อเลื่อนตำแหน่งเส้น threshold',
+    daycap_lines:'เส้นกำลังการผลิต วัน/สัปดาห์', add_line:'+ เพิ่มเส้น', daycap_help:'ใช้เฉพาะมุมมองสัปดาห์/วัน แต่ละเส้น = (ชม./กะ + OT) × กะ ต่อวันทำงาน (×วันทำงานสำหรับสัปดาห์) — วันหยุด/จำนวนวันทำงานไม่มีผลต่ำกว่าระดับเดือน', daycap_name:'ชื่อ', daycap_perday:'ต่อวันทำงาน',
     step_wd:'วันทำงาน', step_ot_days:'วัน OT', step_ot_normal:'OT ชม./กะ', step_hd:'วันหยุดที่ทำ', step_ot_holiday:'OT วันหยุด ชม./กะ', step_threshold:'เป้าหมาย (ชม.)', step_min_one:'ต้องมีอย่างน้อย 1 ขั้น',
     step_pm:'ค่ารายเดือน (เส้นแปรตามเดือน)', step_pm_clear:'ล้างค่ารายเดือน',
     step_pm_hint:'ช่องว่าง = ใช้ค่าฐานของขั้นนี้ • ช่องที่กรอกจะทำให้เส้นนี้แปรตามเดือน (มีเครื่องหมาย ~)',
@@ -1083,6 +1092,7 @@ const I18N = {
     step_initial:'Step 0 — 初期', step_maxcap:'Max Cap', step:'ステップ',
     cap_steps:'生産能力ステップ（しきい値）', add_step:'+ ステップ追加',
     cap_steps_help:'各ステップ目標 = [ 稼働日×(時間/シフト + OT) + 休日×(時間/シフト + 休日OT) ] × シフト数。値を調整してしきい値線の位置を設定。',
+    daycap_lines:'日/週の能力ライン', add_line:'+ ライン追加', daycap_help:'週/日ビュー専用。各ライン = (時間/シフト + OT) × シフト（稼働日あたり、週は稼働日数を掛ける）。休日・稼働日数は月未満では適用されません。', daycap_name:'名称', daycap_perday:'稼働日あたり',
     step_wd:'稼働日', step_ot_days:'OT日数', step_ot_normal:'OT 時間/シフト', step_hd:'休日数', step_ot_holiday:'休日OT 時間/シフト', step_threshold:'目標 (h)', step_min_one:'最低1ステップが必要です',
     step_pm:'月別値（月ごとに変動する線）', step_pm_clear:'月別値をクリア',
     step_pm_hint:'空欄 = ステップの基準値を使用。入力すると月ごとに変動（~ 表示）。',
@@ -1124,7 +1134,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.12.2';
+const APP_VERSION = '3.13.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1174,6 +1184,18 @@ const DEFAULT_STEP_CONFIGS = [
   { wd: 21, otDays: 21, otNormal: 2.5, hdWorked: 4, otHoliday: 2.5 }   // → 497
 ];
 
+// Day/Week capacity lines — a SEPARATE set used only in week/day views (the monthly steps above stay
+// untouched for month view). A day has no working-day/holiday concept, just a per-shift OT level:
+//   threshold = (hrs/shift + ot) × shifts × working-days-in-period   (day = 1, week = Mon–Fri count)
+// Seeded with two lines: normal working time (no OT) and with OT. Editable in Settings.
+const DEFAULT_SUBSTEP_CONFIGS = [
+  { ot: 0,   name: 'Normal' },   // hrs/shift × shifts
+  { ot: 2.5, name: 'OT'     }    // (hrs/shift + 2.5) × shifts
+];
+function isSubStep(cfg) { return !!(cfg && cfg.ot != null && cfg.wd == null); }
+// Which step set drives the CURRENT view: monthly steps in month view, day/week lines otherwise.
+function activeStepConfigs() { return getGranularity() === 'month' ? state.stepConfigs : state.subStepConfigs; }
+
 // Dash/colour palette for threshold lines, cycled per step index.
 const STEP_LINE_STYLES = [
   ['#1D9E75', [4, 4]], ['#185FA5', [6, 4]], ['#E24B4A', []],
@@ -1215,6 +1237,7 @@ const state = {
   ctOverrides: [],
   notes: [],
   stepConfigs: DEFAULT_STEP_CONFIGS.map(c => ({ ...c })),
+  subStepConfigs: DEFAULT_SUBSTEP_CONFIGS.map(c => ({ ...c })),  // day/week capacity lines
   maxCapOT: 2.5,
   importMap: cloneImportMap(),   // what the parsers look for (see DEFAULT_IMPORT_MAP)
   _masterWb: null,               // transient: last uploaded Master workbook (for live re-parse)
@@ -1709,6 +1732,7 @@ function readSettings() {
     maxCapOT: state.maxCapOT,
     shifts: parseInt($('shifts').value) || 2,
     stepConfigs: JSON.parse(JSON.stringify(state.stepConfigs)),  // deep — perMonth must not share refs
+    subStepConfigs: JSON.parse(JSON.stringify(state.subStepConfigs)),
     monthOverrides: state.monthOverrides
   };
 }
@@ -1722,6 +1746,7 @@ function applySavedSettings() {
     if (s.shifts) $('shifts').value = s.shifts;
     if (typeof s.maxCapOT === 'number') state.maxCapOT = s.maxCapOT;
     if (Array.isArray(s.stepConfigs) && s.stepConfigs.length) state.stepConfigs = s.stepConfigs.map(c => ({ ...c }));
+    if (Array.isArray(s.subStepConfigs) && s.subStepConfigs.length) state.subStepConfigs = s.subStepConfigs.map(c => ({ ...c }));
     state.monthOverrides = s.monthOverrides || {};
   }
   if (d.labelOverrides) state.labelOverrides = d.labelOverrides;
@@ -1757,9 +1782,10 @@ function calculateMaxCap(setting, monthLabel) {
 // Build the live step sequence from state.stepConfigs.
 // Index 0 = Initial, then one 'computed' entry per config, then Max Cap.
 function getStepDefs() {
+  const cfgs = activeStepConfigs();
   const defs = [{ id: 0, key: 'step_initial', type: 'initial' }];
-  state.stepConfigs.forEach((c, i) => defs.push({ id: i + 1, key: 'step_computed', type: 'computed', cfgIdx: i }));
-  defs.push({ id: state.stepConfigs.length + 1, key: 'step_maxcap', type: 'maxcap' });
+  cfgs.forEach((c, i) => defs.push({ id: i + 1, key: 'step_computed', type: 'computed', cfgIdx: i }));
+  defs.push({ id: cfgs.length + 1, key: 'step_maxcap', type: 'maxcap' });
   return defs;
 }
 
@@ -1769,6 +1795,7 @@ function getStepDefs() {
 function computeStepThreshold(cfg, setting) {
   if (!cfg) return 0;
   const hp = setting.hrsPerShift, sh = setting.shifts;
+  if (isSubStep(cfg)) return (hp + (cfg.ot || 0)) * sh;   // day/week line: hours for ONE working day
   const wd = cfg.wd || 0;
   const otDays = (cfg.otDays != null) ? cfg.otDays : wd;
   return (wd * hp + otDays * (cfg.otNormal || 0) + (cfg.hdWorked || 0) * (hp + (cfg.otHoliday || 0))) * sh;
@@ -1779,15 +1806,21 @@ function computeStepThreshold(cfg, setting) {
 function stepHasPerMonth(cfg) { return !!(cfg && cfg.perMonth && Object.keys(cfg.perMonth).length); }
 function computeStepThresholdMonth(cfg, setting, monthLabel) {
   if (!cfg) return 0;
+  if (isSubStep(cfg)) {
+    // Day/Week line: (hrs/shift + ot) × shifts per working day × the period's working days.
+    const perWD = (setting.hrsPerShift + (cfg.ot || 0)) * setting.shifts;
+    const t = periodType(monthLabel);
+    if (t === 'day') return perWD;
+    if (t === 'week') return perWD * periodWorkDays(monthLabel);
+    return perWD * (periodWorkDays(monthLabel) || 1);  // month fallback (not normally reached)
+  }
   const type = periodType(monthLabel);
   if (type !== 'month') {
-    // Sub-month view: a single working day = (hrs/shift + OT) × shifts. WD-count and holidays are
-    // month-only concepts, so they're dropped here (a normal day is just a normal day) — this is why
-    // two monthly steps that differ only by holidays collapse to the same day/week line. Per-month
-    // overrides don't apply below a month, so the base config's OT is used.
+    // A monthly step evaluated at a sub-period (defensive; activeStepConfigs normally routes day/week
+    // to sub-steps). Treat as (hrs/shift + its OT) × shifts per working day — holidays/WD are monthly.
     const perWD = (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
-    if (type === 'day') return perWD;                 // one working day at this step's OT level
-    return perWD * periodWorkDays(monthLabel);        // week: × Mon–Fri count in that week
+    if (type === 'day') return perWD;
+    return perWD * periodWorkDays(monthLabel);
   }
   const ov = cfg.perMonth && cfg.perMonth[monthLabel];
   if (!ov) return computeStepThreshold(cfg, setting);
@@ -1801,22 +1834,24 @@ function computeStepThresholdMonth(cfg, setting, monthLabel) {
 }
 
 function getStepTarget(stepIdx, setting, monthLabel) {
+  const cfgs = activeStepConfigs();
   const cfg = getStepDefs()[stepIdx];
   if (!cfg || cfg.type === 'initial') {
     // Initial has no balance target; compare overflow against the first configured step.
-    return computeStepThresholdMonth(state.stepConfigs[0], setting, monthLabel) || 417;
+    return computeStepThresholdMonth(cfgs[0], setting, monthLabel) || 417;
   }
   if (cfg.type === 'maxcap') return calculateMaxCap(setting, monthLabel);
-  return computeStepThresholdMonth(state.stepConfigs[cfg.cfgIdx], setting, monthLabel);
+  return computeStepThresholdMonth(cfgs[cfg.cfgIdx], setting, monthLabel);
 }
 
 function getStepLabel(stepIdx) {
   const cfg = getStepDefs()[stepIdx];
   if (!cfg || cfg.type === 'initial') return t('step_initial');
   if (cfg.type === 'maxcap') return `${t('step')} ${cfg.id} → ${t('step_maxcap')}`;
-  const sc = state.stepConfigs[cfg.cfgIdx];
-  const val = Math.round(computeStepThreshold(sc, readSettings()));
-  return `${t('step')} ${cfg.id} → ${val}${stepHasPerMonth(sc) ? '~' : ''}`;
+  const sc = activeStepConfigs()[cfg.cfgIdx];
+  const val = Math.round(stepReprValue(sc, readSettings()));
+  const nm = isSubStep(sc) && sc.name ? ` ${sc.name}` : '';
+  return `${t('step')} ${cfg.id} →${nm} ${val}${getGranularity() === 'month' && stepHasPerMonth(sc) ? '~' : ''}`;
 }
 
 function getDisplayLabel(internalLabel) {
@@ -2475,7 +2510,7 @@ function calculateForStep(masterParts, monthlyData, setting, stepIdx) {
     const cfg = getStepDefs()[stepIdx];
     const isMaxCap = cfg.type === 'maxcap';
     // Per-month function so variable (per-month) steps balance against each month's own threshold.
-    const target = isMaxCap ? null : (m => computeStepThresholdMonth(state.stepConfigs[cfg.cfgIdx], setting, m));
+    const target = isMaxCap ? null : (m => computeStepThresholdMonth(activeStepConfigs()[cfg.cfgIdx], setting, m));
     const r = smartBalanceV2(initial.byProcess, initial.partMap, setting, initial.months, target, isMaxCap);
     chainExceeded = r.chainExceeded;
   } else {
@@ -3195,20 +3230,22 @@ function getThresholdOpts() {
 // working day / a 5-day week at the step's OT level in day/week view.
 function stepReprValue(cfg, setting) {
   const g = getGranularity();
-  if (g === 'month') return computeStepThreshold(cfg, setting);
-  const perWD = (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
+  if (g === 'month' && !isSubStep(cfg)) return computeStepThreshold(cfg, setting);
+  const ot = isSubStep(cfg) ? (cfg.ot || 0) : (cfg.otNormal || 0);
+  const perWD = (setting.hrsPerShift + ot) * setting.shifts;
   return g === 'week' ? perWD * 5 : perWD;
 }
 // One threshold-line descriptor per configured step, honouring its toggle checkbox.
 function getStepThresholds(setting) {
-  return state.stepConfigs.map((c, i) => {
+  return activeStepConfigs().map((c, i) => {
     const cb = $('showStep' + i);
     const style = stepLineStyle(i);
     const base = Math.round(stepReprValue(c, setting));
     const variable = getGranularity() === 'month' && stepHasPerMonth(c);   // per-month overrides are month-only
+    const nm = isSubStep(c) && c.name ? c.name + ' ' : '';
     return {
       idx: i, value: base, variable,
-      label: variable ? `${base}~` : String(base),
+      label: variable ? `${base}~` : `${nm}${base}`,
       valueFor: m => Math.round(computeStepThresholdMonth(c, setting, m)),
       color: style[0], dash: style[1], show: cb ? cb.checked : true
     };
@@ -3350,16 +3387,18 @@ function thTipHead(hourVal, dispVal) {
 }
 // Multi-line tooltip explaining how a step threshold is built for a given month.
 function stepTipLines(idx, setting, month, dispVal) {
-  const cfg = state.stepConfigs[idx];
+  const cfg = activeStepConfigs()[idx];
   if (!cfg) return null;
   const val = Math.round(computeStepThresholdMonth(cfg, setting, month));
   const type = periodType(month);
-  if (type !== 'month') {
-    // Day/Week: the monthly WD/holiday breakdown doesn't apply — show the per-day OT formula instead.
-    const perWD = (setting.hrsPerShift + (cfg.otNormal || 0)) * setting.shifts;
+  if (type !== 'month' || isSubStep(cfg)) {
+    // Day/Week line: show the per-day OT formula (no monthly WD/holiday breakdown).
+    const ot = isSubStep(cfg) ? (cfg.ot || 0) : (cfg.otNormal || 0);
+    const perWD = (setting.hrsPerShift + ot) * setting.shifts;
+    const nm = isSubStep(cfg) && cfg.name ? cfg.name + ' — ' : '';
     const lines = [
-      `▬ ${thTipHead(val, dispVal)} · ${getDisplayLabel(month)}`,
-      `(${setting.hrsPerShift} + ${cfg.otNormal || 0} OT) × ${setting.shifts} ${t('shifts')} = ${Math.round(perWD * 100) / 100} h/${t('gran_day')}`
+      `▬ ${nm}${thTipHead(val, dispVal)} · ${getDisplayLabel(month)}`,
+      `(${setting.hrsPerShift} + ${ot} OT) × ${setting.shifts} ${t('shifts')} = ${Math.round(perWD * 100) / 100} h/${t('gran_day')}`
     ];
     if (type === 'week') lines.push(`× ${periodWorkDays(month)} ${t('step_wd')}`);
     return lines;
@@ -3394,8 +3433,9 @@ function renderStepToggles() {
   const prev = {};
   box.querySelectorAll('input[type=checkbox]').forEach(cb => { prev[cb.id] = cb.checked; });
   box.innerHTML = '';
-  state.stepConfigs.forEach((c, i) => {
-    const val = Math.round(stepReprValue(c, setting)) + (getGranularity() === 'month' && stepHasPerMonth(c) ? '~' : '');
+  activeStepConfigs().forEach((c, i) => {
+    const nm = isSubStep(c) && c.name ? c.name + ' ' : '';
+    const val = nm + Math.round(stepReprValue(c, setting)) + (getGranularity() === 'month' && stepHasPerMonth(c) ? '~' : '');
     const id = 'showStep' + i;
     const checked = (id in prev) ? prev[id] : true;
     const lbl = document.createElement('label');
@@ -3579,8 +3619,56 @@ function onStepConfigsChanged() {
   if (!state.isSnapshot) saveStorage({ settings: readSettings() });
   recomputeExistingResults();
   renderStepConfigs();
+  renderSubStepConfigs();   // per-day value depends on hrs/shift & shifts too
   renderStepToggles();
   if (getCurrentResult()) renderResults();
+}
+
+// Editable table for the Day/Week capacity lines (state.subStepConfigs).
+function renderSubStepConfigs() {
+  const box = $('subStepConfigTable'); if (!box) return;
+  const setting = readSettings();
+  const ro = state.isSnapshot; const dis = ro ? ' disabled' : '';
+  const perDay = c => Math.round((setting.hrsPerShift + (c.ot || 0)) * setting.shifts * 100) / 100;
+  let html = `<table class="step-config-table"><thead><tr><th>#</th><th>${t('daycap_name')}</th><th>${t('step_ot_normal')}</th><th>${t('daycap_perday')}</th><th></th></tr></thead><tbody>`;
+  state.subStepConfigs.forEach((c, i) => {
+    html += `<tr>` +
+      `<td>${i + 1}</td>` +
+      `<td><input type="text" value="${(c.name || '').replace(/"/g, '&quot;')}" data-sub-idx="${i}" data-sub-field="name"${dis} style="width:96px"></td>` +
+      `<td><input type="number" min="0" step="0.1" value="${c.ot || 0}" data-sub-idx="${i}" data-sub-field="ot"${dis}></td>` +
+      `<td class="step-threshold-val"><strong>${perDay(c)}</strong> h/${t('gran_day')}</td>` +
+      `<td>${ro ? '' : `<button class="btn-small" data-sub-remove="${i}" type="button" title="${t('lay_delete')}">✕</button>`}</td>` +
+      `</tr>`;
+  });
+  html += `</tbody></table>`;
+  box.innerHTML = html;
+  if (ro) return;
+  box.querySelectorAll('input[data-sub-field]').forEach(inp => inp.addEventListener('change', () => {
+    const c = state.subStepConfigs[+inp.dataset.subIdx]; const f = inp.dataset.subField;
+    if (f === 'name') c.name = inp.value.trim();
+    else { let v = parseFloat(inp.value); if (isNaN(v) || v < 0) v = 0; c.ot = v; }
+    onSubStepConfigsChanged();
+  }));
+  box.querySelectorAll('button[data-sub-remove]').forEach(btn => btn.addEventListener('click', () => {
+    if (state.subStepConfigs.length <= 1) { toast(t('step_min_one'), 'error'); return; }
+    state.subStepConfigs.splice(+btn.dataset.subRemove, 1);
+    onSubStepConfigsChanged();
+  }));
+}
+function onSubStepConfigsChanged() {
+  if (!state.isSnapshot) saveStorage({ settings: readSettings() });
+  renderSubStepConfigs();
+  if (getGranularity() !== 'month' && state.master) {
+    const nSteps = getStepDefs().length;
+    for (const ds of state.datasets) {
+      if (!ds.resultsHistory || !ds.resultsHistory.length) continue;
+      const setting = ds.resultsHistory[0].settings;
+      const hist = []; for (let i = 0; i < nSteps; i++) hist.push(calculateForStep(state.master.parts, ds.monthlyData, setting, i));
+      ds.resultsHistory = hist; if (ds.currentStepIdx >= nSteps) ds.currentStepIdx = nSteps - 1;
+    }
+    renderStepToggles();
+    if (getCurrentResult()) renderResults();
+  }
 }
 
 function renderChartSingle() {
@@ -4247,6 +4335,7 @@ function renderPreview() {
       $('uploadBadge').style.display = '';
     }
     renderStepConfigs();
+    renderSubStepConfigs();
     populateRangeSelectors();
     syncRangeControlsFromState();
     renderCtOverrides();
@@ -4428,16 +4517,24 @@ function recomputeAllSteps() {
 function anyDatasetHasDates() {
   return state.datasets.some(ds => ds.monthlyData && ds.monthlyData.daily && ds.monthlyData.daily.size);
 }
-// Switch the time bucket (month/week/day): re-roll every dated dataset and recompute its steps.
+// Switch the time bucket (month/week/day): re-roll every dated dataset and rebuild its steps. The
+// step COUNT can change (month uses stepConfigs, day/week uses subStepConfigs), so results are rebuilt
+// from 0..getStepDefs().length-1 rather than to the old history length.
 function setGranularity(g) {
   g = (g === 'week' || g === 'day') ? g : 'month';
   state.granularity = g;
   if (!state.isSnapshot) saveStorage({ granularity: g });
   for (const ds of state.datasets) rebucketDataset(ds, g);
-  // Month range labels are month-only arithmetic — clear them outside month view so keys show raw.
-  if (g !== 'month') { /* keep labelOverrides; getMonthOnly handles week/day labels directly */ }
-  if (state.datasets.some(ds => ds.resultsHistory && ds.resultsHistory.length)) recomputeAllSteps();
-  else renderResults();
+  const nSteps = getStepDefs().length;
+  for (const ds of state.datasets) {
+    if (!ds.resultsHistory || !ds.resultsHistory.length) continue;
+    const setting = ds.resultsHistory[0].settings;
+    const hist = [];
+    for (let i = 0; i < nSteps; i++) hist.push(calculateForStep(state.master.parts, ds.monthlyData, setting, i));
+    ds.resultsHistory = hist;
+    if (ds.currentStepIdx >= nSteps) ds.currentStepIdx = nSteps - 1;
+  }
+  renderResults();
   syncGranularityControl();
 }
 // Reflect state + availability onto the toolbar <select> (disable week/day when no dated data).
@@ -5336,6 +5433,9 @@ function loadSnapshotIfPresent() {
       if (Array.isArray(data.settings.stepConfigs) && data.settings.stepConfigs.length) {
         state.stepConfigs = data.settings.stepConfigs.map(c => ({ ...c }));
       }
+      if (Array.isArray(data.settings.subStepConfigs) && data.settings.subStepConfigs.length) {
+        state.subStepConfigs = data.settings.subStepConfigs.map(c => ({ ...c }));
+      }
     }
     return true;
   } catch (err) {
@@ -5581,7 +5681,7 @@ function setupEvents() {
   if ($('endYear')) $('endYear').value = String(_now.getFullYear());
 
   document.querySelectorAll('.lang-btn').forEach(b => {
-    b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderStepConfigs(); renderCalendarGrid(); };
+    b.onclick = () => { state.lang = b.dataset.lang; saveStorage({ lang: state.lang }); applyLanguage(); renderStepConfigs(); renderSubStepConfigs(); renderCalendarGrid(); };
   });
 
   $('calculateBtn').onclick = () => {
@@ -5624,6 +5724,10 @@ function setupEvents() {
     const last = state.stepConfigs[state.stepConfigs.length - 1];
     state.stepConfigs.push(last ? { ...last } : { wd: 21, otDays: 21, otNormal: 2.5, hdWorked: 0, otHoliday: 0 });
     onStepConfigsChanged();
+  };
+  if ($('addSubStepBtn')) $('addSubStepBtn').onclick = () => {
+    state.subStepConfigs.push({ ot: 2.5, name: 'OT' + (state.subStepConfigs.length + 1) });
+    onSubStepConfigsChanged();
   };
 
   $('clearAllBtn').onclick = () => {
@@ -6774,6 +6878,7 @@ function init() {
   setupTabs();
   layInit();
   manInit();
+  renderSubStepConfigs();   // day/week capacity-line editor (independent of uploaded data)
 
   // Try snapshot mode first
   const isSnapshot = loadSnapshotIfPresent();
