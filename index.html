@@ -628,6 +628,8 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <span id="stepToggles" style="display:contents"></span>
       <label><input type="checkbox" id="showMaxCap" checked> Max Cap</label>
       <label><input type="checkbox" id="showTrend"> <span data-i18n="show_trend">Trend</span></label>
+      <span style="font-weight:500" data-i18n="over_pct">Over %:</span>
+      <select id="overThresh"><option value="off">—</option></select>
       <span style="flex:1"></span>
       <span style="font-weight:500" data-i18n="granularity">Period:</span>
       <select id="granularity" title="">
@@ -671,6 +673,8 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
             <label><span data-i18n="pat_balanced">Balanced (moved)</span><select id="balancedStyle" data-pat="balanced"></select></label>
             <label><span data-i18n="pat_buffer">Fluctuation buffer</span><select id="bufferStyle" data-pat="buffer"></select></label>
           </div>
+          <div class="tooltip-fields-head" data-i18n="thresh_colors_head" style="margin-top:8px">Threshold line colours</div>
+          <div class="part-color-list" id="threshColorList" style="max-height:150px"></div>
           <div class="tooltip-fields-head" data-i18n="colors_head" style="margin-top:8px">Custom part colours</div>
           <div class="part-color-list" id="partColorList"></div>
           <div class="tooltip-fields-actions">
@@ -908,6 +912,7 @@ const I18N = {
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
     y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
+    over_pct:'Over %:', thresh_colors_head:'Threshold line colours',
     granularity:'Period:', gran_month:'Month', gran_week:'Week', gran_day:'Day', gran_need_dates:'Upload a Raw_Data sheet with real dates to enable Week/Day',
     tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
     colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
@@ -1011,6 +1016,7 @@ const I18N = {
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
     y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
+    over_pct:'เกินเส้น %:', thresh_colors_head:'สีเส้น Threshold',
     granularity:'ช่วงเวลา:', gran_month:'รายเดือน', gran_week:'รายสัปดาห์', gran_day:'รายวัน', gran_need_dates:'อัปโหลดชีต Raw_Data ที่มีวันที่จริง เพื่อเปิดใช้รายสัปดาห์/รายวัน',
     tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
     colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
@@ -1114,6 +1120,7 @@ const I18N = {
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
     y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
+    over_pct:'超過 %:', thresh_colors_head:'しきい値線の色',
     granularity:'期間:', gran_month:'月', gran_week:'週', gran_day:'日', gran_need_dates:'週/日を有効にするには実日付付きの Raw_Data シートをアップロード',
     tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
     colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
@@ -1146,7 +1153,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.16.2';
+const APP_VERSION = '3.17.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1261,6 +1268,8 @@ const state = {
   partColors: new Map(),
   partColorOverrides: {},   // { [partNo]: '#rrggbb' } — user custom colours; win over the hash. Persisted.
   patternStyles: { balanced: 'hatch', buffer: 'dot' },   // fill style for Balanced bars / Fluct buffer. Persisted.
+  threshColors: {},        // custom threshold-line colours, keyed `${gran}|s<idx>` / `${gran}|mc`. Persisted.
+  overThreshKey: 'off',    // which threshold the per-bar "over %" labels compare against ('off' | 's<idx>' | 'mc')
   patternCache: new Map(),
   hoveredDsId: null,
   isSnapshot: false,
@@ -2099,6 +2108,28 @@ function shouldUseNumericMonths(totalBars) {
 
 // Chart.js plugin — draws line-name & year tier rows below x-axis labels,
 // plus dashed vertical separators between line groups.
+// Draws a small "+N%" over each bar whose load exceeds the selected threshold (see state.overThreshKey).
+const overPctPlugin = {
+  id: 'overPct',
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins && chart.options.plugins.overPct;
+    if (!cfg || !cfg.labels || !cfg.labels.length) return;
+    const x = chart.scales.x, y = chart.scales.y, ctx = chart.ctx;
+    if (!x || !y) return;
+    ctx.save();
+    ctx.font = 'bold 10px -apple-system, Segoe UI, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    for (const it of cfg.labels) {
+      const px = x.getPixelForValue(it.idx);
+      const py = y.getPixelForValue(it.total);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(px - 15, py - 15, 30, 12);
+      ctx.fillStyle = '#B00020';
+      ctx.fillText('+' + it.pct + '%', px, py - 4);
+    }
+    ctx.restore();
+  }
+};
 const xHierarchyPlugin = {
   id: 'xHierarchy',
   afterDraw(chart) {
@@ -3158,9 +3189,18 @@ function barTooltipLines(c, data, process, visibleLines, months, datasetName) {
   if (!c.dataset._isBuffer && origin && origin !== line && tipOn('balanced')) lines.push(`${t('tip_balanced_from')} ${origin.replace(/^Shaft /, '')}`);
   return lines.length ? lines : null;
 }
+// Keep a toolbar dropdown panel inside the viewport: default right-aligned, flip to left-aligned if
+// that pushes it off the left edge (happens when the toolbar wraps and the button sits on the left).
+function positionMenuPanel(menu) {
+  const panel = menu && menu.querySelector('.tooltip-fields-panel'); if (!panel) return;
+  panel.style.right = '0'; panel.style.left = 'auto';
+  const r = panel.getBoundingClientRect();
+  if (r.left < 6) { panel.style.left = '0'; panel.style.right = 'auto'; }
+}
 function setupTooltipFields() {
   const menu = $('tooltipFieldsMenu');
   if (!menu) return;
+  menu.addEventListener('toggle', () => { if (menu.open) positionMenuPanel(menu); });
   const sync = () => menu.querySelectorAll('[data-tip-field]').forEach(cb => { cb.checked = tipOn(cb.dataset.tipField); });
   const save = () => { saveStorage({ tooltipFields: state.tooltipFields }); renderChart(); };
   sync();
@@ -3197,6 +3237,30 @@ function renderPartColorList() {
       <input type="color" value="${hex}" data-pc-input>
       <span class="pc-label" title="${safePn}">${safePn}${model ? ` <span class="pc-model">· ${model}</span>` : ''}</span>
       <button class="pc-reset" type="button" data-pc-reset title="${t('colors_reset')}">${custom ? '↺' : '·'}</button>
+    </div>`;
+  }).join('');
+}
+// The active threshold lines (steps + Max Cap when shown) as {key, label, color} for the colour menu.
+function threshColorItems() {
+  const setting = readSettings();
+  const gran = getGranularity();
+  const items = getStepThresholds(setting).map(th => ({ key: `${gran}|s${th.idx}`, label: th.label, color: th.color }));
+  if (periodHasMaxCap()) items.push({ key: `${gran}|mc`, label: 'Max Cap', color: maxCapColor() });
+  return items;
+}
+function renderThreshColorList() {
+  const box = $('threshColorList'); if (!box) return;
+  const items = threshColorItems();
+  box._items = items;
+  if (!items.length) { box.innerHTML = `<div class="part-color-empty">—</div>`; return; }
+  box.innerHTML = items.map((it, i) => {
+    const custom = !!(state.threshColors && state.threshColors[it.key]);
+    const hex = /^#[0-9a-f]{6}$/i.test(it.color) ? it.color : hslToHex(...(it.color.match(/\d+(\.\d+)?/g) || [0, 0, 50]).map(Number));
+    const safe = String(it.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    return `<div class="part-color-row ${custom ? 'customised' : ''}" data-th-idx="${i}">
+      <input type="color" value="${hex}" data-th-input>
+      <span class="pc-label" title="${safe}">${safe}</span>
+      <button class="pc-reset" type="button" data-th-reset title="${t('colors_reset')}">${custom ? '↺' : '·'}</button>
     </div>`;
   }).join('');
 }
@@ -3237,7 +3301,24 @@ function setupPartColorMenu() {
     renderChart();
   });
   $('partColorResetAll').onclick = e => { e.preventDefault(); state.partColorOverrides = {}; persistPartColors(); renderPartColorList(); renderChart(); };
-  menu.addEventListener('toggle', () => { if (menu.open) { renderPatternStyleControls(); renderPartColorList(); } });
+  // Threshold-line colour pickers
+  const tlist = $('threshColorList');
+  const thKeyOf = el => { const row = el.closest('[data-th-idx]'); return row && tlist._items ? tlist._items[+row.dataset.thIdx].key : null; };
+  tlist.addEventListener('change', e => {
+    const inp = e.target.closest('[data-th-input]'); if (!inp) return;
+    const key = thKeyOf(inp); if (!key) return;
+    state.threshColors[key] = inp.value; saveStorage({ threshColors: state.threshColors });
+    const row = inp.closest('[data-th-idx]'); row.classList.add('customised');
+    const rst = row.querySelector('[data-th-reset]'); if (rst) rst.textContent = '↺';
+    renderChart();
+  });
+  tlist.addEventListener('click', e => {
+    const btn = e.target.closest('[data-th-reset]'); if (!btn) return;
+    const key = thKeyOf(btn); if (!key || !state.threshColors[key]) return;
+    delete state.threshColors[key]; saveStorage({ threshColors: state.threshColors });
+    renderChart(); renderThreshColorList();
+  });
+  menu.addEventListener('toggle', () => { if (menu.open) { renderPatternStyleControls(); renderThreshColorList(); renderPartColorList(); positionMenuPanel(menu); } });
   document.addEventListener('click', e => { if (menu.open && !menu.contains(e.target)) menu.removeAttribute('open'); });
 }
 
@@ -3279,6 +3360,9 @@ function getThresholdOpts() {
 // per-working-day). computeStepThreshold already encodes all three via the config shape.
 function stepReprValue(cfg, setting) { return computeStepThreshold(cfg, setting); }
 // One threshold-line descriptor per configured step, honouring its toggle checkbox.
+// Custom-colour keys are per-granularity so month/week/day lines can differ.
+function threshStepColor(idx) { return (state.threshColors && state.threshColors[`${getGranularity()}|s${idx}`]) || stepLineStyle(idx)[0]; }
+function maxCapColor() { return (state.threshColors && state.threshColors[`${getGranularity()}|mc`]) || T_MC[0]; }
 function getStepThresholds(setting) {
   return activeStepConfigs().map((c, i) => {
     const cb = $('showStep' + i);
@@ -3290,7 +3374,7 @@ function getStepThresholds(setting) {
       idx: i, value: base, variable,
       label: variable ? `${nm}${base}~` : `${nm}${base}`,
       valueFor: m => Math.round(computeStepThresholdMonth(c, setting, m)),
-      color: style[0], dash: style[1], show: cb ? cb.checked : true
+      color: threshStepColor(i), dash: style[1], show: cb ? cb.checked : true
     };
   });
 }
@@ -3504,6 +3588,44 @@ function renderStepToggles() {
   // Day view has no Max Cap line — hide its toolbar toggle there.
   const mcCb = $('showMaxCap'); const mcLbl = mcCb && mcCb.closest('label');
   if (mcLbl) mcLbl.style.display = periodHasMaxCap() ? '' : 'none';
+  renderOverThreshOptions();
+}
+// Populate the "Over %" dropdown with the active thresholds (steps + Max Cap).
+function renderOverThreshOptions() {
+  const sel = $('overThresh'); if (!sel) return;
+  const setting = readSettings();
+  let html = `<option value="off">—</option>`;
+  getStepThresholds(setting).forEach(th => { html += `<option value="s${th.idx}">${th.label}</option>`; });
+  if (periodHasMaxCap()) html += `<option value="mc">Max Cap</option>`;
+  sel.innerHTML = html;
+  sel.value = state.overThreshKey || 'off';
+  if (sel.value !== (state.overThreshKey || 'off')) { state.overThreshKey = 'off'; sel.value = 'off'; }  // stale key → off
+}
+// The selected "over %" threshold's value (hours) for a given period key, or null when off/invalid.
+function overThreshHoursFor(setting, m) {
+  const k = state.overThreshKey;
+  if (!k || k === 'off') return null;
+  if (k === 'mc') return periodHasMaxCap() ? calculateMaxCap(setting, m) : null;
+  const idx = parseInt(k.slice(1), 10);
+  const cfg = activeStepConfigs()[idx];
+  return cfg ? computeStepThresholdMonth(cfg, setting, m) : null;
+}
+// Per-bar "+N%" labels for byPart: how far each line's load (hours) exceeds the selected threshold.
+// The % is computed in HOURS (unit-independent, matches the over/under colouring); the label is placed
+// at the bar's plotted top (current unit). Returns a plugin config, or false when off.
+function computeOverPct(data, visibleLines, months, setting) {
+  if (!state.overThreshKey || state.overThreshKey === 'off') return false;
+  const labels = [];
+  let idx = 0;
+  for (const line of visibleLines) for (const m of months) {
+    const lineHours = (data.hours[line] && data.hours[line][m]) || 0;
+    const thH = overThreshHoursFor(setting, m);
+    if (thH > 0 && lineHours > thH) {
+      labels.push({ idx, total: lineBarVal(data, line, m), pct: Math.round((lineHours / thH - 1) * 100) });
+    }
+    idx++;
+  }
+  return labels.length ? { labels } : false;
 }
 
 // Editable step table inside Settings. Read-only in snapshot mode (section is hidden anyway).
@@ -3885,21 +4007,23 @@ function renderChartSingle() {
     if (opts.showMaxCap) {
       const mcData = [], mcTip = [];
       for (const line of visibleLines) for (const m of months) { const pv = thPieces(calculateMaxCap(setting, m), lineHrsPerPieceStable(data, process, line, m, months)); mcData.push(pv); mcTip.push(mcTipLines(setting, m, pv)); }
-      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), mcTip), stack: 'th_mc' });
+      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', maxCapColor(), T_MC[1], mcData), mcTip), stack: 'th_mc' });
     }
 
+    const overCfg = computeOverPct(data, visibleLines, months, setting);
     state.chart = new Chart($('resultChart'), {
-      plugins: [xHierarchyPlugin],
+      plugins: [xHierarchyPlugin, overPctPlugin],
       data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
-        layout: { padding: { bottom: 60 } },
+        layout: { padding: { bottom: 60, top: 14 } },
         interaction: { mode: 'nearest', intersect: true },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
           y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
         },
         plugins: {
+          overPct: overCfg,
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
           legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 }, filter: (li, d) => !d.datasets[li.datasetIndex]?._isBuffer } },
           tooltip: { callbacks: {
@@ -3927,7 +4051,7 @@ function renderChartSingle() {
       if (!th.show) continue;
       datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), procHrsPerPieceStable(data, process, m, months))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => stepTipLines(th.idx, setting, m, thPieces(th.valueFor(m), procHrsPerPieceStable(data, process, m, months)))) });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(setting, m, thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months)))) });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months))), borderColor: maxCapColor(), borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(setting, m, thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months)))) });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -4038,7 +4162,7 @@ function renderChartCompare() {
     if (opts.showMaxCap) {
       const mcData = [], mcTip = [];
       for (const line of visibleLines) for (const m of months) { const pv = thPieces(calculateMaxCap(refResult.settings, m), lineHrsPerPieceStable(refData, process, line, m, months)); mcData.push(pv); mcTip.push(mcTipLines(refResult.settings, m, pv)); }
-      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', T_MC[0], T_MC[1], mcData), mcTip), stack: 'th_mc' });
+      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', maxCapColor(), T_MC[1], mcData), mcTip), stack: 'th_mc' });
     }
 
     state.chart = new Chart($('resultChart'), {
@@ -4091,7 +4215,7 @@ function renderChartCompare() {
       if (!th.show) continue;
       datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), procHrsPerPieceStable(refDataL, process, m, months))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => stepTipLines(th.idx, refResult.settings, m, thPieces(th.valueFor(m), procHrsPerPieceStable(refDataL, process, m, months)))) });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months))), borderColor: T_MC[0], borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(refResult.settings, m, thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months)))) });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months))), borderColor: maxCapColor(), borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(refResult.settings, m, thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months)))) });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -5320,6 +5444,7 @@ function loadSavedDatasets() {
     if (d.yUnit === 'pcs' || d.yUnit === 'hours') state.yUnit = d.yUnit;
     if (d.tooltipFields && typeof d.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, d.tooltipFields);
     if (d.partColorOverrides && typeof d.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, d.partColorOverrides);
+    if (d.threshColors && typeof d.threshColors === 'object') state.threshColors = Object.assign({}, d.threshColors);
     if (d.patternStyles && typeof d.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, d.patternStyles);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (d.granularity === 'week' || d.granularity === 'day' || d.granularity === 'month') state.granularity = d.granularity;
@@ -5386,6 +5511,7 @@ function buildSnapshotPayload(authorName) {
     yUnit: state.yUnit,
     tooltipFields: state.tooltipFields,
     partColorOverrides: state.partColorOverrides,
+    threshColors: state.threshColors,
     patternStyles: state.patternStyles,
     granularity: state.granularity,
     range: { from: ($('rangeFrom') || {}).value || '', to: ($('rangeTo') || {}).value || '' },
@@ -5543,6 +5669,7 @@ function loadSnapshotIfPresent() {
     if (data.yUnit === 'pcs' || data.yUnit === 'hours') state.yUnit = data.yUnit;
     if (data.tooltipFields && typeof data.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, data.tooltipFields);
     if (data.partColorOverrides && typeof data.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, data.partColorOverrides);
+    if (data.threshColors && typeof data.threshColors === 'object') state.threshColors = Object.assign({}, data.threshColors);
     if (data.patternStyles && typeof data.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, data.patternStyles);
     if (data.granularity === 'week' || data.granularity === 'day' || data.granularity === 'month') state.granularity = data.granularity;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
@@ -5919,6 +6046,7 @@ function setupEvents() {
   };
 
   if ($('granularity')) $('granularity').onchange = () => setGranularity($('granularity').value);
+  if ($('overThresh')) $('overThresh').onchange = () => { state.overThreshKey = $('overThresh').value; renderChart(); };
 
   ['rangeFrom','rangeTo'].forEach(id => {
     $(id).onchange = () => {

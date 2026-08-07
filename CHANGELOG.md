@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.17.0] — 2026-08-06
+
+### Added
+- **Per-bar "over threshold" %.** A new **Over %** dropdown on the chart toolbar picks any active
+  threshold (a step or Max Cap); each bar whose load exceeds it then shows a small red **+N%** above it
+  (computed in hours, so it matches the over/under colouring). Stacked-by-Part view.
+- **Custom threshold-line colours.** The 🎨 Colors menu gains a **Threshold line colours** section — set
+  a colour per line (each step + Max Cap), keyed per period so month/week/day can differ. Persisted.
+
+### Fixed
+- **Tooltip / Colors dropdown clipping off the left edge.** When the toolbar wrapped and the menu button
+  sat on the left, the right-aligned panel overflowed off-screen. The panel now flips to left-aligned
+  when it would clip, keeping it inside the viewport.
+
 ## [3.16.2] — 2026-08-06
 
 ### Fixed
