@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.15.0] — 2026-08-06
+
+### Changed
+- **Each Period (Month / Week / Day) now has its own independent threshold lines.**
+  - **Month** — unchanged (417/447/497 + Max Cap).
+  - **Day** — its own line set, and the **Max Cap line is removed** (a per-day Max Cap ≈ the OT line,
+    so it was redundant); its toolbar toggle hides in Day view.
+  - **Week** — its own line set with an editable **Days/week** column per line (default 5), so the
+    week total = day capacity × 5/6/7 as you choose. This replaces the old fixed ×5, and fixes the
+    inconsistency where step lines used 5 working days while Max Cap used 7. Week keeps its Max Cap.
+  - Settings now shows two editors — **Day capacity lines** and **Week capacity lines** — each with
+    the OT / break-relief / fixed-h-day columns (week adds Days/week). Old single day/week config
+    migrates into both (localStorage + snapshot). i18n EN/TH/JP.
+
 ## [3.14.0] — 2026-08-06
 
 ### Added
