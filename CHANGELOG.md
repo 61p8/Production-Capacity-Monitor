@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.17.1] — 2026-08-06
+
+### Fixed
+- **Day view showed no chart.** A leftover reference to a removed `type` variable in `stepTipLines`
+  (from the v3.16 week/day refactor) threw `ReferenceError: type is not defined` while building a
+  day-view threshold tooltip, aborting the whole chart render. Only Day view hit the offending branch
+  (Month/Week don't), so the chart appeared frozen/blank. Replaced with `periodType(month)`.
+
 ## [3.17.0] — 2026-08-06
 
 ### Added
