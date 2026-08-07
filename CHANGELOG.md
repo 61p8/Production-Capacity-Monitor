@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.16.0] — 2026-08-06
+
+### Changed
+- **Week capacity lines now combine the Month and Day models.** Instead of the day-style
+  `× days/week`, each Week line uses the full monthly **WorkDays / OT-days / OT / Holidays / Holiday-OT**
+  formula **plus** the day extras — **break-relief** (added to hrs/shift) and a **Fixed h/day** override
+  (e.g. 3-shift = 24, × working days). Threshold = `hpd × WD`, else
+  `[ WD×(hrs/shift + break-relief) + OT_days×OT + Holidays×((hrs/shift + break-relief) + Holiday-OT) ] × shifts`.
+  The Week editor shows all those columns + a **+ 3-shift (24h)** quick-add and keeps its Max Cap line.
+  `computeStepThreshold` gained the `br`/`hpd` terms for `wd`-shaped configs — Month configs have neither
+  so **Month is unchanged**; Day keeps its simple sub-step lines. Old day-style week configs migrate
+  into the combined shape (localStorage + snapshot). i18n EN/TH/JP.
+
 ## [3.15.0] — 2026-08-06
 
 ### Changed
