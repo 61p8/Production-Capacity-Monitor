@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.17.2] — 2026-08-07
+
+### Fixed
+- **Snapshot re-opened with the full week/day range instead of the saved window** (e.g. showed `W31`
+  when only `W32–W35` were visible at export). The snapshot exporter strips the `<option>`s from the
+  Start/End range selects but the `data-sig` guard attribute rode along in the exported HTML, so on
+  load `populateRangeSelectors()` saw a matching signature over an *empty* select and skipped
+  repopulation — leaving the range unset and the saved `pendingRange` unconsumed, so every period
+  showed. The guard now also repopulates when the option count doesn't match the period count, so the
+  saved range is reapplied. Re-export the snapshot from this version to get the fix.
+
 ## [3.17.1] — 2026-08-06
 
 ### Fixed

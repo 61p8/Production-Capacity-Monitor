@@ -1153,7 +1153,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.17.1';
+const APP_VERSION = '3.17.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2678,7 +2678,10 @@ function populateRangeSelectors() {
   const fromS = $('rangeFrom'), toS = $('rangeTo');
   const opts = months.map(m => `<option value="${m}">${getDisplayLabel(m)}</option>`).join('');
   const sig = months.join(',') + '|' + state.lang + '|' + JSON.stringify(state.labelOverrides);
-  if (fromS.dataset.sig !== sig) {
+  // Also repopulate when the options were stripped (snapshot export clears the <option>s but the
+  // data-sig attribute rides along in the exported HTML — a stale matching sig over an empty select
+  // would otherwise skip the fill and leave pendingRange unconsumed → full range shows on load).
+  if (fromS.dataset.sig !== sig || fromS.options.length !== months.length) {
     const prevFrom = fromS.value, prevTo = toS.value;
     fromS.innerHTML = opts;
     toS.innerHTML = opts;
