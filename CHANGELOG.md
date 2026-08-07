@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.16.1] — 2026-08-06
+
+### Added
+- **Name column for the Month and Week capacity-step editors** (Day already had one). Naming a step
+  prefixes its threshold-line label and toolbar toggle (e.g. `Base 417`). Persisted with the config.
+
+### Fixed
+- **Unreadable step-config table header.** The header inherited the global data-table's dark
+  background while keeping dark-grey text (dark-on-dark). It now uses a light header (beige background,
+  dark text) in both the step and per-month tables.
+
 ## [3.16.0] — 2026-08-06
 
 ### Changed

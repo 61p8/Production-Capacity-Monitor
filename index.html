@@ -99,7 +99,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .setting-item input:disabled { background: #F5F4F0; color: #5F5E5A; }
 .help-text { font-size: 11px; color: #5F5E5A; margin-top: 8px; }
 .step-config-table { border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-.step-config-table th { font-size: 11px; color: #5F5E5A; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; padding: 4px 8px; white-space: nowrap; }
+.step-config-table th { font-size: 11px; color: #4A4945; background: #EFEDE6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; padding: 5px 8px; white-space: nowrap; border-bottom: 1px solid #D3D1C7; position: static; }
 .step-config-table td { padding: 3px 8px; }
 .step-config-table input { width: 64px; border: 1px solid #B4B2A9; border-radius: 4px; padding: 5px 7px; font-size: 13px; background: white; font-family: inherit; }
 .step-config-table input:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 2px rgba(29,158,117,0.15); }
@@ -111,7 +111,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sukhumvit Se
 .step-config-table .pm-active { background: #1D9E75; color: white; border-color: #1D9E75; }
 .pm-editor-row > td { background: #FAFAF7; border: 1px solid #E5E3DB; border-radius: 6px; padding: 8px 10px !important; }
 .step-pm-table { border-collapse: collapse; font-size: 12px; }
-.step-pm-table th { font-size: 10px; color: #5F5E5A; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; padding: 3px 6px; white-space: nowrap; }
+.step-pm-table th { font-size: 10px; color: #4A4945; background: #EFEDE6; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; text-align: left; padding: 3px 6px; white-space: nowrap; border-bottom: 1px solid #D3D1C7; position: static; }
 .step-pm-table td { padding: 2px 6px; }
 .step-pm-table input { width: 58px; border: 1px solid #B4B2A9; border-radius: 4px; padding: 3px 6px; font-size: 12px; background: white; font-family: inherit; }
 .step-pm-table input::placeholder { color: #B4B2A9; }
@@ -1146,7 +1146,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.16.0';
+const APP_VERSION = '3.16.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1888,7 +1888,7 @@ function getStepLabel(stepIdx) {
   if (cfg.type === 'maxcap') return `${t('step')} ${cfg.id} → ${t('step_maxcap')}`;
   const sc = activeStepConfigs()[cfg.cfgIdx];
   const val = Math.round(stepReprValue(sc, readSettings()));
-  const nm = isSubStep(sc) && sc.name ? ` ${sc.name}` : '';
+  const nm = sc && sc.name ? ` ${sc.name}` : '';
   return `${t('step')} ${cfg.id} →${nm} ${val}${getGranularity() === 'month' && stepHasPerMonth(sc) ? '~' : ''}`;
 }
 
@@ -3276,10 +3276,10 @@ function getStepThresholds(setting) {
     const style = stepLineStyle(i);
     const base = Math.round(stepReprValue(c, setting));
     const variable = getGranularity() === 'month' && stepHasPerMonth(c);   // per-month overrides are month-only
-    const nm = isSubStep(c) && c.name ? c.name + ' ' : '';
+    const nm = c.name ? c.name + ' ' : '';
     return {
       idx: i, value: base, variable,
-      label: variable ? `${base}~` : `${nm}${base}`,
+      label: variable ? `${nm}${base}~` : `${nm}${base}`,
       valueFor: m => Math.round(computeStepThresholdMonth(c, setting, m)),
       color: style[0], dash: style[1], show: cb ? cb.checked : true
     };
@@ -3483,7 +3483,7 @@ function renderStepToggles() {
   box.querySelectorAll('input[type=checkbox]').forEach(cb => { prev[cb.id] = cb.checked; });
   box.innerHTML = '';
   activeStepConfigs().forEach((c, i) => {
-    const nm = isSubStep(c) && c.name ? c.name + ' ' : '';
+    const nm = c.name ? c.name + ' ' : '';
     const val = nm + Math.round(stepReprValue(c, setting)) + (getGranularity() === 'month' && stepHasPerMonth(c) ? '~' : '');
     const id = 'showStep' + i;
     const checked = (id in prev) ? prev[id] : true;
@@ -3522,6 +3522,7 @@ function renderStepConfigs() {
   const months = allDataMonths();
   let html = `<table class="step-config-table"><thead><tr>` +
     `<th>#</th>` +
+    `<th>${t('daycap_name')}</th>` +
     `<th>${t('step_wd')}</th>` +
     `<th>${t('step_ot_days')}</th>` +
     `<th>${t('step_ot_normal')}</th>` +
@@ -3542,6 +3543,7 @@ function renderStepConfigs() {
     }
     html += `<tr>` +
       `<td>${i + 1}</td>` +
+      `<td><input type="text" value="${(c.name || '').replace(/"/g, '&quot;')}" data-idx="${i}" data-field="name"${dis} style="width:96px" placeholder="—"></td>` +
       `<td><input type="number" min="0" max="31" step="1" value="${c.wd}" data-idx="${i}" data-field="wd"${dis}></td>` +
       `<td><input type="number" min="0" max="31" step="1" value="${otDays}" data-idx="${i}" data-field="otDays"${dis}></td>` +
       `<td><input type="number" min="0" step="0.1" value="${c.otNormal}" data-idx="${i}" data-field="otNormal"${dis}></td>` +
@@ -3576,12 +3578,13 @@ function renderStepConfigs() {
         inner += `</tbody></table>` +
           `<button class="btn-small" data-pm-clear="${i}" type="button" style="margin-top:6px;">${t('step_pm_clear')}</button>`;
       }
-      html += `<tr class="pm-editor-row"><td colspan="8">${inner}</td></tr>`;
+      html += `<tr class="pm-editor-row"><td colspan="9">${inner}</td></tr>`;
     }
   });
   // Final Max Cap row — every day worked; WD auto from month, only OT editable.
   html += `<tr class="maxcap-row">` +
     `<td>${t('step_maxcap')}</td>` +
+    `<td><span class="step-auto">—</span></td>` +
     `<td><span class="step-auto">${t('auto')}</span></td>` +
     `<td><span class="step-auto">${t('auto')}</span></td>` +
     `<td><input type="number" min="0" step="0.1" value="${state.maxCapOT}" data-maxcap="1"${dis}></td>` +
@@ -3595,9 +3598,9 @@ function renderStepConfigs() {
   if (ro) return;
   box.querySelectorAll('input[data-field]').forEach(inp => {
     inp.addEventListener('change', () => {
-      let v = parseFloat(inp.value);
-      if (isNaN(v) || v < 0) v = 0;
-      state.stepConfigs[+inp.dataset.idx][inp.dataset.field] = v;
+      const cfg = state.stepConfigs[+inp.dataset.idx];
+      if (inp.dataset.field === 'name') { cfg.name = inp.value.trim(); }
+      else { let v = parseFloat(inp.value); if (isNaN(v) || v < 0) v = 0; cfg[inp.dataset.field] = v; }
       onStepConfigsChanged(false);
     });
   });
@@ -3688,7 +3691,7 @@ function renderWeekStepConfigs() {
   const setting = readSettings();
   const ro = state.isSnapshot; const dis = ro ? ' disabled' : '';
   let html = `<table class="step-config-table"><thead><tr>` +
-    `<th>#</th><th>${t('step_wd')}</th><th>${t('step_ot_days')}</th><th>${t('step_ot_normal')}</th><th>${t('step_hd')}</th><th>${t('step_ot_holiday')}</th>` +
+    `<th>#</th><th>${t('daycap_name')}</th><th>${t('step_wd')}</th><th>${t('step_ot_days')}</th><th>${t('step_ot_normal')}</th><th>${t('step_hd')}</th><th>${t('step_ot_holiday')}</th>` +
     `<th title="${t('daycap_br_full')}">${t('daycap_br')}</th><th title="${t('daycap_fixed_full')}">${t('daycap_fixed')}</th>` +
     `<th>${t('step_threshold')}</th><th></th></tr></thead><tbody>`;
   state.weekStepConfigs.forEach((c, i) => {
@@ -3698,6 +3701,7 @@ function renderWeekStepConfigs() {
     const nd = fixed ? ' disabled title="' + t('daycap_fixed_note') + '"' : '';
     html += `<tr>` +
       `<td>${i + 1}</td>` +
+      `<td><input type="text" value="${(c.name || '').replace(/"/g, '&quot;')}" data-wk-idx="${i}" data-wk-field="name"${dis} style="width:96px" placeholder="—"></td>` +
       `<td><input type="number" min="0" max="7" step="1" value="${c.wd}" data-wk-idx="${i}" data-wk-field="wd"${dis}></td>` +
       `<td><input type="number" min="0" max="7" step="1" value="${otDays}" data-wk-idx="${i}" data-wk-field="otDays"${dis}${nd}></td>` +
       `<td><input type="number" min="0" step="0.1" value="${c.otNormal}" data-wk-idx="${i}" data-wk-field="otNormal"${dis}${nd}></td>` +
@@ -3714,7 +3718,8 @@ function renderWeekStepConfigs() {
   if (ro) return;
   box.querySelectorAll('input[data-wk-field]').forEach(inp => inp.addEventListener('change', () => {
     const c = state.weekStepConfigs[+inp.dataset.wkIdx]; const f = inp.dataset.wkField;
-    if (f === 'hpd') { const raw = inp.value.trim(); if (raw === '') delete c.hpd; else { let v = parseFloat(raw); if (isNaN(v) || v < 0) v = 0; c.hpd = v; } }
+    if (f === 'name') { c.name = inp.value.trim(); }
+    else if (f === 'hpd') { const raw = inp.value.trim(); if (raw === '') delete c.hpd; else { let v = parseFloat(raw); if (isNaN(v) || v < 0) v = 0; c.hpd = v; } }
     else { let v = parseFloat(inp.value); if (isNaN(v) || v < 0) v = 0; c[f] = v; }
     onSubStepConfigsChanged();
   }));
