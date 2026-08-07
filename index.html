@@ -1146,7 +1146,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.16.1';
+const APP_VERSION = '3.16.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2651,10 +2651,19 @@ function populateRangeSelectors() {
     const prevFrom = fromS.value, prevTo = toS.value;
     fromS.innerHTML = opts;
     toS.innerHTML = opts;
-    // Default the start to the current month when present, so the chart isn't dragged
-    // back across many past months; keep the user's prior pick if still valid.
-    fromS.value = months.includes(prevFrom) ? prevFrom : (findCurrentMonthKey(months) || months[0]);
-    toS.value = months.includes(prevTo) ? prevTo : months[months.length - 1];
+    // A range saved in a snapshot wins once (so the snapshot reproduces the exact visible window,
+    // regardless of what "current month/week" resolves to when it's re-opened).
+    const pr = state.pendingRange;
+    if (pr && months.includes(pr.from)) {
+      fromS.value = pr.from;
+      toS.value = months.includes(pr.to) ? pr.to : months[months.length - 1];
+      state.pendingRange = null;
+    } else {
+      // Default the start to the current month when present, so the chart isn't dragged
+      // back across many past months; keep the user's prior pick if still valid.
+      fromS.value = months.includes(prevFrom) ? prevFrom : (findCurrentMonthKey(months) || months[0]);
+      toS.value = months.includes(prevTo) ? prevTo : months[months.length - 1];
+    }
     fromS.dataset.sig = sig;
     toS.dataset.sig = sig;
   }
@@ -5379,6 +5388,7 @@ function buildSnapshotPayload(authorName) {
     partColorOverrides: state.partColorOverrides,
     patternStyles: state.patternStyles,
     granularity: state.granularity,
+    range: { from: ($('rangeFrom') || {}).value || '', to: ($('rangeTo') || {}).value || '' },
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
     labelOverrides: state.labelOverrides,
@@ -5536,6 +5546,7 @@ function loadSnapshotIfPresent() {
     if (data.patternStyles && typeof data.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, data.patternStyles);
     if (data.granularity === 'week' || data.granularity === 'day' || data.granularity === 'month') state.granularity = data.granularity;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
+    if (data.range && data.range.from) state.pendingRange = { from: data.range.from, to: data.range.to };  // reproduce the exact visible window
     state.monthOverrides = data.monthOverrides || {};
     state.labelOverrides = data.labelOverrides || {};
     state.ctOverrides = Array.isArray(data.ctOverrides) ? data.ctOverrides : [];

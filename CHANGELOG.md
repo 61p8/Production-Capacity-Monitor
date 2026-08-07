@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.16.2] — 2026-08-06
+
+### Fixed
+- **Snapshot now reproduces the exact visible date range.** The chart's From/To range wasn't saved in
+  the snapshot, so on re-open it fell back to the default (start = current month/week, else the first
+  column). If the snapshot was opened on a different day than it was made, that default shifted and an
+  earlier period the live view had hidden (e.g. an extra `W31` from a weekend date) reappeared. The
+  snapshot now stores the range and restores it verbatim, regardless of the viewer's current date.
+
 ## [3.16.1] — 2026-08-06
 
 ### Added
