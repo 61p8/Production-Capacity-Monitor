@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.18.0] — 2026-08-08
+
+### Added
+- **Per-month week numbering.** In Week view a new **Week #** toggle (shown only in Week view) switches
+  the week labels between **ISO** (`W31`, `W32`… — the calendar's ISO week number, the default) and
+  **Per month** (`W1`, `W2`… — reset within each month). In per-month mode a week is assigned to the
+  month of its **end (Sunday)** and numbered `ceil(Sunday_day / 7)`, so e.g. Aug 2026's five weeks read
+  `W1–W5` (all grouped under *Aug*) instead of `W31–W35`, and the Aug 31 → Sep 6 week becomes Sep `W1`.
+  The choice is remembered (localStorage + snapshot) and affects both the leaf label and the month group
+  header on the chart. Month/Day views are unchanged.
+
 ## [3.17.2] — 2026-08-07
 
 ### Fixed

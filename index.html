@@ -637,6 +637,13 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <option value="week" data-i18n="gran_week">Week</option>
         <option value="day" data-i18n="gran_day">Day</option>
       </select>
+      <span id="weekNumWrap" style="display:none;align-items:center;gap:6px">
+        <span style="font-weight:500" data-i18n="week_numbering">Week #:</span>
+        <select id="weekNumbering" title="">
+          <option value="iso" data-i18n="week_num_iso">ISO (W31)</option>
+          <option value="month" data-i18n="week_num_month">Per month (W1)</option>
+        </select>
+      </span>
       <span style="font-weight:500" data-i18n="y_unit">Y-axis:</span>
       <select id="yUnit">
         <option value="hours" data-i18n="y_unit_hours">Hours</option>
@@ -914,6 +921,7 @@ const I18N = {
     y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
     over_pct:'Over %:', thresh_colors_head:'Threshold line colours',
     granularity:'Period:', gran_month:'Month', gran_week:'Week', gran_day:'Day', gran_need_dates:'Upload a Raw_Data sheet with real dates to enable Week/Day',
+    week_numbering:'Week #:', week_num_iso:'ISO (W31)', week_num_month:'Per month (W1)',
     tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
     colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
     pat_styles_head:'Balanced / buffer style', pat_balanced:'Balanced (moved)', pat_buffer:'Fluctuation buffer',
@@ -1018,6 +1026,7 @@ const I18N = {
     y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
     over_pct:'เกินเส้น %:', thresh_colors_head:'สีเส้น Threshold',
     granularity:'ช่วงเวลา:', gran_month:'รายเดือน', gran_week:'รายสัปดาห์', gran_day:'รายวัน', gran_need_dates:'อัปโหลดชีต Raw_Data ที่มีวันที่จริง เพื่อเปิดใช้รายสัปดาห์/รายวัน',
+    week_numbering:'เลขสัปดาห์:', week_num_iso:'ISO (W31)', week_num_month:'ตามเดือน (W1)',
     tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
     colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
     pat_styles_head:'ลายของ Balanced / Buffer', pat_balanced:'Balanced (ย้าย)', pat_buffer:'Buffer ความผันผวน',
@@ -1122,6 +1131,7 @@ const I18N = {
     y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
     over_pct:'超過 %:', thresh_colors_head:'しきい値線の色',
     granularity:'期間:', gran_month:'月', gran_week:'週', gran_day:'日', gran_need_dates:'週/日を有効にするには実日付付きの Raw_Data シートをアップロード',
+    week_numbering:'週番号:', week_num_iso:'ISO (W31)', week_num_month:'月ごと (W1)',
     tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
     colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
     pat_styles_head:'Balanced / バッファの柄', pat_balanced:'Balanced (移動)', pat_buffer:'変動バッファ',
@@ -1153,7 +1163,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.17.2';
+const APP_VERSION = '3.18.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1257,6 +1267,7 @@ const state = {
   viewMode: 'single',    // 'single' | 'compare' | 'diff'
   yUnit: 'hours',        // 'hours' | 'pcs' — Results chart Y-axis unit
   granularity: 'month',  // 'month' | 'week' | 'day' — time bucket for dated demand (see rebucketDataset)
+  weekNumbering: 'iso',  // 'iso' (W31 = ISO week) | 'month' (W1..W5 within the week's end month) — week-view label style only
   // Which fields the bar tooltip shows (Results chart, Stacked-by-Part). Configurable in the
   // "Tooltip fields" menu on the chart toolbar. Persisted (localStorage + snapshot).
   tooltipFields: { title:true, dataset:true, part:true, model:true, value:true, ct:true, balanced:true, buffer:true },
@@ -2016,6 +2027,16 @@ function isoWeekStart(key) {
   const monday = new Date(jan4); monday.setDate(jan4.getDate() - jan4Day + (week - 1) * 7);
   return monday;
 }
+function isoWeekEnd(key) { const s = isoWeekStart(key); if (!s) return null; const e = new Date(s); e.setDate(s.getDate() + 6); return e; }
+// Week-view label style (state.weekNumbering). 'iso' keeps the ISO week number (W31). 'month' numbers
+// weeks W1..W5/6 within the month of the week's END (Sunday): Sundays are 7 days apart, so the Sunday's
+// week-of-month = ceil(dayOfMonth / 7). The week is anchored to (grouped under) that same end month, so
+// e.g. the Jul 27–Aug 2 week reads "W1" under "Aug" when its data is August.
+function weekAnchorDate(key) { return state.weekNumbering === 'month' ? isoWeekEnd(key) : isoWeekStart(key); }
+function weekLeafLabel(key) {
+  if (state.weekNumbering === 'month') { const e = isoWeekEnd(key); return e ? 'W' + Math.ceil(e.getDate() / 7) : key; }
+  const m = String(key).match(/-W(\d{2})$/); return m ? 'W' + m[1] : key;
+}
 // First calendar day of a period (used for cross-granularity ordering & grouping). null for FY.
 function keyStartDate(key) {
   const t = periodType(key);
@@ -2090,7 +2111,7 @@ function getEffectiveCT(partNo, process, lineName, monthLabel, baseCT) {
 function getMonthOnly(label, asNumber) {
   const t = periodType(label);
   if (t === 'day') { const d = dateFromIso(label); return asNumber ? String(d.getDate()) : String(d.getDate()); }  // day-of-month; month tier sits above
-  if (t === 'week') { const m = label.match(/-W(\d{2})$/); return m ? 'W' + m[1] : label; }
+  if (t === 'week') return weekLeafLabel(label);
   const parsed = parseMonthYearFromLabel(getDisplayLabel(label)) || parseMonthYearFromLabel(label);
   if (!parsed) return getDisplayLabel(label);
   if (asNumber) return String(parsed.monthIdx + 1);
@@ -2218,7 +2239,7 @@ const xHierarchyPlugin = {
 // week/day view (so days/weeks stay anchored to their month), and just the year for FY columns.
 function xGroupLabel(key) {
   const t = periodType(key);
-  if (t !== 'month') { const d = keyStartDate(key); return d ? `${PERIOD_MON[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}` : '?'; }
+  if (t !== 'month') { const d = t === 'week' ? weekAnchorDate(key) : keyStartDate(key); return d ? `${PERIOD_MON[d.getMonth()]} '${String(d.getFullYear()).slice(-2)}` : '?'; }
   const parsed = parseMonthYearFromLabel(getDisplayLabel(key)) || parseMonthYearFromLabel(key)
     || parseFYLabel(getDisplayLabel(key)) || parseFYLabel(key);
   return parsed ? String(parsed.year) : '?';
@@ -4801,6 +4822,9 @@ function syncGranularityControl() {
   for (const opt of sel.options) if (opt.value !== 'month') opt.disabled = !has;
   sel.title = has ? '' : t('gran_need_dates');
   if (!has && state.granularity !== 'month') { state.granularity = 'month'; sel.value = 'month'; }
+  const wrap = $('weekNumWrap'), wsel = $('weekNumbering');
+  if (wrap) wrap.style.display = getGranularity() === 'week' ? 'inline-flex' : 'none';
+  if (wsel) wsel.value = state.weekNumbering === 'month' ? 'month' : 'iso';
 }
 
 // ===== Text Boxes (PPT-style — Comment redesign) =====
@@ -5451,6 +5475,7 @@ function loadSavedDatasets() {
     if (d.patternStyles && typeof d.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, d.patternStyles);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (d.granularity === 'week' || d.granularity === 'day' || d.granularity === 'month') state.granularity = d.granularity;
+    if (d.weekNumbering === 'month' || d.weekNumbering === 'iso') state.weekNumbering = d.weekNumbering;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     renderDatasetList();
@@ -5517,6 +5542,7 @@ function buildSnapshotPayload(authorName) {
     threshColors: state.threshColors,
     patternStyles: state.patternStyles,
     granularity: state.granularity,
+    weekNumbering: state.weekNumbering,
     range: { from: ($('rangeFrom') || {}).value || '', to: ($('rangeTo') || {}).value || '' },
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
@@ -5675,6 +5701,7 @@ function loadSnapshotIfPresent() {
     if (data.threshColors && typeof data.threshColors === 'object') state.threshColors = Object.assign({}, data.threshColors);
     if (data.patternStyles && typeof data.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, data.patternStyles);
     if (data.granularity === 'week' || data.granularity === 'day' || data.granularity === 'month') state.granularity = data.granularity;
+    if (data.weekNumbering === 'month' || data.weekNumbering === 'iso') state.weekNumbering = data.weekNumbering;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     if (data.range && data.range.from) state.pendingRange = { from: data.range.from, to: data.range.to };  // reproduce the exact visible window
     state.monthOverrides = data.monthOverrides || {};
@@ -6049,6 +6076,11 @@ function setupEvents() {
   };
 
   if ($('granularity')) $('granularity').onchange = () => setGranularity($('granularity').value);
+  if ($('weekNumbering')) $('weekNumbering').onchange = () => {
+    state.weekNumbering = $('weekNumbering').value === 'month' ? 'month' : 'iso';
+    if (!state.isSnapshot) saveStorage({ weekNumbering: state.weekNumbering });
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderTableArea(); renderChart(); renderChartLegendMini(); }
+  };
   if ($('overThresh')) $('overThresh').onchange = () => { state.overThreshKey = $('overThresh').value; renderChart(); };
 
   ['rangeFrom','rangeTo'].forEach(id => {
