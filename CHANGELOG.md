@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.0] — 2026-08-08
+
+### Changed
+- **Threshold lines now fill the whole bar.** In *Stacked by Part* view each line-group's threshold
+  extended to cover its first/last bars — Chart.js draws the line only between the outer bar *centres*,
+  leaving the outer half-bars bare. A small overlay (`threshExtrasPlugin`) now caps each group out to
+  the bar edges (respecting the *Join across lines* setting), so the line reads as a proper cap over
+  every bar.
+- **Max Cap is month-view only.** `periodHasMaxCap()` now returns true only in Month view — Week and
+  Day no longer show a Max Cap line or its toggle (Max Cap is a monthly calendar-day capacity, so it
+  had no meaning per week/day).
+
+### Added
+- **Show threshold names (toggle).** A **Show names** checkbox in the chart toolbar draws each
+  threshold line's label (its step name / value) at the line's right end, colour-matched. Persisted
+  (localStorage + snapshot). byPart view.
+
 ## [4.1.0] — 2026-08-08
 
 ### Added

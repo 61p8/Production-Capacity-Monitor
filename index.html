@@ -696,8 +696,9 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <span id="stepToggles" style="display:contents"></span>
         <label><input type="checkbox" id="showMaxCap" checked> Max Cap</label>
       </span>
-      <span class="tb-group">
+      <span class="tb-group" id="threshOptsGroup">
         <label title="" id="threshConnectLbl"><input type="checkbox" id="threshConnect"> <span data-i18n="thresh_connect">Join across lines</span></label>
+        <label><input type="checkbox" id="threshLabels"> <span data-i18n="thresh_labels">Show names</span></label>
       </span>
       <span style="flex:1"></span>
       <span class="tb-group">
@@ -897,7 +898,7 @@ const I18N = {
     tl_both:'↔ both', tl_back:'← build ahead', tl_fwd:'→ delay', btn_time_level:'Level →', btn_time_level_off:'Clear level',
     tl_in_week:'within Week', tl_in_month:'within Month', tl_active:'Time level on', tl_no_container:'No container to level within in this period.',
     must_submit_first:'Click Submit first.', tl_done:'Time-leveled {c}.',
-    threshold_lines:'Threshold lines:', thresh_connect:'Join across lines', view_label:'View:', view_single:'Single', view_compare:'Compare', view_diff:'Diff',
+    threshold_lines:'Threshold lines:', thresh_connect:'Join across lines', thresh_labels:'Show names', view_label:'View:', view_single:'Single', view_compare:'Compare', view_diff:'Diff',
     dataset_label:'Dataset:', chart_mode:'Chart:', chart_by_part:'Stacked by Part', chart_by_line:'By Line (totals)', month_range:'Range:',
     line_filter_show_all:'Show all', line_filter_hide_all:'Hide all',
     no_data_in_proc:'process "{proc}" has no matched parts',
@@ -1006,7 +1007,7 @@ const I18N = {
     tl_both:'↔ ทั้งสองทาง', tl_back:'← ทำล่วงหน้า', tl_fwd:'→ เลื่อนออก', btn_time_level:'เกลี่ย →', btn_time_level_off:'ยกเลิกเกลี่ย',
     tl_in_week:'ภายในสัปดาห์', tl_in_month:'ภายในเดือน', tl_active:'เปิดเกลี่ยเวลาอยู่', tl_no_container:'period นี้ไม่มีกล่องให้เกลี่ย',
     must_submit_first:'กด Submit ก่อน', tl_done:'เกลี่ยเวลา{c}แล้ว',
-    threshold_lines:'เส้นเกณฑ์:', thresh_connect:'เชื่อมเส้นข้ามไลน์', view_label:'มุมมอง:', view_single:'เดี่ยว', view_compare:'เปรียบเทียบ', view_diff:'ส่วนต่าง',
+    threshold_lines:'เส้นเกณฑ์:', thresh_connect:'เชื่อมเส้นข้ามไลน์', thresh_labels:'โชว์ชื่อเส้น', view_label:'มุมมอง:', view_single:'เดี่ยว', view_compare:'เปรียบเทียบ', view_diff:'ส่วนต่าง',
     dataset_label:'Dataset:', chart_mode:'กราฟ:', chart_by_part:'แยกสีตาม Part', chart_by_line:'รวมต่อไลน์', month_range:'ช่วงเดือน:',
     line_filter_show_all:'เลือกทั้งหมด', line_filter_hide_all:'ไม่เลือก',
     no_data_in_proc:'process "{proc}" ไม่มี part ที่ matched',
@@ -1115,7 +1116,7 @@ const I18N = {
     tl_both:'↔ 両方向', tl_back:'← 前倒し', tl_fwd:'→ 後ろ倒し', btn_time_level:'平準化 →', btn_time_level_off:'平準化解除',
     tl_in_week:'週内', tl_in_month:'月内', tl_active:'時間平準化 ON', tl_no_container:'この期間には平準化する枠がありません',
     must_submit_first:'先に送信を押してください', tl_done:'{c}で時間平準化しました',
-    threshold_lines:'基準ライン:', thresh_connect:'ライン間をつなぐ', view_label:'表示:', view_single:'シングル', view_compare:'比較', view_diff:'差分',
+    threshold_lines:'基準ライン:', thresh_connect:'ライン間をつなぐ', thresh_labels:'名称を表示', view_label:'表示:', view_single:'シングル', view_compare:'比較', view_diff:'差分',
     dataset_label:'データセット:', chart_mode:'グラフ:', chart_by_part:'パーツ別積み上げ', chart_by_line:'ライン別合計', month_range:'範囲:',
     line_filter_show_all:'全選択', line_filter_hide_all:'全解除',
     no_data_in_proc:'プロセス "{proc}" 一致なし',
@@ -1206,7 +1207,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.1.0';
+const APP_VERSION = '4.2.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1283,7 +1284,7 @@ function toWeekMonthShape(c) {
   return { wd: days, otDays: c.ot ? days : 0, otNormal: c.ot || 0, hdWorked: 0, otHoliday: 0, br: c.br || 0 };
 }
 // Day view drops the Max Cap line (per-day Max Cap ≈ the OT line, so it's redundant); week & month keep it.
-function periodHasMaxCap() { return getGranularity() !== 'day'; }
+function periodHasMaxCap() { return getGranularity() === 'month'; }  // Max Cap = monthly calendar-day capacity → month view only
 // Which step set drives the CURRENT view: monthly steps in month view, day/week lines otherwise.
 function activeStepConfigs() { const g = getGranularity(); return g === 'month' ? state.stepConfigs : g === 'week' ? state.weekStepConfigs : state.dayStepConfigs; }
 
@@ -1312,6 +1313,7 @@ const state = {
   granularity: 'month',  // 'month' | 'week' | 'day' — time bucket for dated demand (see rebucketDataset)
   weekNumbering: 'iso',  // 'iso' (W31 = ISO week) | 'month' (W1..W5 within the week's end month) — week-view label style only
   threshConnect: false,  // byPart chart: join threshold lines across line groups (default off = a separate segment per line)
+  threshLabels: false,   // byPart chart: draw each threshold line's name at its right end
   // Which fields the bar tooltip shows (Results chart, Stacked-by-Part). Configurable in the
   // "Tooltip fields" menu on the chart toolbar. Persisted (localStorage + snapshot).
   tooltipFields: { title:true, dataset:true, part:true, model:true, value:true, ct:true, balanced:true, buffer:true },
@@ -2193,6 +2195,61 @@ const overPctPlugin = {
       ctx.fillText('+' + it.pct + '%', px, py - 4);
     }
     ctx.restore();
+  }
+};
+// byPart threshold extras: (1) extend each line-group's threshold to fill the outer bars (Chart.js
+// stops the line at the first/last bar CENTRE, leaving the outer half-bars bare), and (2) optionally
+// draw the threshold's name at the right end. Reads the existing `_isTh` line datasets so legend,
+// tooltip and per-line toggles keep working; only the visual caps/labels are added here.
+const threshExtrasPlugin = {
+  id: 'threshExtras',
+  afterDatasetsDraw(chart) {
+    const o = chart.options.plugins && chart.options.plugins.threshExtras;
+    if (!o) return;
+    const nMonths = o.nMonths, join = o.join, showLabels = o.showLabels;
+    const xS = chart.scales.x, yS = chart.scales.y, ctx = chart.ctx;
+    if (!xS || !yS || !nMonths) return;
+    const count = chart.data.labels.length;
+    const half = (xS.right - xS.left) / count / 2;
+    const nGroups = Math.max(1, Math.round(count / nMonths));
+    chart.data.datasets.forEach((dsx, di) => {
+      if (!dsx._isTh) return;
+      const meta = chart.getDatasetMeta(di);
+      if (meta.hidden) return;
+      ctx.save();
+      ctx.strokeStyle = dsx.borderColor; ctx.lineWidth = dsx.borderWidth || 2;
+      ctx.setLineDash(dsx.borderDash || []);
+      for (let g = 0; g < nGroups; g++) {
+        const s = g * nMonths, e = s + nMonths - 1;
+        if (e >= count) break;
+        if ((!join || g === 0) && dsx.data[s] != null) {           // fill the group's first bar
+          const y = yS.getPixelForValue(dsx.data[s]), xc = xS.getPixelForValue(s);
+          ctx.beginPath(); ctx.moveTo(xc - half, y); ctx.lineTo(xc, y); ctx.stroke();
+        }
+        if ((!join || g === nGroups - 1) && dsx.data[e] != null) {  // fill the group's last bar
+          const y = yS.getPixelForValue(dsx.data[e]), xc = xS.getPixelForValue(e);
+          ctx.beginPath(); ctx.moveTo(xc, y); ctx.lineTo(xc + half, y); ctx.stroke();
+        }
+      }
+      ctx.restore();
+      if (showLabels) {
+        const e = Math.min(count - 1, (nGroups - 1) * nMonths + nMonths - 1);
+        if (dsx.data[e] != null) {
+          const y = yS.getPixelForValue(dsx.data[e]);
+          ctx.save();
+          ctx.setLineDash([]);
+          ctx.font = '600 10px -apple-system, Segoe UI, sans-serif';
+          ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          const txt = dsx.label, tw = ctx.measureText(txt).width;
+          const rx = xS.getPixelForValue(e) + half - 2;
+          ctx.fillRect(rx - tw - 2, y - 13, tw + 4, 12);
+          ctx.fillStyle = dsx.borderColor;
+          ctx.fillText(txt, rx, y - 2);
+          ctx.restore();
+        }
+      }
+    });
   }
 };
 const xHierarchyPlugin = {
@@ -3729,9 +3786,10 @@ function renderStepToggles() {
   // Day view has no Max Cap line — hide its toolbar toggle there.
   const mcCb = $('showMaxCap'); const mcLbl = mcCb && mcCb.closest('label');
   if (mcLbl) mcLbl.style.display = periodHasMaxCap() ? '' : 'none';
-  // "Join across lines" is a byPart-only concept — hide it in By-Line mode; reflect current state.
+  // "Join across lines" / "Show names" are byPart-only — hide the group in By-Line mode; reflect state.
   const tc = $('threshConnect'); if (tc) tc.checked = !!state.threshConnect;
-  const tcLbl = $('threshConnectLbl'); if (tcLbl) tcLbl.parentElement.style.display = ($('chartMode') && $('chartMode').value === 'byLine') ? 'none' : '';
+  const tl = $('threshLabels'); if (tl) tl.checked = !!state.threshLabels;
+  const tg = $('threshOptsGroup'); if (tg) tg.style.display = ($('chartMode') && $('chartMode').value === 'byLine') ? 'none' : '';
   renderOverThreshOptions();
 }
 // Populate the "Over %" dropdown with the active thresholds (steps + Max Cap).
@@ -4144,7 +4202,7 @@ function renderChartSingle() {
 
     const overCfg = computeOverPct(data, visibleLines, months, setting);
     state.chart = new Chart($('resultChart'), {
-      plugins: [xHierarchyPlugin, overPctPlugin],
+      plugins: [xHierarchyPlugin, overPctPlugin, threshExtrasPlugin],
       data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -4156,6 +4214,7 @@ function renderChartSingle() {
         },
         plugins: {
           overPct: overCfg,
+          threshExtras: { nMonths: months.length, join: state.threshConnect, showLabels: state.threshLabels },
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
           legend: { display: partList.length <= 25, position: 'top', labels: { boxWidth: 10, font: { size: 10 }, filter: (li, d) => !d.datasets[li.datasetIndex]?._isBuffer } },
           tooltip: { callbacks: {
@@ -4291,7 +4350,7 @@ function renderChartCompare() {
     }
 
     state.chart = new Chart($('resultChart'), {
-      plugins: [xHierarchyPlugin],
+      plugins: [xHierarchyPlugin, threshExtrasPlugin],
       data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -4302,6 +4361,7 @@ function renderChartCompare() {
           y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
         },
         plugins: {
+          threshExtras: { nMonths: months.length, join: state.threshConnect, showLabels: state.threshLabels },
           xHierarchy: { lineGroups: xHier.lineGroups, yearGroups: xHier.yearGroups, separators: xHier.separators, axisLabelHeight: 18 },
           legend: { display: false },
           tooltip: {
@@ -5624,6 +5684,7 @@ function loadSavedDatasets() {
     if (d.granularity === 'week' || d.granularity === 'day' || d.granularity === 'month') state.granularity = d.granularity;
     if (d.weekNumbering === 'month' || d.weekNumbering === 'iso') state.weekNumbering = d.weekNumbering;
     if (typeof d.threshConnect === 'boolean') state.threshConnect = d.threshConnect;
+    if (typeof d.threshLabels === 'boolean') state.threshLabels = d.threshLabels;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     renderDatasetList();
@@ -5693,6 +5754,7 @@ function buildSnapshotPayload(authorName) {
     granularity: state.granularity,
     weekNumbering: state.weekNumbering,
     threshConnect: state.threshConnect,
+    threshLabels: state.threshLabels,
     range: { from: ($('rangeFrom') || {}).value || '', to: ($('rangeTo') || {}).value || '' },
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
@@ -5854,6 +5916,7 @@ function loadSnapshotIfPresent() {
     if (data.granularity === 'week' || data.granularity === 'day' || data.granularity === 'month') state.granularity = data.granularity;
     if (data.weekNumbering === 'month' || data.weekNumbering === 'iso') state.weekNumbering = data.weekNumbering;
     if (typeof data.threshConnect === 'boolean') state.threshConnect = data.threshConnect;
+    if (typeof data.threshLabels === 'boolean') state.threshLabels = data.threshLabels;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     if (data.range && data.range.from) state.pendingRange = { from: data.range.from, to: data.range.to };  // reproduce the exact visible window
     state.monthOverrides = data.monthOverrides || {};
@@ -6243,6 +6306,11 @@ function setupEvents() {
   if ($('threshConnect')) $('threshConnect').onchange = () => {
     state.threshConnect = $('threshConnect').checked;
     if (!state.isSnapshot) saveStorage({ threshConnect: state.threshConnect });
+    if (state.datasets.some(d => d.resultsHistory.length > 0)) renderChart();
+  };
+  if ($('threshLabels')) $('threshLabels').onchange = () => {
+    state.threshLabels = $('threshLabels').checked;
+    if (!state.isSnapshot) saveStorage({ threshLabels: state.threshLabels });
     if (state.datasets.some(d => d.resultsHistory.length > 0)) renderChart();
   };
   $('yUnit').onchange = () => {
