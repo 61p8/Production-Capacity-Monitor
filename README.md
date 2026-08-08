@@ -12,7 +12,9 @@ A single-file HTML application for production capacity planning. Compares monthl
 - **Multi-process support** — define any number of production processes via Excel sheet names (`Matrix - Lathe`, `Matrix - Rolling`, etc.)
 - **Multi-dataset comparison** — load up to 5 monthly requirement datasets and compare side-by-side
 - **Smart Balance algorithm** — automatically redistributes load to alternate lines (priority 2, 3, ...) when primary lines exceed capacity targets
-- **Step-based progression** — Step 0 (initial) → configurable OT-driven targets → MaxCap, with chain-push depth up to 5. Add/remove steps and tune each target from working-day/holiday OT in Settings.
+- **Time-Level balancing** — in Week/Day view, level a spike across *periods on the same line* within a container (Day → within Week/Month, Week → within Month), choosing direction (build ahead / delay / both). Volume is redistributed in time, never created or destroyed
+- **Submit-and-balance workflow** — upload → **Submit** (initial allocation), then apply balancing from explicit toolbar buttons: a *Line balance* target dropdown and the *Time level* controls
+- **Step-based targets** — Step 0 (initial) → configurable OT-driven targets → MaxCap, with chain-push depth up to 5. Add/remove steps and tune each target from working-day/holiday OT in Settings.
 - **Month / Week / Day views** — a **Period** toggle re-buckets dated demand and recomputes every step at that granularity (chart, table, thresholds, Max Cap). Needs a `Raw_Data` sheet with real dates (see below); month-label-only files stay monthly. In Week view a **Week #** toggle switches labels between ISO week numbers (`W31`) and per-month numbering (`W1`, `W2`… reset each month, by the week's end date)
 - **Hours ⇄ Pieces Y-axis** — flip the Results chart between load-hours and pieces/month; threshold lines convert via the volume-weighted average cycle time
 - **Configurable bar tooltip** — pick which fields the Results chart tooltip shows (part, model, value, C/T, balanced-from, fluctuation buffer, …) from a toolbar menu; the choice is remembered and applies inside snapshots too

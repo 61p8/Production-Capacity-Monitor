@@ -587,7 +587,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
     </div>
 
     <div class="btn-row">
-      <button class="btn" id="calculateBtn" data-i18n="btn_calculate">Calculate (Step 0 — initial)</button>
+      <button class="btn" id="calculateBtn" data-i18n="btn_submit">Submit</button>
       <button class="btn-secondary btn" id="saveSettingsBtn" data-i18n="btn_save_settings">Save settings</button>
     </div>
   </div>
@@ -701,8 +701,24 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
       <canvas id="resultChart"></canvas>
     </div>
 
-    <div class="btn-row" id="balanceRow">
-      <button class="btn-warn btn" id="balanceBtn" data-i18n="btn_balance">Balance →</button>
+    <div class="btn-row" id="balanceRow" style="flex-wrap:wrap; gap:10px; align-items:center;">
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <span style="font-weight:600; color:#5F5E5A;" data-i18n="bal_line">Line balance</span>
+        <select id="lineBalTarget" title=""></select>
+        <button class="btn-warn btn" id="lineBalanceBtn" data-i18n="btn_line_balance">Balance lines →</button>
+      </span>
+      <span id="timeLevelWrap" style="display:none; align-items:center; gap:6px;">
+        <span style="width:1px; height:22px; background:#E5E4DF;"></span>
+        <span style="font-weight:600; color:#5F5E5A;" data-i18n="bal_time">Time level</span>
+        <select id="tlContainer" title=""></select>
+        <select id="tlDirection" title="">
+          <option value="both" data-i18n="tl_both">↔ both</option>
+          <option value="back" data-i18n="tl_back">← build ahead</option>
+          <option value="fwd" data-i18n="tl_fwd">→ delay</option>
+        </select>
+        <button class="btn-warn btn" id="timeLevelBtn" data-i18n="btn_time_level">Level →</button>
+        <button class="btn-secondary btn" id="timeLevelOffBtn" data-i18n="btn_time_level_off" style="display:none;">Clear level</button>
+      </span>
       <span class="balance-info" id="balanceInfo"></span>
     </div>
   </div>
@@ -862,6 +878,10 @@ const I18N = {
     month_help:'Edit each month label directly • WD = Working Day, HD = Holiday • Empty = use default above',
     upload_first:'📅 Upload Monthly Req. first → fields will appear',
     btn_calculate:'Calculate (Step 0 — initial)', btn_save_settings:'Save settings', btn_balance:'Balance →',
+    btn_submit:'Submit', bal_line:'Line balance', bal_time:'Time level', btn_line_balance:'Balance lines →',
+    tl_both:'↔ both', tl_back:'← build ahead', tl_fwd:'→ delay', btn_time_level:'Level →', btn_time_level_off:'Clear level',
+    tl_in_week:'within Week', tl_in_month:'within Month', tl_active:'Time level on', tl_no_container:'No container to level within in this period.',
+    must_submit_first:'Click Submit first.', tl_done:'Time-leveled {c}.',
     threshold_lines:'Threshold lines:', view_label:'View:', view_single:'Single', view_compare:'Compare', view_diff:'Diff',
     dataset_label:'Dataset:', chart_mode:'Chart:', chart_by_part:'Stacked by Part', chart_by_line:'By Line (totals)', month_range:'Range:',
     line_filter_show_all:'Show all', line_filter_hide_all:'Hide all',
@@ -967,6 +987,10 @@ const I18N = {
     month_help:'แก้ label ของแต่ละเดือนได้โดยตรง • WD = วันทำงาน, HD = วันหยุด • ปล่อยว่าง = ใช้ค่า default ด้านบน',
     upload_first:'📅 อัปโหลด Monthly Req. ก่อน → จะแสดงช่องให้กรอก',
     btn_calculate:'คำนวณ (Step 0 — เริ่มต้น)', btn_save_settings:'บันทึกค่าตั้งต้น', btn_balance:'Balance →',
+    btn_submit:'Submit', bal_line:'บาลานซ์ไลน์', bal_time:'เกลี่ยเวลา', btn_line_balance:'บาลานซ์ไลน์ →',
+    tl_both:'↔ ทั้งสองทาง', tl_back:'← ทำล่วงหน้า', tl_fwd:'→ เลื่อนออก', btn_time_level:'เกลี่ย →', btn_time_level_off:'ยกเลิกเกลี่ย',
+    tl_in_week:'ภายในสัปดาห์', tl_in_month:'ภายในเดือน', tl_active:'เปิดเกลี่ยเวลาอยู่', tl_no_container:'period นี้ไม่มีกล่องให้เกลี่ย',
+    must_submit_first:'กด Submit ก่อน', tl_done:'เกลี่ยเวลา{c}แล้ว',
     threshold_lines:'เส้นเกณฑ์:', view_label:'มุมมอง:', view_single:'เดี่ยว', view_compare:'เปรียบเทียบ', view_diff:'ส่วนต่าง',
     dataset_label:'Dataset:', chart_mode:'กราฟ:', chart_by_part:'แยกสีตาม Part', chart_by_line:'รวมต่อไลน์', month_range:'ช่วงเดือน:',
     line_filter_show_all:'เลือกทั้งหมด', line_filter_hide_all:'ไม่เลือก',
@@ -1072,6 +1096,10 @@ const I18N = {
     month_help:'各月のラベル直接編集可',
     upload_first:'📅 まず月次要求をアップロード',
     btn_calculate:'計算 (Step 0 — 初期)', btn_save_settings:'設定保存', btn_balance:'バランス →',
+    btn_submit:'送信', bal_line:'ライン平準化', bal_time:'時間平準化', btn_line_balance:'ライン平準化 →',
+    tl_both:'↔ 両方向', tl_back:'← 前倒し', tl_fwd:'→ 後ろ倒し', btn_time_level:'平準化 →', btn_time_level_off:'平準化解除',
+    tl_in_week:'週内', tl_in_month:'月内', tl_active:'時間平準化 ON', tl_no_container:'この期間には平準化する枠がありません',
+    must_submit_first:'先に送信を押してください', tl_done:'{c}で時間平準化しました',
     threshold_lines:'基準ライン:', view_label:'表示:', view_single:'シングル', view_compare:'比較', view_diff:'差分',
     dataset_label:'データセット:', chart_mode:'グラフ:', chart_by_part:'パーツ別積み上げ', chart_by_line:'ライン別合計', month_range:'範囲:',
     line_filter_show_all:'全選択', line_filter_hide_all:'全解除',
@@ -1163,7 +1191,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '3.18.0';
+const APP_VERSION = '4.0.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2576,6 +2604,98 @@ function smartBalanceV2(byProcess, partMap, setting, months, target, isMaxCap) {
   return { chainExceeded };
 }
 
+// ===== Time Level (temporal peak-shaving within a container) =====
+// Deep-clone a byProcess result so an overlay op (Time Level) can transform a copy without touching
+// the cached ladder step it derives from. months is immutable → shared by reference.
+function cloneByProcess(bp) {
+  const out = {};
+  for (const proc in bp) {
+    const p = bp[proc];
+    const lines = (p.lines instanceof Set) ? Array.from(p.lines) : p.lines.slice();
+    const hours = {}; for (const l in p.hours) hours[l] = Object.assign({}, p.hours[l]);
+    const partAlloc = {};
+    for (const l in p.partAlloc) {
+      partAlloc[l] = {};
+      for (const m in p.partAlloc[l]) {
+        partAlloc[l][m] = {};
+        for (const pn in p.partAlloc[l][m]) partAlloc[l][m][pn] = Object.assign({}, p.partAlloc[l][m][pn]);
+      }
+    }
+    out[proc] = { lines, months: p.months, hours, partAlloc, partOrigin: Object.assign({}, p.partOrigin || {}) };
+  }
+  return out;
+}
+
+// Which container a period belongs to. container: 'week' → the period's ISO week; 'month' → its month
+// (a WEEK period is assigned by its END-Sunday month, matching the Week# per-month scheme).
+function periodContainerKey(periodKey, container) {
+  const d = keyStartDate(periodKey);
+  if (!d) return null;
+  if (container === 'week') { const w = isoWeekParts(d); return `${w.weekYear}-W${pad2(w.week)}`; }
+  const md = (periodType(periodKey) === 'week') ? isoWeekEnd(periodKey) : d;
+  return md ? `${md.getFullYear()}-${pad2(md.getMonth() + 1)}` : null;
+}
+
+// Move a part's pieces between PERIODS on the SAME line, inside each container, so every period is
+// pulled under its own threshold (getStepTarget for the active target). Same-line only — line moves
+// are Smart Balance's job. CT is re-resolved at the destination period (step-function CT can differ
+// by month). direction: 'back' = build ahead (earlier period) · 'fwd' = delay (later) · 'both'.
+function timeLevelBalance(byProcess, partMap, setting, months, container, direction, targetIdx) {
+  const thr = m => getStepTarget(targetIdx, setting, m);
+  const ord = {}; months.forEach(m => { const d = keyStartDate(m); ord[m] = d ? d.getTime() : 0; });
+  const okDir = (dst, src) => direction === 'both' ? true : direction === 'back' ? ord[dst] < ord[src] : ord[dst] > ord[src];
+  for (const proc of getProcesses()) {
+    const pdata = byProcess[proc];
+    if (!pdata) continue;
+    const lines = (pdata.lines instanceof Set) ? Array.from(pdata.lines) : pdata.lines;
+    const groups = new Map();
+    for (const m of months) { const k = periodContainerKey(m, container); if (!k) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(m); }
+    for (const line of lines) {
+      for (const grp of groups.values()) {
+        let iter = 0;
+        while (iter++ < 300) {
+          const over = grp.filter(m => (pdata.hours[line]?.[m] || 0) > thr(m) + 0.01)
+                          .sort((a, b) => ((pdata.hours[line][b] - thr(b)) - (pdata.hours[line][a] - thr(a))));
+          if (!over.length) break;
+          let moved = false;
+          for (const src of over) {
+            const excess = (pdata.hours[line][src] || 0) - thr(src);
+            if (excess <= 0.01) continue;
+            const recips = grp.filter(m => m !== src && okDir(m, src) && (thr(m) - (pdata.hours[line]?.[m] || 0)) > 0.01)
+                              .sort((a, b) => (thr(b) - (pdata.hours[line][b] || 0)) - (thr(a) - (pdata.hours[line][a] || 0)));
+            if (!recips.length) continue;
+            const parts = pdata.partAlloc[line]?.[src] || {};
+            const plist = Object.entries(parts).filter(([_, a]) => a.qty > 0.01).sort((a, b) => b[1].qty - a[1].qty);
+            for (const [pn, alloc] of plist) {
+              const part = partMap.get(pn); if (!part?.processes[proc]) continue;
+              const pd = part.processes[proc];
+              const lc = pd.lines.find(l => l.name === line); if (!lc) continue;
+              const fact = pd.oa / pd.fluct;
+              const srcHpp = getEffectiveCT(pn, proc, line, src, lc.ct) / 3600 / fact;
+              if (!(srcHpp > 0)) continue;
+              for (const dst of recips) {
+                const room = thr(dst) - (pdata.hours[line][dst] || 0);
+                if (room <= 0.01) continue;
+                const dstHpp = getEffectiveCT(pn, proc, line, dst, lc.ct) / 3600 / fact;
+                if (!(dstHpp > 0)) continue;
+                const qMove = Math.min(alloc.qty, excess / srcHpp, room / dstHpp);
+                if (qMove < 1) continue;
+                const adj = qMove * pd.fluct;
+                removeFromAlloc(pdata, line, src, pn, qMove, qMove * srcHpp, adj);
+                addToAlloc(pdata, line, dst, pn, qMove, qMove * dstHpp, adj);
+                moved = true; break;
+              }
+              if (moved) break;
+            }
+            if (moved) break;
+          }
+          if (!moved) break;
+        }
+      }
+    }
+  }
+}
+
 // Fluctuation now lives in the Volume file (a demand multiplier, per part). Fold it into each part's
 // process configs so the whole calc/balance chain (which reads pd.fluct) uses it — hours stay
 // mathematically identical to putting Fluct in the hours formula. Missing → 1.0 (NOT the Matrix value).
@@ -2663,7 +2783,34 @@ function getStatusClass(hours, threshold) {
 function getCurrentResult(ds) {
   ds = ds || getActiveDataset();
   if (!ds || !ds.resultsHistory) return null;
-  return ds.resultsHistory[ds.currentStepIdx];
+  const base = ds.resultsHistory[ds.currentStepIdx];
+  if (!base || !ds.timeLevel || !ds.timeLevel.on) return base;
+  return deriveTimeLevelResult(ds, base);
+}
+
+// Time Level is a per-dataset render OVERLAY on top of the selected ladder step (it never mutates the
+// cached ladder, so Smart-Balance history / snapshot precompute stay intact). Derived lazily and cached
+// by a signature; master is present in snapshots too, so this works read-only there.
+function deriveTimeLevelResult(ds, base) {
+  const tl = ds.timeLevel;
+  const setting = base.settings;
+  const sig = [ds.currentStepIdx, tl.container, tl.direction, base.stepIdx, getGranularity(), state.weekNumbering, settingsSig(setting)].join('|');
+  if (ds._tlCache && ds._tlCache.sig === sig) return ds._tlCache.result;
+  if (!state.master || !state.master.parts) return base;  // cannot derive without the matrix
+  const bp = cloneByProcess(base.byProcess);
+  const partMap = new Map(resolvePartsFluct(state.master.parts, ds.monthlyData).map(p => [p.partNo, p]));
+  timeLevelBalance(bp, partMap, setting, base.months, tl.container, tl.direction, base.stepIdx);
+  const alerts = generateAlerts(bp, base.months, setting, base.stepIdx);
+  const result = Object.assign({}, base, { byProcess: bp, alerts, timeLeveled: true, tlContainer: tl.container, tlDirection: tl.direction });
+  ds._tlCache = { sig, result };
+  return result;
+}
+
+// Cheap signature of the fields of `setting` that affect thresholds/hours, to invalidate the TL cache.
+function settingsSig(s) {
+  if (!s) return '';
+  try { return JSON.stringify({ h: s.hrsPerShift, sh: s.shifts, mc: s.maxCapOT, sc: s.stepConfigs, wc: s.weekStepConfigs, dc: s.dayStepConfigs }); }
+  catch (e) { return String(s.hrsPerShift) + '|' + String(s.shifts); }
 }
 
 // The initial (Step 0 = un-balanced) result — Manual balancing always starts from here, never from
@@ -4489,7 +4636,7 @@ function renderResults() {
   }
 
   const result = getCurrentResult(ds);
-  $('resultStepBadge').textContent = getStepLabel(result.stepIdx);
+  $('resultStepBadge').textContent = getStepLabel(result.stepIdx) + (result.timeLeveled ? ` · 🕒${result.tlContainer === 'week' ? t('tl_in_week') : t('tl_in_month')}` : '');
   $('resultStepBadge').className = result.stepIdx === 0 ? 'badge-status' : (result.chainExceeded ? 'badge-status warn' : 'badge-status info');
 
   populateRangeSelectors();
@@ -4517,22 +4664,8 @@ function renderResults() {
   revPopulate();
   syncGranularityControl();
 
-  // Balance button — enable based on step level
-  const nextStepIdx = ds.currentStepIdx + 1;
-  const hasNext = nextStepIdx < getStepDefs().length;
-  if (!state.isSnapshot) {
-    $('balanceBtn').disabled = !hasNext;
-    if (!hasNext) {
-      $('balanceInfo').textContent = t('cannot_balance');
-      $('balanceBtn').textContent = '✓';
-    } else {
-      $('balanceInfo').textContent = '';
-      $('balanceBtn').innerHTML = `Balance → <strong>${getStepLabel(nextStepIdx)}</strong>`;
-    }
-    if (result.chainExceeded) {
-      $('balanceInfo').innerHTML = `<span class="balance-error">${t('chain_too_deep')}</span>`;
-    }
-  }
+  // Balance toolbar — Line-balance target dropdown + Time-level state (snapshot hides the whole row)
+  if (!state.isSnapshot) syncBalanceToolbar(ds, result);
   renderChartLegendMini();
 }
 
@@ -4803,7 +4936,12 @@ function setGranularity(g) {
   if (!state.isSnapshot) saveStorage({ granularity: g });
   for (const ds of state.datasets) rebucketDataset(ds, g);
   const nSteps = getStepDefs().length;
+  // Valid Time-Level containers for this period; drop an overlay that no longer applies (period keys
+  // changed anyway, so the old byProcess is stale) and always invalidate the derive cache.
+  const validConts = g === 'day' ? ['week', 'month'] : g === 'week' ? ['month'] : [];
   for (const ds of state.datasets) {
+    ds._tlCache = null;
+    if (ds.timeLevel && ds.timeLevel.on && !validConts.includes(ds.timeLevel.container)) ds.timeLevel = null;
     if (!ds.resultsHistory || !ds.resultsHistory.length) continue;
     const setting = ds.resultsHistory[0].settings;
     const hist = [];
@@ -4825,6 +4963,60 @@ function syncGranularityControl() {
   const wrap = $('weekNumWrap'), wsel = $('weekNumbering');
   if (wrap) wrap.style.display = getGranularity() === 'week' ? 'inline-flex' : 'none';
   if (wsel) wsel.value = state.weekNumbering === 'month' ? 'month' : 'iso';
+  // Time-Level container choices depend on the current period: Day → Week/Month, Week → Month, Month → none.
+  const g = getGranularity();
+  const tlWrap = $('timeLevelWrap'), tlC = $('tlContainer');
+  if (tlWrap) tlWrap.style.display = (g === 'week' || g === 'day') ? 'inline-flex' : 'none';
+  if (tlC) {
+    const conts = g === 'day' ? ['week', 'month'] : g === 'week' ? ['month'] : [];
+    const labelOf = c => c === 'week' ? t('tl_in_week') : t('tl_in_month');
+    const opts = conts.map(c => `<option value="${c}">${labelOf(c)}</option>`).join('');
+    const sig = opts + '|' + state.lang;
+    if (tlC.dataset.sig !== sig) { const prev = tlC.value; tlC.innerHTML = opts; if (conts.includes(prev)) tlC.value = prev; tlC.dataset.sig = sig; }
+  }
+}
+
+// Sync the Line-balance target dropdown + Time-level state onto the toolbar (called from renderResults).
+function syncBalanceToolbar(ds, result) {
+  const sel = $('lineBalTarget');
+  if (sel) {
+    const defs = getStepDefs().filter(d => d.type !== 'initial');
+    const opts = defs.map(d => `<option value="${d.id}">${getStepLabel(d.id)}</option>`).join('');
+    const sig = opts + '|' + state.lang;
+    if (sel.dataset.sig !== sig) { sel.innerHTML = opts; sel.dataset.sig = sig; }
+    const cur = ds.currentStepIdx;
+    if (defs.some(d => d.id === cur)) sel.value = String(cur);
+    else if (!defs.some(d => String(d.id) === sel.value)) sel.value = defs.length ? String(defs[0].id) : '';
+  }
+  const tl = ds.timeLevel;
+  if (tl && tl.on) {
+    if ($('tlDirection')) $('tlDirection').value = tl.direction;
+    if ($('tlContainer') && [...$('tlContainer').options].some(o => o.value === tl.container)) $('tlContainer').value = tl.container;
+  }
+  if ($('timeLevelOffBtn')) $('timeLevelOffBtn').style.display = (tl && tl.on) ? '' : 'none';
+  const info = $('balanceInfo');
+  if (info) info.innerHTML = result.chainExceeded ? `<span class="balance-error">${t('chain_too_deep')}</span>`
+    : (tl && tl.on ? `<span style="color:#8a6d00">🕒 ${t('tl_active')}</span>` : '');
+}
+
+// Jump the active (and, in compare/diff, all displayed) dataset(s) to a line-balance target step,
+// computing any missing ladder entries on demand. The Time-Level overlay (if on) re-derives via the
+// getCurrentResult signature (which includes currentStepIdx), so it follows the new base automatically.
+function gotoStep(idx) {
+  const displayedIds = state.viewMode === 'single'
+    ? (state.activeDatasetId ? [state.activeDatasetId] : [])
+    : (state.compareDatasetIds.length ? state.compareDatasetIds.slice() : state.datasets.map(d => d.id));
+  for (const id of displayedIds) {
+    const d = getDatasetById(id);
+    if (!d || !d.resultsHistory || !d.resultsHistory.length) continue;
+    while (d.resultsHistory.length <= idx) {
+      const nextIdx = d.resultsHistory.length;
+      const useSetting = d.resultsHistory[0]?.settings || readSettings();
+      d.resultsHistory.push(calculateForStep(state.master.parts, d.monthlyData, useSetting, nextIdx));
+    }
+    d.currentStepIdx = Math.min(idx, d.resultsHistory.length - 1);
+  }
+  renderResults();
 }
 
 // ===== Text Boxes (PPT-style — Comment redesign) =====
@@ -5424,7 +5616,8 @@ function serializeDataset(ds) {
       daily: ds.monthlyData.daily ? Array.from(ds.monthlyData.daily.entries()) : null,
       sheetName: ds.monthlyData.sheetName,
       headerRowIdx: ds.monthlyData.headerRowIdx
-    }
+    },
+    timeLevel: ds.timeLevel || null
   };
 }
 
@@ -5441,7 +5634,8 @@ function deserializeDataset(serialized) {
       headerRowIdx: serialized.monthlyData.headerRowIdx
     },
     resultsHistory: [],
-    currentStepIdx: 0
+    currentStepIdx: 0,
+    timeLevel: serialized.timeLevel || null
   };
 }
 
@@ -5530,7 +5724,8 @@ function buildSnapshotPayload(authorName) {
         headerRowIdx: ds.monthlyData.headerRowIdx
       },
       resultsHistory: (ds.resultsHistory || []).map(serializeResult),
-      currentStepIdx: ds.currentStepIdx
+      currentStepIdx: ds.currentStepIdx,
+      timeLevel: ds.timeLevel || null
     })),
     activeDatasetId: state.activeDatasetId,
     compareDatasetIds: state.compareDatasetIds,
@@ -5689,7 +5884,8 @@ function loadSnapshotIfPresent() {
         headerRowIdx: ds.monthlyData.headerRowIdx
       },
       resultsHistory: (ds.resultsHistory || []).map(deserializeResult),
-      currentStepIdx: ds.currentStepIdx || 0
+      currentStepIdx: ds.currentStepIdx || 0,
+      timeLevel: ds.timeLevel || null
     }));
     state.activeDatasetId = data.activeDatasetId || (state.datasets[0]?.id || null);
     state.compareDatasetIds = data.compareDatasetIds || [];
@@ -5992,20 +6188,39 @@ function setupEvents() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  $('balanceBtn').onclick = () => {
+  // Line Balance — jump the active/displayed datasets to the chosen target step (across lines).
+  if ($('lineBalanceBtn')) $('lineBalanceBtn').onclick = () => {
+    const ds = getActiveDataset();
+    if (!ds || !ds.resultsHistory || !ds.resultsHistory.length) { toast(t('must_submit_first'), 'error'); return; }
+    const idx = parseInt($('lineBalTarget').value);
+    if (isNaN(idx)) return;
+    gotoStep(idx);
+    toast(t('balance_done', { step: getStepLabel(idx) }), 'success');
+  };
+
+  // Time Level — apply/refresh the temporal peak-shaving overlay on the active dataset.
+  const applyTimeLevel = () => {
+    const ds = getActiveDataset();
+    if (!ds || !ds.resultsHistory || !ds.resultsHistory.length) { toast(t('must_submit_first'), 'error'); return; }
+    const container = $('tlContainer').value, direction = $('tlDirection').value;
+    if (!container) { toast(t('tl_no_container'), 'error'); return; }
+    ds.timeLevel = { on: true, container, direction };
+    ds._tlCache = null;
+    if (!state.isSnapshot) saveDatasets();
+    renderResults();
+    toast(t('tl_done', { c: container === 'week' ? t('tl_in_week') : t('tl_in_month') }), 'success');
+  };
+  if ($('timeLevelBtn')) $('timeLevelBtn').onclick = applyTimeLevel;
+  if ($('timeLevelOffBtn')) $('timeLevelOffBtn').onclick = () => {
     const ds = getActiveDataset();
     if (!ds) return;
-    const nextStepIdx = ds.currentStepIdx + 1;
-    if (nextStepIdx >= getStepDefs().length) return;
-    const setting = ds.resultsHistory[0].settings;
-    const result = calculateForStep(state.master.parts, ds.monthlyData, setting, nextStepIdx);
-    // Truncate forward history if user revisited prior step
-    ds.resultsHistory = ds.resultsHistory.slice(0, ds.currentStepIdx + 1);
-    ds.resultsHistory.push(result);
-    ds.currentStepIdx = ds.resultsHistory.length - 1;
+    ds.timeLevel = null; ds._tlCache = null;
+    if (!state.isSnapshot) saveDatasets();
     renderResults();
-    toast(t('balance_done', { step: getStepLabel(nextStepIdx) }), 'success');
   };
+  // Changing the container/direction while the overlay is active re-applies immediately.
+  if ($('tlContainer')) $('tlContainer').onchange = () => { const ds = getActiveDataset(); if (ds && ds.timeLevel && ds.timeLevel.on) applyTimeLevel(); };
+  if ($('tlDirection')) $('tlDirection').onchange = () => { const ds = getActiveDataset(); if (ds && ds.timeLevel && ds.timeLevel.on) applyTimeLevel(); };
 
   $('saveSettingsBtn').onclick = () => { saveStorage({ settings: readSettings() }); toast(t('settings_saved'), 'success'); };
 

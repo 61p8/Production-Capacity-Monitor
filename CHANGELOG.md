@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] — 2026-08-08
+
+### Changed — Balancing UX reworked
+- **Submit replaces the step ladder.** After uploading, one **Submit** button computes the initial
+  allocation and jumps to Results — no more clicking *Calculate* then *Balance* through each step.
+- **Balancing is now explicit buttons on the Results toolbar**, each doing one thing:
+  - **Line balance** — a target dropdown (Step 1 … Max Cap) + **Balance lines →** moves parts *across
+    lines* to bring every line under the chosen target (the existing Smart Balance engine; the ladder
+    is still computed on demand, so the step chips keep working).
+  - **Time level** *(new — Week/Day only)* — **Level →** with a *container* selector (Day → within
+    Week / within Month, Week → within Month) and a *direction* selector (**↔ both**, **← build ahead**,
+    **→ delay**). **Clear level** turns it off.
+
+### Added — Time-Level balancing (temporal peak-shaving)
+- Moves *volume* between periods **on the same line**, inside the chosen container, so each period is
+  pulled under its own threshold — e.g. a spike in one day is spread to other days of the same week
+  (or month) that still have room. The container total is conserved (volume is redistributed in time,
+  never created or destroyed); cycle time is re-resolved at the destination period so step-function CT
+  stays correct. Direction limits which way work may shift: build ahead (earlier), delay (later), or
+  both. Weeks that straddle two months are assigned to their **end (Sunday)** month, matching the Week#
+  per-month scheme.
+- Time level is a **render overlay** on top of the selected line-balance step — it never mutates the
+  Smart-Balance ladder or the snapshot precompute, so switching steps / exporting still work. The
+  choice is remembered (localStorage + snapshot) and re-derives read-only inside snapshots. The result
+  badge shows a 🕒 marker when it's on.
+
 ## [3.18.0] — 2026-08-08
 
 ### Added
