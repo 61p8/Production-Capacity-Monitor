@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.1] — 2026-08-08
+
+### Fixed
+- **"+N%" over-threshold labels no longer hide the threshold line.** They were drawn on a solid white
+  box that covered any threshold line sitting at the bar top; the box is replaced with a thin white
+  text-halo (stroke) and the label is nudged slightly higher, so the line stays visible behind it.
+
 ## [4.2.0] — 2026-08-08
 
 ### Changed
