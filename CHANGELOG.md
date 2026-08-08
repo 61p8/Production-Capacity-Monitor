@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] — 2026-08-08
+
+### Added
+- **Join threshold lines across lines (toggle).** In *Stacked by Part* view, each line's threshold is
+  now drawn as a **separate segment per line** by default (it no longer visually bridges one line's
+  last month to the next line's first). A **Join across lines** checkbox in the chart toolbar restores
+  the old continuous line. Persisted (localStorage + snapshot). Implemented by hiding the cross-group
+  connecting segment (`segment.borderColor` → transparent at each line-group boundary).
+
+### Changed
+- **Chart toolbar reorganised** into clearly-labelled groups — *Period* (+ Week#), *Chart* / *Y-axis*,
+  *Threshold lines* (+ Max Cap + Join across lines) and *Over %* — so each control reads at a glance
+  instead of one long scattered row.
+- Threshold-line checkboxes continue to reflect the **current period's** steps (they're rebuilt from
+  `activeStepConfigs()` on every render; Max Cap hides itself in Day view).
+
+### Removed
+- **The "Step:" chip row above the chart.** It duplicated the new **Line balance** target dropdown, so
+  it's gone; the current step still shows in the result badge, and compare/diff still syncs the step
+  through the dropdown.
+- **The "Trend" line toggle** and its overlay.
+
 ## [4.0.0] — 2026-08-08
 
 ### Changed — Balancing UX reworked
