@@ -953,8 +953,8 @@ const I18N = {
     auto:'auto', per_month:'per month', month_labels:'Month labels & graph range', this_month:'This month', range_auto:'Auto (this month)',
     first_column:'First column =', graph_show:'Show on chart', range_start:'Start', range_end:'End',
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
-    line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month',
-    y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces/month', pcs_axis:'Pieces / month', pcs_unit:'pcs',
+    line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month', week_axis:'Week', day_axis:'Day',
+    y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces', pcs_axis:'Pieces / month', pcs_axis_week:'Pieces / week', pcs_axis_day:'Pieces / day', pcs_unit:'pcs',
     over_pct:'Over %:', thresh_colors_head:'Threshold line colours',
     granularity:'Period:', gran_month:'Month', gran_week:'Week', gran_day:'Day', gran_need_dates:'Upload a Raw_Data sheet with real dates to enable Week/Day',
     week_numbering:'Week #:', week_num_iso:'ISO (W31)', week_num_month:'Per month (W1)',
@@ -1062,8 +1062,8 @@ const I18N = {
     auto:'auto', per_month:'ต่อเดือน', month_labels:'ชื่อเดือน & ช่วงกราฟ', this_month:'เดือนนี้', range_auto:'Auto (เดือนปัจจุบัน)',
     first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ', range_start:'เริ่ม', range_end:'ถึง',
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
-    line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน',
-    y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว/เดือน', pcs_axis:'จำนวนตัว / เดือน', pcs_unit:'ตัว',
+    line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน', week_axis:'สัปดาห์', day_axis:'วัน',
+    y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว', pcs_axis:'จำนวนตัว / เดือน', pcs_axis_week:'จำนวนตัว / สัปดาห์', pcs_axis_day:'จำนวนตัว / วัน', pcs_unit:'ตัว',
     over_pct:'เกินเส้น %:', thresh_colors_head:'สีเส้น Threshold',
     granularity:'ช่วงเวลา:', gran_month:'รายเดือน', gran_week:'รายสัปดาห์', gran_day:'รายวัน', gran_need_dates:'อัปโหลดชีต Raw_Data ที่มีวันที่จริง เพื่อเปิดใช้รายสัปดาห์/รายวัน',
     week_numbering:'เลขสัปดาห์:', week_num_iso:'ISO (W31)', week_num_month:'ตามเดือน (W1)',
@@ -1171,8 +1171,8 @@ const I18N = {
     auto:'auto', per_month:'月別', month_labels:'月ラベル & グラフ範囲', this_month:'今月', range_auto:'Auto (今月)',
     first_column:'最初の列 =', graph_show:'グラフ表示', range_start:'開始', range_end:'終了',
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
-    line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月',
-    y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数/月', pcs_axis:'個数 / 月', pcs_unit:'個',
+    line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月', week_axis:'週', day_axis:'日',
+    y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数', pcs_axis:'個数 / 月', pcs_axis_week:'個数 / 週', pcs_axis_day:'個数 / 日', pcs_unit:'個',
     over_pct:'超過 %:', thresh_colors_head:'しきい値線の色',
     granularity:'期間:', gran_month:'月', gran_week:'週', gran_day:'日', gran_need_dates:'週/日を有効にするには実日付付きの Raw_Data シートをアップロード',
     week_numbering:'週番号:', week_num_iso:'ISO (W31)', week_num_month:'月ごと (W1)',
@@ -1207,7 +1207,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.2.1';
+const APP_VERSION = '4.2.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -3594,7 +3594,16 @@ function thresholdLineDataset(label, val, color, dash, dataArr, stackId) {
 // changes (e.g. a From-FY28 override), instead of wiggling with month-to-month demand. See
 // lineHrsPerPieceStable / procHrsPerPieceStable.
 function getYUnit() { return state.yUnit === 'pcs' ? 'pcs' : 'hours'; }
-function yAxisTitle() { return getYUnit() === 'pcs' ? t('pcs_axis') : t('hours_axis'); }
+function yAxisTitle() {
+  if (getYUnit() !== 'pcs') return t('hours_axis');
+  const g = getGranularity();
+  return g === 'week' ? t('pcs_axis_week') : g === 'day' ? t('pcs_axis_day') : t('pcs_axis');
+}
+// x-axis title in By-Line mode, period-aware (Month / Week / Day).
+function periodAxisTitle() {
+  const g = getGranularity();
+  return g === 'week' ? t('week_axis') : g === 'day' ? t('day_axis') : t('month_axis');
+}
 function fmtY(v) { return getYUnit() === 'pcs' ? Math.round(v).toLocaleString() + ' ' + t('pcs_unit') : formatHours(v); }
 // Base (non-Fluct) portion of an alloc in the active unit. In hours mode the bar's hours are split
 // qty : buffer proportionally, so base + buffer still sum to the full hours.
@@ -4244,7 +4253,7 @@ function renderChartSingle() {
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: t('month_axis') } } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: periodAxisTitle() } } },
         plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
@@ -4410,7 +4419,7 @@ function renderChartCompare() {
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: t('month_axis') } } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: periodAxisTitle() } } },
         plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });

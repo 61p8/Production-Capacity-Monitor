@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.2] — 2026-08-08
+
+### Fixed
+- **Chart axis titles now follow the period.** In Pieces mode the Y-axis read "Pieces / month" even in
+  Week/Day view; it now shows "Pieces / week" or "Pieces / day" (and the By-Line X-axis title switches
+  Month / Week / Day too). The Y-axis unit dropdown option is now just "Pieces" (the period lives on
+  the axis label). All three languages.
+
 ## [4.2.1] — 2026-08-08
 
 ### Fixed
