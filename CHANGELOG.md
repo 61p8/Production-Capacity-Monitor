@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.1] — 2026-08-08
+
+### Fixed
+- **Time-Level no longer leaks volume into hidden periods.** It leveled across *all* periods, so with a
+  narrowed range it could push load into an out-of-range week (e.g. a partial `W31` that the end-Sunday
+  rule files under August but which sits before the selected window) — the moved pieces then vanished
+  from the chart and the visible total looked like it dropped. Leveling is now scoped to the **visible
+  range**, so the shown periods are conserved and out-of-range periods are left untouched. (The range is
+  part of the overlay's cache key, so changing the window re-levels within it.)
+
 ## [4.4.0] — 2026-08-08
 
 ### Changed

@@ -1211,7 +1211,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.4.0';
+const APP_VERSION = '4.4.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2878,12 +2878,20 @@ function getCurrentResult(ds) {
 function deriveTimeLevelResult(ds, base) {
   const tl = ds.timeLevel;
   const setting = base.settings;
-  const sig = [ds.currentStepIdx, tl.container, tl.direction, base.stepIdx, getGranularity(), state.weekNumbering, settingsSig(setting)].join('|');
+  // Level ONLY within the visible range — otherwise volume can flow into a hidden period (e.g. a
+  // partial W31 that the end-Sunday rule files under August but sits before the selected window), and
+  // the redistributed pieces vanish from the chart, looking like the total production dropped.
+  // (Inlined instead of getRangeMonths() to avoid recursion: getRangeMonths → getCurrentResult → here.)
+  const all = base.months || [];
+  const f = ($('rangeFrom') || {}).value, to = ($('rangeTo') || {}).value;
+  const i1 = all.indexOf(f), i2 = all.indexOf(to);
+  const lvlMonths = (i1 >= 0 && i2 >= 0 && i1 <= i2) ? all.slice(i1, i2 + 1) : all;
+  const sig = [ds.currentStepIdx, tl.container, tl.direction, base.stepIdx, getGranularity(), state.weekNumbering, f, to, settingsSig(setting)].join('|');
   if (ds._tlCache && ds._tlCache.sig === sig) return ds._tlCache.result;
   if (!state.master || !state.master.parts) return base;  // cannot derive without the matrix
   const bp = cloneByProcess(base.byProcess);
   const partMap = new Map(resolvePartsFluct(state.master.parts, ds.monthlyData).map(p => [p.partNo, p]));
-  timeLevelBalance(bp, partMap, setting, base.months, tl.container, tl.direction, base.stepIdx);
+  timeLevelBalance(bp, partMap, setting, lvlMonths, tl.container, tl.direction, base.stepIdx);
   const alerts = generateAlerts(bp, base.months, setting, base.stepIdx);
   const result = Object.assign({}, base, { byProcess: bp, alerts, timeLeveled: true, tlContainer: tl.container, tlDirection: tl.direction });
   ds._tlCache = { sig, result };
