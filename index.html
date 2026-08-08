@@ -1211,7 +1211,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.3.0';
+const APP_VERSION = '4.4.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2717,14 +2717,38 @@ function periodContainerKey(periodKey, container) {
   return md ? `${md.getFullYear()}-${pad2(md.getMonth() + 1)}` : null;
 }
 
-// Move a part's pieces between PERIODS on the SAME line, inside each container, so every period is
-// pulled under its own threshold (getStepTarget for the active target). Same-line only — line moves
-// are Smart Balance's job. CT is re-resolved at the destination period (step-function CT can differ
-// by month). direction: 'back' = build ahead (earlier period) · 'fwd' = delay (later) · 'both'.
+// Move part pieces between PERIODS on the SAME line, inside each container, to LEVEL the load —
+// i.e. pull every period toward the container's average (mean) hours, so the bars come out roughly
+// equal (not just capped at a step line). Same-line only — line moves are Smart Balance's job. CT is
+// re-resolved at the destination period (step-function CT can differ by month), so hours are used as
+// the balance metric. direction: 'back' = build ahead (move to an EARLIER period) · 'fwd' = delay
+// (LATER) · 'both'. targetIdx is unused (kept for signature compatibility) — leveling targets the mean.
 function timeLevelBalance(byProcess, partMap, setting, months, container, direction, targetIdx) {
-  const thr = m => getStepTarget(targetIdx, setting, m);
   const ord = {}; months.forEach(m => { const d = keyStartDate(m); ord[m] = d ? d.getTime() : 0; });
   const okDir = (dst, src) => direction === 'both' ? true : direction === 'back' ? ord[dst] < ord[src] : ord[dst] > ord[src];
+  // Move up to wantHrs (measured on the SOURCE side) of a line's load from period src → dst by shifting
+  // whole parts' pieces. Returns the source-hours actually moved.
+  const movePeriodHours = (pdata, proc, line, src, dst, wantHrs) => {
+    let remaining = wantHrs, moved = 0;
+    const parts = pdata.partAlloc[line]?.[src] || {};
+    const plist = Object.entries(parts).filter(([_, a]) => a.qty > 0.001).sort((a, b) => b[1].qty - a[1].qty);
+    for (const [pn, alloc] of plist) {
+      if (remaining <= 0.01) break;
+      const part = partMap.get(pn); if (!part?.processes[proc]) continue;
+      const pd = part.processes[proc];
+      const lc = pd.lines.find(l => l.name === line); if (!lc) continue;
+      const fact = pd.oa / pd.fluct;
+      const srcHpp = getEffectiveCT(pn, proc, line, src, lc.ct) / 3600 / fact; if (!(srcHpp > 0)) continue;
+      const dstHpp = getEffectiveCT(pn, proc, line, dst, lc.ct) / 3600 / fact; if (!(dstHpp > 0)) continue;
+      const qty = Math.min(alloc.qty, remaining / srcHpp);
+      if (qty <= 0.001) continue;
+      const adj = qty * pd.fluct;
+      removeFromAlloc(pdata, line, src, pn, qty, qty * srcHpp, adj);
+      addToAlloc(pdata, line, dst, pn, qty, qty * dstHpp, adj);
+      remaining -= qty * srcHpp; moved += qty * srcHpp;
+    }
+    return moved;
+  };
   for (const proc of getProcesses()) {
     const pdata = byProcess[proc];
     if (!pdata) continue;
@@ -2733,44 +2757,23 @@ function timeLevelBalance(byProcess, partMap, setting, months, container, direct
     for (const m of months) { const k = periodContainerKey(m, container); if (!k) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(m); }
     for (const line of lines) {
       for (const grp of groups.values()) {
+        if (grp.length < 2) continue;
+        const H = m => (pdata.hours[line]?.[m] || 0);
         let iter = 0;
-        while (iter++ < 300) {
-          const over = grp.filter(m => (pdata.hours[line]?.[m] || 0) > thr(m) + 0.01)
-                          .sort((a, b) => ((pdata.hours[line][b] - thr(b)) - (pdata.hours[line][a] - thr(a))));
-          if (!over.length) break;
-          let moved = false;
-          for (const src of over) {
-            const excess = (pdata.hours[line][src] || 0) - thr(src);
-            if (excess <= 0.01) continue;
-            const recips = grp.filter(m => m !== src && okDir(m, src) && (thr(m) - (pdata.hours[line]?.[m] || 0)) > 0.01)
-                              .sort((a, b) => (thr(b) - (pdata.hours[line][b] || 0)) - (thr(a) - (pdata.hours[line][a] || 0)));
-            if (!recips.length) continue;
-            const parts = pdata.partAlloc[line]?.[src] || {};
-            const plist = Object.entries(parts).filter(([_, a]) => a.qty > 0.01).sort((a, b) => b[1].qty - a[1].qty);
-            for (const [pn, alloc] of plist) {
-              const part = partMap.get(pn); if (!part?.processes[proc]) continue;
-              const pd = part.processes[proc];
-              const lc = pd.lines.find(l => l.name === line); if (!lc) continue;
-              const fact = pd.oa / pd.fluct;
-              const srcHpp = getEffectiveCT(pn, proc, line, src, lc.ct) / 3600 / fact;
-              if (!(srcHpp > 0)) continue;
-              for (const dst of recips) {
-                const room = thr(dst) - (pdata.hours[line][dst] || 0);
-                if (room <= 0.01) continue;
-                const dstHpp = getEffectiveCT(pn, proc, line, dst, lc.ct) / 3600 / fact;
-                if (!(dstHpp > 0)) continue;
-                const qMove = Math.min(alloc.qty, excess / srcHpp, room / dstHpp);
-                if (qMove < 1) continue;
-                const adj = qMove * pd.fluct;
-                removeFromAlloc(pdata, line, src, pn, qMove, qMove * srcHpp, adj);
-                addToAlloc(pdata, line, dst, pn, qMove, qMove * dstHpp, adj);
-                moved = true; break;
-              }
-              if (moved) break;
-            }
-            if (moved) break;
-          }
-          if (!moved) break;
+        while (iter++ < 500) {
+          // Mean is recomputed each pass (CT differences between periods can shift the total slightly).
+          const total = grp.reduce((s, m) => s + H(m), 0);
+          if (total <= 0.01) break;
+          const mean = total / grp.length;
+          // Donor = period furthest ABOVE the mean; recipient = period furthest BELOW it (direction-gated).
+          let src = null, srcOver = 0;
+          for (const m of grp) { const o = H(m) - mean; if (o > srcOver + 1e-6) { srcOver = o; src = m; } }
+          if (!src || srcOver < 1) break;   // essentially flat → done
+          let dst = null, dstUnder = 0;
+          for (const m of grp) { if (m === src || !okDir(m, src)) continue; const u = mean - H(m); if (u > dstUnder + 1e-6) { dstUnder = u; dst = m; } }
+          if (!dst) break;   // nowhere to send it (direction blocks every under-mean period)
+          const moved = movePeriodHours(pdata, proc, line, src, dst, Math.min(srcOver, dstUnder));
+          if (moved < 0.01) break;
         }
       }
     }

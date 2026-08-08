@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.0] — 2026-08-08
+
+### Changed
+- **Time-Level now truly levels (equalises) instead of capping at a step.** It previously peak-shaved
+  each period down to the selected step threshold — so periods bunched up at the step line rather than
+  evening out. It now pulls every period toward the container's **mean** load, so the bars come out
+  roughly equal (real load-leveling). Direction still limits which way work may shift (build ahead /
+  delay / both) and the container total is still conserved; a period that can't shed in the chosen
+  direction (e.g. the earliest period under "build ahead") is left as-is.
+
 ## [4.3.0] — 2026-08-08
 
 ### Added
