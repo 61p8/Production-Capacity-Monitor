@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.3.0] — 2026-08-08
+
+### Added
+- **Custom threshold line style (solid / dashed / dotted).** The 🎨 Colors menu's *Threshold line
+  colours* rows now each carry a line-style dropdown next to the colour picker, so any step or Max Cap
+  line can be set solid, dashed or dotted (independent of its colour). Keyed per granularity like the
+  colours, remembered (localStorage + snapshot), and the row's ↺ resets both colour and style.
+
 ## [4.2.2] — 2026-08-08
 
 ### Fixed

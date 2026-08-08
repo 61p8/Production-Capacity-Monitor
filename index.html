@@ -207,6 +207,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
 .part-color-row input[type="color"] { width: 26px; height: 20px; padding: 0; border: 1px solid #B4B2A9; border-radius: 4px; background: none; cursor: pointer; flex: none; }
 .part-color-row .pc-label { flex: 1; font-size: 12px; color: #2C2C2A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .part-color-row .pc-label .pc-model { color: #888780; }
+.part-color-row .pc-dash { flex: none; font-size: 11px; padding: 1px 4px; border: 1px solid #B4B2A9; border-radius: 4px; background: white; font-family: inherit; cursor: pointer; }
 .part-color-row .pc-reset { flex: none; border: none; background: none; color: #B4B2A9; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
 .part-color-row .pc-reset:hover { color: #791F1F; }
 .part-color-row.customised .pc-reset { color: #1D9E75; }
@@ -960,6 +961,7 @@ const I18N = {
     week_numbering:'Week #:', week_num_iso:'ISO (W31)', week_num_month:'Per month (W1)',
     tip_fields:'Tooltip', tip_fields_head:'Show in bar tooltip', tip_f_title:'Line & month', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'Model', tip_f_value:'Value', tip_f_ct:'C/T (sec/pc)', tip_f_balanced:'Balanced from', tip_f_buffer:'Fluctuation buffer', tip_all:'All', tip_none:'None', tip_value:'Value', tip_balanced_from:'Balanced from:',
     colors_menu:'Colors', colors_head:'Custom part colours', colors_reset_all:'Reset all', colors_reset:'Reset to auto', colors_empty:'No parts to colour',
+    dash_style:'Line style', dash_solid:'─ Solid', dash_dash:'╌ Dashed', dash_dot:'⋯ Dotted',
     pat_styles_head:'Balanced / buffer style', pat_balanced:'Balanced (moved)', pat_buffer:'Fluctuation buffer',
     style_solid:'Solid', style_hatch:'Diagonal ╱', style_hatchBack:'Diagonal ╲', style_cross:'Cross-hatch', style_grid:'Grid', style_horizontal:'Horizontal', style_vertical:'Vertical', style_dot:'Dots', style_dotLg:'Big dots',
     sec_revct:'Reverse C/T calculator', revct_hint:'Pick a line, month and a target hours cap (a threshold) — see the C/T each part needs to keep the line under it.', rev_line:'Line', rev_month:'Month', rev_target:'Target ≤', hours_unit:'h', rev_custom:'Custom…',
@@ -1069,6 +1071,7 @@ const I18N = {
     week_numbering:'เลขสัปดาห์:', week_num_iso:'ISO (W31)', week_num_month:'ตามเดือน (W1)',
     tip_fields:'Tooltip', tip_fields_head:'แสดงใน tooltip ของแท่ง', tip_f_title:'ไลน์ & เดือน', tip_f_dataset:'Dataset', tip_f_part:'Part No.', tip_f_model:'รุ่น', tip_f_value:'ค่า', tip_f_ct:'C/T (วิ/ชิ้น)', tip_f_balanced:'ย้ายมาจาก', tip_f_buffer:'Buffer ความผันผวน', tip_all:'ทั้งหมด', tip_none:'ไม่เลือก', tip_value:'ค่า', tip_balanced_from:'ย้ายมาจาก:',
     colors_menu:'สี', colors_head:'กำหนดสี Part เอง', colors_reset_all:'รีเซ็ตทั้งหมด', colors_reset:'กลับเป็นสีอัตโนมัติ', colors_empty:'ไม่มี Part ให้กำหนดสี',
+    dash_style:'ลักษณะเส้น', dash_solid:'─ เส้นทึบ', dash_dash:'╌ เส้นประ', dash_dot:'⋯ เส้นจุด',
     pat_styles_head:'ลายของ Balanced / Buffer', pat_balanced:'Balanced (ย้าย)', pat_buffer:'Buffer ความผันผวน',
     style_solid:'ทึบ', style_hatch:'ทแยง ╱', style_hatchBack:'ทแยง ╲', style_cross:'ตาราง ╳', style_grid:'ตาราง #', style_horizontal:'แนวนอน', style_vertical:'แนวตั้ง', style_dot:'จุด', style_dotLg:'จุดใหญ่',
     sec_revct:'คำนวณ C/T ย้อนกลับ', revct_hint:'เลือกไลน์ เดือน และเป้าชั่วโมงสูงสุด (เส้น threshold) — ดูว่าแต่ละ Part ต้องใช้ C/T เท่าไหร่เพื่อให้ไลน์ไม่เกินเป้า', rev_line:'ไลน์', rev_month:'เดือน', rev_target:'เป้า ≤', hours_unit:'ชม.', rev_custom:'กำหนดเอง…',
@@ -1178,6 +1181,7 @@ const I18N = {
     week_numbering:'週番号:', week_num_iso:'ISO (W31)', week_num_month:'月ごと (W1)',
     tip_fields:'ツールチップ', tip_fields_head:'バーのツールチップに表示', tip_f_title:'ライン・月', tip_f_dataset:'データセット', tip_f_part:'品番', tip_f_model:'機種', tip_f_value:'値', tip_f_ct:'C/T (秒/個)', tip_f_balanced:'移動元', tip_f_buffer:'変動バッファ', tip_all:'全て', tip_none:'なし', tip_value:'値', tip_balanced_from:'移動元:',
     colors_menu:'色', colors_head:'品番の色を指定', colors_reset_all:'全てリセット', colors_reset:'自動色に戻す', colors_empty:'色を指定する品番がありません',
+    dash_style:'線種', dash_solid:'─ 実線', dash_dash:'╌ 破線', dash_dot:'⋯ 点線',
     pat_styles_head:'Balanced / バッファの柄', pat_balanced:'Balanced (移動)', pat_buffer:'変動バッファ',
     style_solid:'ベタ', style_hatch:'斜線 ╱', style_hatchBack:'斜線 ╲', style_cross:'格子 ╳', style_grid:'グリッド', style_horizontal:'横線', style_vertical:'縦線', style_dot:'ドット', style_dotLg:'大ドット',
     sec_revct:'C/T 逆算', revct_hint:'ライン・月・目標時間（しきい値）を選ぶと、ラインを目標内に収めるのに各品番へ必要な C/T が分かります', rev_line:'ライン', rev_month:'月', rev_target:'目標 ≤', hours_unit:'h', rev_custom:'カスタム…',
@@ -1207,7 +1211,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.2.2';
+const APP_VERSION = '4.3.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1326,6 +1330,7 @@ const state = {
   partColorOverrides: {},   // { [partNo]: '#rrggbb' } — user custom colours; win over the hash. Persisted.
   patternStyles: { balanced: 'hatch', buffer: 'dot' },   // fill style for Balanced bars / Fluct buffer. Persisted.
   threshColors: {},        // custom threshold-line colours, keyed `${gran}|s<idx>` / `${gran}|mc`. Persisted.
+  threshDash: {},          // custom threshold-line dash styles ('solid'/'dash'/'dot'), same keys. Persisted.
   overThreshKey: 'off',    // which threshold the per-bar "over %" labels compare against ('off' | 's<idx>' | 'mc')
   patternCache: new Map(),
   hoveredDsId: null,
@@ -3438,8 +3443,8 @@ function renderPartColorList() {
 function threshColorItems() {
   const setting = readSettings();
   const gran = getGranularity();
-  const items = getStepThresholds(setting).map(th => ({ key: `${gran}|s${th.idx}`, label: th.label, color: th.color }));
-  if (periodHasMaxCap()) items.push({ key: `${gran}|mc`, label: 'Max Cap', color: maxCapColor() });
+  const items = getStepThresholds(setting).map(th => ({ key: `${gran}|s${th.idx}`, label: th.label, color: th.color, dash: th.dash }));
+  if (periodHasMaxCap()) items.push({ key: `${gran}|mc`, label: 'Max Cap', color: maxCapColor(), dash: maxCapDash() });
   return items;
 }
 function renderThreshColorList() {
@@ -3447,14 +3452,18 @@ function renderThreshColorList() {
   const items = threshColorItems();
   box._items = items;
   if (!items.length) { box.innerHTML = `<div class="part-color-empty">—</div>`; return; }
+  const dashOpts = st => ['solid', 'dash', 'dot'].map(v =>
+    `<option value="${v}"${v === st ? ' selected' : ''}>${t('dash_' + v)}</option>`).join('');
   box.innerHTML = items.map((it, i) => {
-    const custom = !!(state.threshColors && state.threshColors[it.key]);
+    const customC = !!(state.threshColors && state.threshColors[it.key]);
+    const customD = !!(state.threshDash && state.threshDash[it.key]);
     const hex = /^#[0-9a-f]{6}$/i.test(it.color) ? it.color : hslToHex(...(it.color.match(/\d+(\.\d+)?/g) || [0, 0, 50]).map(Number));
     const safe = String(it.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    return `<div class="part-color-row ${custom ? 'customised' : ''}" data-th-idx="${i}">
+    return `<div class="part-color-row ${customC || customD ? 'customised' : ''}" data-th-idx="${i}">
       <input type="color" value="${hex}" data-th-input>
       <span class="pc-label" title="${safe}">${safe}</span>
-      <button class="pc-reset" type="button" data-th-reset title="${t('colors_reset')}">${custom ? '↺' : '·'}</button>
+      <select class="pc-dash" data-th-dash title="${t('dash_style')}">${dashOpts(threshDashStyleOf(it.key, it.dash))}</select>
+      <button class="pc-reset" type="button" data-th-reset title="${t('colors_reset')}">${customC || customD ? '↺' : '·'}</button>
     </div>`;
   }).join('');
 }
@@ -3499,17 +3508,22 @@ function setupPartColorMenu() {
   const tlist = $('threshColorList');
   const thKeyOf = el => { const row = el.closest('[data-th-idx]'); return row && tlist._items ? tlist._items[+row.dataset.thIdx].key : null; };
   tlist.addEventListener('change', e => {
-    const inp = e.target.closest('[data-th-input]'); if (!inp) return;
-    const key = thKeyOf(inp); if (!key) return;
-    state.threshColors[key] = inp.value; saveStorage({ threshColors: state.threshColors });
-    const row = inp.closest('[data-th-idx]'); row.classList.add('customised');
+    const inp = e.target.closest('[data-th-input]');
+    const dsel = e.target.closest('[data-th-dash]');
+    const el = inp || dsel; if (!el) return;
+    const key = thKeyOf(el); if (!key) return;
+    if (inp) { state.threshColors[key] = inp.value; saveStorage({ threshColors: state.threshColors }); }
+    else { state.threshDash[key] = dsel.value; saveStorage({ threshDash: state.threshDash }); }
+    const row = el.closest('[data-th-idx]'); row.classList.add('customised');
     const rst = row.querySelector('[data-th-reset]'); if (rst) rst.textContent = '↺';
     renderChart();
   });
   tlist.addEventListener('click', e => {
     const btn = e.target.closest('[data-th-reset]'); if (!btn) return;
-    const key = thKeyOf(btn); if (!key || !state.threshColors[key]) return;
-    delete state.threshColors[key]; saveStorage({ threshColors: state.threshColors });
+    const key = thKeyOf(btn); if (!key) return;
+    if (!state.threshColors[key] && !state.threshDash[key]) return;
+    delete state.threshColors[key]; delete state.threshDash[key];
+    saveStorage({ threshColors: state.threshColors, threshDash: state.threshDash });
     renderChart(); renderThreshColorList();
   });
   menu.addEventListener('toggle', () => { if (menu.open) { renderPatternStyleControls(); renderThreshColorList(); renderPartColorList(); positionMenuPanel(menu); } });
@@ -3564,10 +3578,20 @@ function stepReprValue(cfg, setting) { return computeStepThreshold(cfg, setting)
 // Custom-colour keys are per-granularity so month/week/day lines can differ.
 function threshStepColor(idx) { return (state.threshColors && state.threshColors[`${getGranularity()}|s${idx}`]) || stepLineStyle(idx)[0]; }
 function maxCapColor() { return (state.threshColors && state.threshColors[`${getGranularity()}|mc`]) || T_MC[0]; }
+// Custom dash style ('solid'/'dash'/'dot') → Chart.js borderDash array; falls back to the line's default.
+const DASH_ARRAYS = { solid: [], dash: [8, 4], dot: [2, 3] };
+function dashArrayFor(style) { return DASH_ARRAYS[style] || []; }
+function threshStepDash(idx) { const s = state.threshDash && state.threshDash[`${getGranularity()}|s${idx}`]; return s ? dashArrayFor(s) : stepLineStyle(idx)[1]; }
+function maxCapDash() { const s = state.threshDash && state.threshDash[`${getGranularity()}|mc`]; return s ? dashArrayFor(s) : T_MC[1]; }
+// Which dash-style dropdown value to show for a key (custom wins; else infer from the default array).
+function threshDashStyleOf(key, defaultDash) {
+  const s = state.threshDash && state.threshDash[key];
+  if (s) return s;
+  return (defaultDash && defaultDash.length) ? 'dash' : 'solid';
+}
 function getStepThresholds(setting) {
   return activeStepConfigs().map((c, i) => {
     const cb = $('showStep' + i);
-    const style = stepLineStyle(i);
     const base = Math.round(stepReprValue(c, setting));
     const variable = getGranularity() === 'month' && stepHasPerMonth(c);   // per-month overrides are month-only
     const nm = c.name ? c.name + ' ' : '';
@@ -3575,7 +3599,7 @@ function getStepThresholds(setting) {
       idx: i, value: base, variable,
       label: variable ? `${nm}${base}~` : `${nm}${base}`,
       valueFor: m => Math.round(computeStepThresholdMonth(c, setting, m)),
-      color: threshStepColor(i), dash: style[1], show: cb ? cb.checked : true
+      color: threshStepColor(i), dash: threshStepDash(i), show: cb ? cb.checked : true
     };
   });
 }
@@ -4209,7 +4233,7 @@ function renderChartSingle() {
     if (opts.showMaxCap) {
       const mcData = [], mcTip = [];
       for (const line of visibleLines) for (const m of months) { const pv = thPieces(calculateMaxCap(setting, m), lineHrsPerPieceStable(data, process, line, m, months)); mcData.push(pv); mcTip.push(mcTipLines(setting, m, pv)); }
-      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', maxCapColor(), T_MC[1], mcData), mcTip), stack: 'th_mc', segment: brk });
+      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', maxCapColor(), maxCapDash(), mcData), mcTip), stack: 'th_mc', segment: brk });
     }
 
     const overCfg = computeOverPct(data, visibleLines, months, setting);
@@ -4246,7 +4270,7 @@ function renderChartSingle() {
       if (!th.show) continue;
       datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), procHrsPerPieceStable(data, process, m, months))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => stepTipLines(th.idx, setting, m, thPieces(th.valueFor(m), procHrsPerPieceStable(data, process, m, months)))) });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months))), borderColor: maxCapColor(), borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(setting, m, thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months)))) });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months))), borderColor: maxCapColor(), borderWidth: 2, borderDash: maxCapDash(), pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(setting, m, thPieces(calculateMaxCap(setting, m), procHrsPerPieceStable(data, process, m, months)))) });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -4358,7 +4382,7 @@ function renderChartCompare() {
     if (opts.showMaxCap) {
       const mcData = [], mcTip = [];
       for (const line of visibleLines) for (const m of months) { const pv = thPieces(calculateMaxCap(refResult.settings, m), lineHrsPerPieceStable(refData, process, line, m, months)); mcData.push(pv); mcTip.push(mcTipLines(refResult.settings, m, pv)); }
-      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', maxCapColor(), T_MC[1], mcData), mcTip), stack: 'th_mc', segment: brk });
+      datasets.push({ ...attachTip(thresholdLineDataset('Max Cap', 'mc', maxCapColor(), maxCapDash(), mcData), mcTip), stack: 'th_mc', segment: brk });
     }
 
     state.chart = new Chart($('resultChart'), {
@@ -4412,7 +4436,7 @@ function renderChartCompare() {
       if (!th.show) continue;
       datasets.push({ type: 'line', label: th.label, data: months.map(m => thPieces(th.valueFor(m), procHrsPerPieceStable(refDataL, process, m, months))), borderColor: th.color, borderWidth: 2, borderDash: th.dash, pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => stepTipLines(th.idx, refResult.settings, m, thPieces(th.valueFor(m), procHrsPerPieceStable(refDataL, process, m, months)))) });
     }
-    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months))), borderColor: maxCapColor(), borderWidth: 2, borderDash: T_MC[1], pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(refResult.settings, m, thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months)))) });
+    if (opts.showMaxCap) datasets.push({ type: 'line', label: 'Max Cap', data: months.map(m => thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months))), borderColor: maxCapColor(), borderWidth: 2, borderDash: maxCapDash(), pointRadius: 0, fill: false, order: 0, _isTh: true, _tip: months.map(m => mcTipLines(refResult.settings, m, thPieces(calculateMaxCap(refResult.settings, m), procHrsPerPieceStable(refDataL, process, m, months)))) });
 
     state.chart = new Chart($('resultChart'), {
       data: { labels, datasets },
@@ -5691,6 +5715,7 @@ function loadSavedDatasets() {
     if (d.tooltipFields && typeof d.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, d.tooltipFields);
     if (d.partColorOverrides && typeof d.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, d.partColorOverrides);
     if (d.threshColors && typeof d.threshColors === 'object') state.threshColors = Object.assign({}, d.threshColors);
+    if (d.threshDash && typeof d.threshDash === 'object') state.threshDash = Object.assign({}, d.threshDash);
     if (d.patternStyles && typeof d.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, d.patternStyles);
     if (d.currentTab && PROCESSES.includes(d.currentTab)) state.currentTab = d.currentTab;
     if (d.granularity === 'week' || d.granularity === 'day' || d.granularity === 'month') state.granularity = d.granularity;
@@ -5762,6 +5787,7 @@ function buildSnapshotPayload(authorName) {
     tooltipFields: state.tooltipFields,
     partColorOverrides: state.partColorOverrides,
     threshColors: state.threshColors,
+    threshDash: state.threshDash,
     patternStyles: state.patternStyles,
     granularity: state.granularity,
     weekNumbering: state.weekNumbering,
@@ -5924,6 +5950,7 @@ function loadSnapshotIfPresent() {
     if (data.tooltipFields && typeof data.tooltipFields === 'object') state.tooltipFields = Object.assign({}, state.tooltipFields, data.tooltipFields);
     if (data.partColorOverrides && typeof data.partColorOverrides === 'object') state.partColorOverrides = Object.assign({}, data.partColorOverrides);
     if (data.threshColors && typeof data.threshColors === 'object') state.threshColors = Object.assign({}, data.threshColors);
+    if (data.threshDash && typeof data.threshDash === 'object') state.threshDash = Object.assign({}, data.threshDash);
     if (data.patternStyles && typeof data.patternStyles === 'object') state.patternStyles = Object.assign({}, state.patternStyles, data.patternStyles);
     if (data.granularity === 'week' || data.granularity === 'day' || data.granularity === 'month') state.granularity = data.granularity;
     if (data.weekNumbering === 'month' || data.weekNumbering === 'iso') state.weekNumbering = data.weekNumbering;
