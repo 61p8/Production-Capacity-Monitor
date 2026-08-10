@@ -652,6 +652,9 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
           <option value="hours" data-i18n="y_unit_hours">Hours</option>
           <option value="pcs" data-i18n="y_unit_pcs">Pieces/month</option>
         </select>
+        <span class="tb-lbl" data-i18n="y_scale">Y min/max:</span>
+        <input id="yAxisMin" type="number" step="any" placeholder="auto" title="" style="width:60px;border:1px solid #B4B2A9;border-radius:4px;padding:4px 6px;font-size:12px;font-family:inherit;">
+        <input id="yAxisMax" type="number" step="any" placeholder="auto" title="" style="width:60px;border:1px solid #B4B2A9;border-radius:4px;padding:4px 6px;font-size:12px;font-family:inherit;">
       </span>
       <span style="flex:1"></span>
       <details class="tooltip-fields" id="tooltipFieldsMenu">
@@ -955,7 +958,7 @@ const I18N = {
     first_column:'First column =', graph_show:'Show on chart', range_start:'Start', range_end:'End',
     month_labels_help:'Set the chart window with Start and End (month + year). Data columns are labelled sequentially from the Start month.',
     line_col:'Line', total_col:'Total', hours_axis:'Hours', month_axis:'Month', week_axis:'Week', day_axis:'Day',
-    y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces', pcs_axis:'Pieces / month', pcs_axis_week:'Pieces / week', pcs_axis_day:'Pieces / day', pcs_unit:'pcs',
+    y_unit:'Y-axis:', y_unit_hours:'Hours', y_unit_pcs:'Pieces', y_scale:'Y min/max:', pcs_axis:'Pieces / month', pcs_axis_week:'Pieces / week', pcs_axis_day:'Pieces / day', pcs_unit:'pcs',
     over_pct:'Over %:', thresh_colors_head:'Threshold line colours',
     granularity:'Period:', gran_month:'Month', gran_week:'Week', gran_day:'Day', gran_need_dates:'Upload a Raw_Data sheet with real dates to enable Week/Day',
     week_numbering:'Week #:', week_num_iso:'ISO (W31)', week_num_month:'Per month (W1)',
@@ -1065,7 +1068,7 @@ const I18N = {
     first_column:'คอลัมน์แรก =', graph_show:'แสดงบนกราฟ', range_start:'เริ่ม', range_end:'ถึง',
     month_labels_help:'กำหนดช่วงกราฟด้วย Start และ End (เดือน + ปี) • คอลัมน์จะถูกตั้งชื่อเรียงต่อกันจากเดือน Start',
     line_col:'ไลน์', total_col:'รวม', hours_axis:'ชั่วโมง', month_axis:'เดือน', week_axis:'สัปดาห์', day_axis:'วัน',
-    y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว', pcs_axis:'จำนวนตัว / เดือน', pcs_axis_week:'จำนวนตัว / สัปดาห์', pcs_axis_day:'จำนวนตัว / วัน', pcs_unit:'ตัว',
+    y_unit:'แกน Y:', y_unit_hours:'ชั่วโมง', y_unit_pcs:'จำนวนตัว', y_scale:'Y ต่ำ/สูง:', pcs_axis:'จำนวนตัว / เดือน', pcs_axis_week:'จำนวนตัว / สัปดาห์', pcs_axis_day:'จำนวนตัว / วัน', pcs_unit:'ตัว',
     over_pct:'เกินเส้น %:', thresh_colors_head:'สีเส้น Threshold',
     granularity:'ช่วงเวลา:', gran_month:'รายเดือน', gran_week:'รายสัปดาห์', gran_day:'รายวัน', gran_need_dates:'อัปโหลดชีต Raw_Data ที่มีวันที่จริง เพื่อเปิดใช้รายสัปดาห์/รายวัน',
     week_numbering:'เลขสัปดาห์:', week_num_iso:'ISO (W31)', week_num_month:'ตามเดือน (W1)',
@@ -1175,7 +1178,7 @@ const I18N = {
     first_column:'最初の列 =', graph_show:'グラフ表示', range_start:'開始', range_end:'終了',
     month_labels_help:'StartとEnd（月＋年）でグラフ範囲を設定。データ列はStart月から連番で命名。',
     line_col:'ライン', total_col:'合計', hours_axis:'時間', month_axis:'月', week_axis:'週', day_axis:'日',
-    y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数', pcs_axis:'個数 / 月', pcs_axis_week:'個数 / 週', pcs_axis_day:'個数 / 日', pcs_unit:'個',
+    y_unit:'Y軸:', y_unit_hours:'時間', y_unit_pcs:'個数', y_scale:'Y 最小/最大:', pcs_axis:'個数 / 月', pcs_axis_week:'個数 / 週', pcs_axis_day:'個数 / 日', pcs_unit:'個',
     over_pct:'超過 %:', thresh_colors_head:'しきい値線の色',
     granularity:'期間:', gran_month:'月', gran_week:'週', gran_day:'日', gran_need_dates:'週/日を有効にするには実日付付きの Raw_Data シートをアップロード',
     week_numbering:'週番号:', week_num_iso:'ISO (W31)', week_num_month:'月ごと (W1)',
@@ -1211,7 +1214,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.4.3';
+const APP_VERSION = '4.5.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -1318,6 +1321,8 @@ const state = {
   weekNumbering: 'iso',  // 'iso' (W31 = ISO week) | 'month' (W1..W5 within the week's end month) — week-view label style only
   threshConnect: false,  // byPart chart: join threshold lines across line groups (default off = a separate segment per line)
   threshLabels: false,   // byPart chart: draw each threshold line's name at its right end
+  yAxisMin: null,        // manual Y-axis min (null/'' = auto). Persisted.
+  yAxisMax: null,        // manual Y-axis max (null/'' = auto). Persisted.
   // Which fields the bar tooltip shows (Results chart, Stacked-by-Part). Configurable in the
   // "Tooltip fields" menu on the chart toolbar. Persisted (localStorage + snapshot).
   tooltipFields: { title:true, dataset:true, part:true, model:true, value:true, ct:true, balanced:true, buffer:true },
@@ -3656,6 +3661,13 @@ function yAxisTitle() {
   const g = getGranularity();
   return g === 'week' ? t('pcs_axis_week') : g === 'day' ? t('pcs_axis_day') : t('pcs_axis');
 }
+// Apply the user's manual Y-axis bounds (if set) onto a Chart.js y-scale config. Empty/null = auto.
+function applyYBounds(y) {
+  const mn = state.yAxisMin, mx = state.yAxisMax;
+  if (mn != null && mn !== '' && isFinite(+mn)) { y.min = +mn; y.beginAtZero = false; }
+  if (mx != null && mx !== '' && isFinite(+mx)) y.max = +mx;
+  return y;
+}
 // x-axis title in By-Line mode, period-aware (Month / Week / Day).
 function periodAxisTitle() {
   const g = getGranularity();
@@ -4279,7 +4291,7 @@ function renderChartSingle() {
         interaction: { mode: 'nearest', intersect: true },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
-          y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
+          y: applyYBounds({ stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } })
         },
         plugins: {
           overPct: overCfg,
@@ -4310,7 +4322,7 @@ function renderChartSingle() {
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: periodAxisTitle() } } },
+        scales: { y: applyYBounds({ beginAtZero: true, title: { display: true, text: yAxisTitle() } }), x: { title: { display: true, text: periodAxisTitle() } } },
         plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
@@ -4427,7 +4439,7 @@ function renderChartCompare() {
         interaction: { mode: 'nearest', intersect: true },
         scales: {
           x: { stacked: true, title: { display: false }, ticks: { font: { size: 10 }, autoSkip: false, maxRotation: 0, minRotation: 0 } },
-          y: { stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } }
+          y: applyYBounds({ stacked: true, beginAtZero: true, title: { display: true, text: yAxisTitle() } })
         },
         plugins: {
           threshExtras: { nMonths: months.length, join: state.threshConnect, showLabels: state.threshLabels },
@@ -4476,7 +4488,7 @@ function renderChartCompare() {
       options: {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        scales: { y: { beginAtZero: true, title: { display: true, text: yAxisTitle() } }, x: { title: { display: true, text: periodAxisTitle() } } },
+        scales: { y: applyYBounds({ beginAtZero: true, title: { display: true, text: yAxisTitle() } }), x: { title: { display: true, text: periodAxisTitle() } } },
         plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, tooltip: { callbacks: { label: c => c.dataset._tip ? c.dataset._tip[c.dataIndex] : `${c.dataset.label}: ${fmtY(c.parsed.y)}` } } }
       }
     });
@@ -4512,7 +4524,7 @@ function renderChartDiff() {
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
-      scales: { y: { stacked: true, beginAtZero: false, title: { display: true, text: `Δ ${t('hours_axis')} (${dsB.name} − ${dsA.name})` } }, x: { stacked: true, title: { display: true, text: t('month_axis') } } },
+      scales: { y: applyYBounds({ stacked: true, beginAtZero: false, title: { display: true, text: `Δ ${t('hours_axis')} (${dsB.name} − ${dsA.name})` } }), x: { stacked: true, title: { display: true, text: t('month_axis') } } },
       plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${formatDelta(c.parsed.y)}` } } }
     }
   });
@@ -5755,6 +5767,8 @@ function loadSavedDatasets() {
     if (d.weekNumbering === 'month' || d.weekNumbering === 'iso') state.weekNumbering = d.weekNumbering;
     if (typeof d.threshConnect === 'boolean') state.threshConnect = d.threshConnect;
     if (typeof d.threshLabels === 'boolean') state.threshLabels = d.threshLabels;
+    if (d.yAxisMin === null || isFinite(+d.yAxisMin)) state.yAxisMin = (d.yAxisMin === null || d.yAxisMin === '') ? null : +d.yAxisMin;
+    if (d.yAxisMax === null || isFinite(+d.yAxisMax)) state.yAxisMax = (d.yAxisMax === null || d.yAxisMax === '') ? null : +d.yAxisMax;
     if (typeof d.dsIdCounter === 'number') state.dsIdCounter = d.dsIdCounter;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     renderDatasetList();
@@ -5826,6 +5840,8 @@ function buildSnapshotPayload(authorName) {
     weekNumbering: state.weekNumbering,
     threshConnect: state.threshConnect,
     threshLabels: state.threshLabels,
+    yAxisMin: state.yAxisMin,
+    yAxisMax: state.yAxisMax,
     range: { from: ($('rangeFrom') || {}).value || '', to: ($('rangeTo') || {}).value || '' },
     settings: readSettings(),
     monthOverrides: state.monthOverrides,
@@ -5989,6 +6005,8 @@ function loadSnapshotIfPresent() {
     if (data.weekNumbering === 'month' || data.weekNumbering === 'iso') state.weekNumbering = data.weekNumbering;
     if (typeof data.threshConnect === 'boolean') state.threshConnect = data.threshConnect;
     if (typeof data.threshLabels === 'boolean') state.threshLabels = data.threshLabels;
+    if (data.yAxisMin === null || isFinite(+data.yAxisMin)) state.yAxisMin = (data.yAxisMin === null || data.yAxisMin === '') ? null : +data.yAxisMin;
+    if (data.yAxisMax === null || isFinite(+data.yAxisMax)) state.yAxisMax = (data.yAxisMax === null || data.yAxisMax === '') ? null : +data.yAxisMax;
     for (const ds of state.datasets) rebucketDataset(ds, getGranularity());
     if (data.range && data.range.from) state.pendingRange = { from: data.range.from, to: data.range.to };  // reproduce the exact visible window
     state.monthOverrides = data.monthOverrides || {};
@@ -6390,6 +6408,17 @@ function setupEvents() {
     saveStorage({ yUnit: state.yUnit });
     if (state.datasets.some(d => d.resultsHistory.length > 0)) { renderTableArea(); renderChart(); renderChartLegendMini(); }
   };
+  // Manual Y-axis bounds (empty = auto).
+  ['yAxisMin', 'yAxisMax'].forEach(id => {
+    const el = $(id); if (!el) return;
+    el.value = (state[id] == null ? '' : state[id]);
+    el.onchange = () => {
+      const v = el.value.trim();
+      state[id] = (v === '' || !isFinite(+v)) ? null : +v;
+      if (!state.isSnapshot) saveStorage({ yAxisMin: state.yAxisMin, yAxisMax: state.yAxisMax });
+      if (state.datasets.some(d => d.resultsHistory.length > 0)) renderChart();
+    };
+  });
 
   if ($('granularity')) $('granularity').onchange = () => setGranularity($('granularity').value);
   if ($('weekNumbering')) $('weekNumbering').onchange = () => {
@@ -7536,6 +7565,8 @@ function init() {
     b.classList.toggle('active', b.dataset.view === state.viewMode);
   });
   if ($('yUnit')) $('yUnit').value = state.yUnit;
+  if ($('yAxisMin')) $('yAxisMin').value = (state.yAxisMin == null ? '' : state.yAxisMin);
+  if ($('yAxisMax')) $('yAxisMax').value = (state.yAxisMax == null ? '' : state.yAxisMax);
   setupTooltipFields();  // common to both branches (snapshots get a configurable tooltip too)
   setupPartColorMenu();
   setupReverseCT();

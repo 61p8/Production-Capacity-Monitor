@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.5.0] — 2026-08-10
+
+### Added
+- **Manual Y-axis scale.** Two **Y min / Y max** inputs in the chart toolbar let you pin the Results
+  chart's vertical scale instead of auto-scaling (leave either blank for auto). Setting a min turns off
+  begin-at-zero. Applies to Single / Compare / Diff and both chart types; remembered (localStorage +
+  snapshot).
+
 ## [4.4.3] — 2026-08-10
 
 ### Fixed
