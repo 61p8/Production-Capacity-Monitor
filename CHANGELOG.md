@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.3] — 2026-08-10
+
+### Fixed
+- **Line names no longer drop a leading "Shaft ".** The chart's line-group labels (and the tooltip's
+  "balanced from" / the CT-override list) stripped a `Shaft ` prefix, so `Shaft Armature Line 1 Robot`
+  showed as `Armature Line 1 Robot`. The full line name from the Master file is now shown as-is.
+
 ## [4.4.2] — 2026-08-10
 
 ### Fixed

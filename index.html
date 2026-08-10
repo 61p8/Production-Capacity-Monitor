@@ -1211,7 +1211,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.4.2';
+const APP_VERSION = '4.4.3';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2363,7 +2363,7 @@ function computeXHierarchy(visibleLines, months) {
     const fromIdx = li * months.length;
     const toIdx = fromIdx + months.length - 1;
     lineGroups.push({
-      label: visibleLines[li].replace(/^Shaft /, ''),
+      label: visibleLines[li],
       fromIdx, toIdx,
       bg: '#FAFAF7', color: lineColor
     });
@@ -3418,7 +3418,7 @@ function barTooltipLines(c, data, process, visibleLines, months, datasetName) {
   const ct = effectiveCtForTooltip(pn, process, line, month);
   if (ct != null && tipOn('ct')) lines.push(`C/T: ${Number(ct).toLocaleString(undefined, {maximumFractionDigits:3})} sec/pc`);
   const origin = data.partOrigin && data.partOrigin[pn];
-  if (!c.dataset._isBuffer && origin && origin !== line && tipOn('balanced')) lines.push(`${t('tip_balanced_from')} ${origin.replace(/^Shaft /, '')}`);
+  if (!c.dataset._isBuffer && origin && origin !== line && tipOn('balanced')) lines.push(`${t('tip_balanced_from')} ${origin}`);
   return lines.length ? lines : null;
 }
 // Keep a toolbar dropdown panel inside the viewport: default right-aligned, flip to left-aligned if
@@ -4909,7 +4909,7 @@ function renderCtOverrides() {
 
   // Refresh list of existing overrides
   list.innerHTML = (state.ctOverrides || []).map((o, i) => {
-    const lineShort = o.line.replace(/^Shaft /, '');
+    const lineShort = o.line;
     return `<div style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:#FAFAF7; border:1px solid #E5E3DB; border-radius:6px; font-size:12px;">
       <span style="background:#1D9E75; color:#fff; font-size:10px; padding:2px 6px; border-radius:3px;">App</span>
       <span style="font-family:monospace;">${o.partNo}</span>
