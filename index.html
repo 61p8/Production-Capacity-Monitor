@@ -1211,7 +1211,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.4.1';
+const APP_VERSION = '4.4.2';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -2929,6 +2929,26 @@ function findCurrentMonthKey(months) {
   return null;
 }
 
+// The calendar-month ordinal a period belongs to, using the SAME anchor the chart groups it under
+// (weekAnchorDate: Monday for ISO week numbers, end-Sunday for per-month numbering; the day/month for
+// day/month keys). Used to build the default week/day window.
+function periodMonthOrd(m) {
+  const t = periodType(m);
+  let d = null;
+  if (t === 'day') d = dateFromIso(m);
+  else if (t === 'week') d = weekAnchorDate(m) || isoWeekStart(m);
+  else { const p = parseMonthYearFromLabel(getDisplayLabel(m)) || parseMonthYearFromLabel(m); return p ? p.year * 12 + p.monthIdx : null; }
+  return d ? d.getFullYear() * 12 + d.getMonth() : null;
+}
+// Default week/day window = the whole CURRENT calendar month's periods (so earlier weeks of this month
+// stay visible instead of clipping to "current week onward", which hid e.g. W32 when today is W33).
+function currentMonthWindow(months) {
+  const now = new Date();
+  const curOrd = now.getFullYear() * 12 + now.getMonth();
+  const inMonth = months.filter(m => periodMonthOrd(m) === curOrd);
+  return inMonth.length ? { from: inMonth[0], to: inMonth[inMonth.length - 1] } : null;
+}
+
 function populateRangeSelectors() {
   const ds = getActiveDataset();
   const result = getCurrentResult();
@@ -2953,10 +2973,12 @@ function populateRangeSelectors() {
       toS.value = months.includes(pr.to) ? pr.to : months[months.length - 1];
       state.pendingRange = null;
     } else {
-      // Default the start to the current month when present, so the chart isn't dragged
-      // back across many past months; keep the user's prior pick if still valid.
-      fromS.value = months.includes(prevFrom) ? prevFrom : (findCurrentMonthKey(months) || months[0]);
-      toS.value = months.includes(prevTo) ? prevTo : months[months.length - 1];
+      // Default to the current month; keep the user's prior pick if still valid. In week/day view the
+      // window spans the whole current month (all its weeks/days) so an earlier week of the same month
+      // isn't clipped off the axis (e.g. W32 vanishing when "today" falls in W33).
+      const win = getGranularity() !== 'month' ? currentMonthWindow(months) : null;
+      fromS.value = months.includes(prevFrom) ? prevFrom : (win ? win.from : (findCurrentMonthKey(months) || months[0]));
+      toS.value = months.includes(prevTo) ? prevTo : (win ? win.to : months[months.length - 1]);
     }
     fromS.dataset.sig = sig;
     toS.dataset.sig = sig;

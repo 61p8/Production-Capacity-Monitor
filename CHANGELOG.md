@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.2] — 2026-08-10
+
+### Fixed
+- **Week/Day view no longer hides earlier weeks of the current month** (e.g. `W32` vanishing from the
+  axis when "today" is `W33`). The default chart window started at the *current week/day* and re-applied
+  on every render (Calculate, Time-Level, …), clipping same-month periods before today. The default now
+  spans the **whole current calendar month's** periods (`currentMonthWindow()`, anchored the same way
+  the chart groups weeks into months), so all of the month's weeks/days stay visible. A window the user
+  has set is still respected.
+
 ## [4.4.1] — 2026-08-08
 
 ### Fixed
