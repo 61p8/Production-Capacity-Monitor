@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.6.0] — 2026-08-10
+
+### Added
+- **Layout: import SVG (kept as vector).** The 🖼 button (now "Image/SVG") accepts `.svg` and places it
+  as a crisp **vector** picture object — no rasterizing to PNG — with the correct aspect read from the
+  SVG's `width`/`height` or `viewBox`. It persists in the saved layout JSON and comes back out through
+  the SVG export. (Raster PNG/JPG import is unchanged.) The SVG is drawn via `<image href>`, so any
+  embedded script in the file is inert. Note: it imports as a single picture, not editable shapes; the
+  📂 Load button still reads only the app's own layout JSON.
+
 ## [4.5.0] — 2026-08-10
 
 ### Added

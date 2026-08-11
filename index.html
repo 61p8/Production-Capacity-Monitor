@@ -801,7 +801,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <button class="lay-tool" data-laytool="rect" type="button" title="Draw rectangle"><span data-i18n="lay_rect">▭ Rectangle</span></button>
       </div>
       <button class="btn-small" id="layImageBtn" type="button" data-i18n="lay_image">🖼 Image</button>
-      <input type="file" id="layImageInput" accept="image/*" style="display:none">
+      <input type="file" id="layImageInput" accept="image/*,.svg,image/svg+xml" style="display:none">
       <span class="lay-sep"></span>
       <button class="btn-small" id="layUndoBtn" type="button" title="Undo (Ctrl+Z)">↶</button>
       <button class="btn-small" id="layRedoBtn" type="button" title="Redo (Ctrl+Y)">↷</button>
@@ -879,7 +879,7 @@ const I18N = {
     lay_need2:'Select at least 2 objects', lay_no_overlap:'Objects do not overlap', lay_clear_confirm:'Clear the whole layout?',
     lay_fit:'Fit', lay_snap_on:'Snap: On', lay_snap_off:'Snap: Off',
     lay_save:'💾 Save', lay_load:'📂 Load', lay_export_svg:'SVG', lay_loaded:'Layout loaded', lay_load_err:'Could not read the file', lay_empty_export:'Nothing to export',
-    lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours', lay_image:'🖼 Image',
+    lay_group:'Group', lay_ungroup:'Ungroup', lay_lock_btn:'Lock', lay_lock:'Locked', lay_fill:'Fill', lay_stroke:'Border', lay_opacity:'Opacity', lay_reset_style:'Reset colours', lay_image:'🖼 Image/SVG',
     tab_manual:'Manual', sec_manual:'Manual Balance', man_load:'↻ Load initial (unbalanced)', man_process:'Process', man_floor:'Reduce line to', man_reset:'Reset', man_cancel:'Cancel', man_moves:'{q} pcs', man_nothing:'Nothing to move at this level',
     man_no_data:'Calculate Step 0 first, then click "Load initial (unbalanced)".', man_hint_move:'Balance {p} from {l} — click to choose a target line', man_move_from:'Move {p} off {l} ({h}h)',
     man_help:'Hover a bar segment above the lowest line — the lines it can move to blink and a ghost bar shows the new height. Click to pick a target line; the source line is reduced to the "Reduce line to" value. Targets may overflow — balance them next.',
@@ -989,7 +989,7 @@ const I18N = {
     lay_need2:'เลือกอย่างน้อย 2 ชิ้น', lay_no_overlap:'วัตถุไม่ได้ซ้อนทับกัน', lay_clear_confirm:'ล้างผังทั้งหมด?',
     lay_fit:'พอดีจอ', lay_snap_on:'Snap: เปิด', lay_snap_off:'Snap: ปิด',
     lay_save:'💾 เซฟไฟล์', lay_load:'📂 โหลด', lay_export_svg:'SVG', lay_loaded:'โหลดผังแล้ว', lay_load_err:'อ่านไฟล์ไม่ได้', lay_empty_export:'ไม่มีอะไรให้ส่งออก',
-    lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี', lay_image:'🖼 รูปภาพ',
+    lay_group:'จัดกลุ่ม', lay_ungroup:'แยกกลุ่ม', lay_lock_btn:'ล็อก', lay_lock:'ล็อก (ห้ามขยับ)', lay_fill:'สีพื้น', lay_stroke:'สีขอบ', lay_opacity:'ความโปร่งใส', lay_reset_style:'รีเซ็ตสี', lay_image:'🖼 รูป/SVG',
     tab_manual:'Manual', sec_manual:'บาลานซ์เอง (Manual)', man_load:'↻ โหลดค่าเริ่มต้น (ยังไม่บาลานซ์)', man_process:'Process', man_floor:'ลดไลน์เหลือ', man_reset:'รีเซ็ต', man_cancel:'ยกเลิก', man_moves:'{q} ชิ้น', man_nothing:'ไม่มีอะไรให้ย้ายที่ระดับนี้',
     man_no_data:'คำนวณ Step 0 ก่อน แล้วกด "โหลดค่าเริ่มต้น (ยังไม่บาลานซ์)"', man_hint_move:'บาลานซ์ {p} จาก {l} — คลิกเพื่อเลือกไลน์ปลายทาง', man_move_from:'ย้าย {p} ออกจาก {l} ({h}h)',
     man_help:'ชี้แท่ง part ที่อยู่เหนือเส้นล่างสุด — ไลน์ที่ย้ายไปได้จะกระพริบ และมี ghost bar โชว์ความสูงใหม่ • คลิกเพื่อเลือกไลน์ปลายทาง ไลน์เดิมจะถูกลดลงเหลือค่า "ลดไลน์เหลือ" • ปลายทางล้นได้ ค่อยไปบาลานซ์ต่อ',
@@ -1099,7 +1099,7 @@ const I18N = {
     lay_need2:'2個以上選択してください', lay_no_overlap:'重なっていません', lay_clear_confirm:'レイアウトを全消去しますか？',
     lay_fit:'全体表示', lay_snap_on:'Snap: オン', lay_snap_off:'Snap: オフ',
     lay_save:'💾 保存', lay_load:'📂 読込', lay_export_svg:'SVG', lay_loaded:'レイアウトを読込みました', lay_load_err:'ファイルを読めません', lay_empty_export:'エクスポート対象なし',
-    lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット', lay_image:'🖼 画像',
+    lay_group:'グループ化', lay_ungroup:'解除', lay_lock_btn:'ロック', lay_lock:'ロック', lay_fill:'塗り', lay_stroke:'枠線', lay_opacity:'不透明度', lay_reset_style:'色をリセット', lay_image:'🖼 画像/SVG',
     tab_manual:'Manual', sec_manual:'手動バランス', man_load:'↻ 初期状態を読込 (未バランス)', man_process:'工程', man_floor:'ラインを減らす基準', man_reset:'リセット', man_cancel:'キャンセル', man_moves:'{q} 個', man_nothing:'このレベルで移動対象なし',
     man_no_data:'先に Step 0 を計算し「初期状態を読込 (未バランス)」を押してください', man_hint_move:'{p} を {l} からバランス — クリックで移動先を選択', man_move_from:'{p} を {l} から移動 ({h}h)',
     man_help:'最下線より上のバー部分にホバー — 移動可能なラインが点滅しゴーストバーで新しい高さを表示。クリックで移動先を選択、元ラインは「ラインを減らす基準」まで減少。移動先はオーバー可、次でバランス。',
@@ -1214,7 +1214,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.5.0';
+const APP_VERSION = '4.6.0';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -7082,9 +7082,41 @@ function layBackward() {
 }
 
 // ----- image reference objects -----
+// Place an image object (raster PNG/JPG or a vector SVG) centred on the canvas. aspect = height/width.
+function layPlaceImage(href, aspect) {
+  const L = layCur(), wrap = $('layCanvasWrap');
+  const W = wrap.clientWidth || 900, H = wrap.clientHeight || 560;
+  const cxmm = (W / 2 - L.panX) / L.pxPerMm, cymm = (H / 2 - L.panY) / L.pxPerMm;
+  const wmm = 10000, hmm = wmm * (aspect > 0 ? aspect : 1);
+  const o = { id: L.nextId++, kind: 'image', type: 'area', label: '', href, opacity: 0.85, rects: [{ x: cxmm - wmm / 2, y: cymm - hmm / 2, w: wmm, h: hmm }] };
+  L.objects.unshift(o); L.selected = [o.id];
+  laySave(); layRecord(); layRender();
+}
 function layAddImage(file) {
   if (!file) return;
+  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '');
   const rd = new FileReader();
+  if (isSvg) {
+    // Keep SVG as vector (no rasterizing): embed the markup as a data URL and read the intrinsic
+    // aspect from width/height or the viewBox. Rendered via <image href>, so any embedded script is
+    // inert (not executed). Falls back to the raster path if the SVG can't be parsed.
+    rd.onload = () => {
+      const svgText = String(rd.result || '');
+      let ar = 0;
+      try {
+        const el = new DOMParser().parseFromString(svgText, 'image/svg+xml').documentElement;
+        let w = parseFloat(el.getAttribute('width')), h = parseFloat(el.getAttribute('height'));
+        if (!(w > 0 && h > 0)) {
+          const vb = (el.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+          if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) { w = vb[2]; h = vb[3]; }
+        }
+        if (w > 0 && h > 0) ar = h / w;
+      } catch (e) { /* ignore → default aspect */ }
+      layPlaceImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText), ar || 1);
+    };
+    rd.readAsText(file);
+    return;
+  }
   rd.onload = () => {
     const img = new Image();
     img.onload = () => {
@@ -7093,13 +7125,7 @@ function layAddImage(file) {
       const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
       cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
       let href; try { href = cv.toDataURL('image/png'); } catch (e) { href = rd.result; }
-      const L = layCur(), wrap = $('layCanvasWrap');
-      const W = wrap.clientWidth || 900, H = wrap.clientHeight || 560;
-      const cxmm = (W / 2 - L.panX) / L.pxPerMm, cymm = (H / 2 - L.panY) / L.pxPerMm;
-      const wmm = 10000, hmm = wmm * (ch / cw);
-      const o = { id: L.nextId++, kind: 'image', type: 'area', label: '', href, opacity: 0.85, rects: [{ x: cxmm - wmm / 2, y: cymm - hmm / 2, w: wmm, h: hmm }] };
-      L.objects.unshift(o); L.selected = [o.id];
-      laySave(); layRecord(); layRender();
+      layPlaceImage(href, ch / cw);
     };
     img.src = rd.result;
   };
