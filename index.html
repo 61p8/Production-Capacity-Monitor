@@ -801,7 +801,7 @@ td.month-total { font-weight: 500; background: #F5F4F0; }
         <button class="lay-tool" data-laytool="rect" type="button" title="Draw rectangle"><span data-i18n="lay_rect">▭ Rectangle</span></button>
       </div>
       <button class="btn-small" id="layImageBtn" type="button" data-i18n="lay_image">🖼 Image</button>
-      <input type="file" id="layImageInput" accept="image/*,.svg,image/svg+xml" style="display:none">
+      <input type="file" id="layImageInput" accept="image/*,.svg,.svgz,image/svg+xml" style="display:none">
       <span class="lay-sep"></span>
       <button class="btn-small" id="layUndoBtn" type="button" title="Undo (Ctrl+Z)">↶</button>
       <button class="btn-small" id="layRedoBtn" type="button" title="Redo (Ctrl+Y)">↷</button>
@@ -1214,7 +1214,7 @@ function getProcesses() {
 // App version — single source of truth. Bump on every change (see CLAUDE.md "Versioning").
 // This is separate from the data-format versions (snapshot / layout file / Excel templates),
 // which change only when their format changes.
-const APP_VERSION = '4.6.0';
+const APP_VERSION = '4.6.1';
 const STORAGE_KEY = 'capPlanV2';
 const LINE_COLORS = ['#185FA5','#1D9E75','#BA7517','#993C1D','#534AB7','#993556','#5F5E5A','#0F6E56'];
 const DATASET_COLORS = ['#1D9E75','#185FA5','#BA7517','#993556','#534AB7'];
@@ -7092,28 +7092,42 @@ function layPlaceImage(href, aspect) {
   L.objects.unshift(o); L.selected = [o.id];
   laySave(); layRecord(); layRender();
 }
+// Place SVG markup as a vector image object: read the intrinsic aspect from width/height or viewBox,
+// embed via <image href> (so any embedded script stays inert), no rasterizing.
+function layPlaceSvgText(svgText) {
+  let ar = 0;
+  try {
+    const el = new DOMParser().parseFromString(String(svgText || ''), 'image/svg+xml').documentElement;
+    let w = parseFloat(el.getAttribute('width')), h = parseFloat(el.getAttribute('height'));
+    if (!(w > 0 && h > 0)) {
+      const vb = (el.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+      if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) { w = vb[2]; h = vb[3]; }
+    }
+    if (w > 0 && h > 0) ar = h / w;
+  } catch (e) { /* ignore → default aspect */ }
+  layPlaceImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(String(svgText || '')), ar || 1);
+}
 function layAddImage(file) {
   if (!file) return;
-  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '');
+  const name = file.name || '';
+  const isSvgz = /\.svgz$/i.test(name);
+  const isSvg = !isSvgz && (file.type === 'image/svg+xml' || /\.svg$/i.test(name));
   const rd = new FileReader();
-  if (isSvg) {
-    // Keep SVG as vector (no rasterizing): embed the markup as a data URL and read the intrinsic
-    // aspect from width/height or the viewBox. Rendered via <image href>, so any embedded script is
-    // inert (not executed). Falls back to the raster path if the SVG can't be parsed.
-    rd.onload = () => {
-      const svgText = String(rd.result || '');
-      let ar = 0;
+  if (isSvgz) {
+    // SVGZ = gzip-compressed SVG. Decompress in the browser (DecompressionStream), then treat as SVG.
+    rd.onload = async () => {
       try {
-        const el = new DOMParser().parseFromString(svgText, 'image/svg+xml').documentElement;
-        let w = parseFloat(el.getAttribute('width')), h = parseFloat(el.getAttribute('height'));
-        if (!(w > 0 && h > 0)) {
-          const vb = (el.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
-          if (vb.length === 4 && vb[2] > 0 && vb[3] > 0) { w = vb[2]; h = vb[3]; }
-        }
-        if (w > 0 && h > 0) ar = h / w;
-      } catch (e) { /* ignore → default aspect */ }
-      layPlaceImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText), ar || 1);
+        if (typeof DecompressionStream === 'undefined') throw new Error('no DecompressionStream');
+        const stream = new Blob([rd.result]).stream().pipeThrough(new DecompressionStream('gzip'));
+        const buf = await new Response(stream).arrayBuffer();
+        layPlaceSvgText(new TextDecoder('utf-8').decode(buf));
+      } catch (e) { toast(t('lay_load_err'), 'error'); }
     };
+    rd.readAsArrayBuffer(file);
+    return;
+  }
+  if (isSvg) {
+    rd.onload = () => layPlaceSvgText(rd.result);
     rd.readAsText(file);
     return;
   }

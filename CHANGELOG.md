@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.6.1] — 2026-08-10
+
+### Added
+- **Layout: import SVGZ** (gzip-compressed SVG) too. The file is decompressed in the browser
+  (`DecompressionStream('gzip')`) and then imported exactly like an SVG — kept as vector, correct
+  aspect from the viewBox. Falls back with an error toast on browsers without `DecompressionStream`.
+
 ## [4.6.0] — 2026-08-10
 
 ### Added
