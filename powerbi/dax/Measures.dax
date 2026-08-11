@@ -1,0 +1,79 @@
+// ============================================================================
+// Power BI — DimDate table + measures for the capacity monitor (Approach A)
+// Paste the DimDate block as a NEW TABLE; paste each measure as a NEW MEASURE.
+// Requires: Load / Load_Initial (from Load.pq), and helper tables Params & Steps
+// (Enter Data — see powerbi/README.md).
+// ============================================================================
+
+// ---- Date table (New Table). Mark as Date table on [Date]; relate to Load[Date]. ----
+DimDate =
+VAR MinD = MIN ( Load[Date] )
+VAR MaxD = MAX ( Load[Date] )
+RETURN
+ADDCOLUMNS (
+    CALENDAR ( MinD, MaxD ),
+    "Year", YEAR ( [Date] ),
+    "MonthNo", MONTH ( [Date] ),
+    "MonthStart", DATE ( YEAR ( [Date] ), MONTH ( [Date] ), 1 ),
+    "Month", FORMAT ( [Date], "MMM" ) & " '" & FORMAT ( [Date], "YY" ),
+    "DaysInMonth", DAY ( EOMONTH ( [Date], 0 ) ),
+    "ISOWeek", "W" & FORMAT ( WEEKNUM ( [Date], 21 ), "00" ),
+    "ISOWeekYear", YEAR ( [Date] )   // good enough for most fiscal years; refine if week 1/52 edge matters
+)
+
+// ======================= base aggregates (use Load_Initial) =======================
+Load Hours     = SUM ( Load_Initial[Hours] )
+Planned Pieces = SUM ( Load_Initial[PlannedPieces] )
+Base Qty       = SUM ( Load_Initial[Qty] )
+
+// ======================= parameters (single-row Params table) =======================
+Hrs Per Shift = SELECTEDVALUE ( Params[HrsPerShift], 7.44 )
+Shifts        = SELECTEDVALUE ( Params[Shifts], 2 )
+Max Cap OT    = SELECTEDVALUE ( Params[MaxCapOT], 0 )
+
+// ======================= thresholds =======================
+// Step target for the step selected in a single-select Steps[Step] slicer:
+//   (WD*h + OTdays*OTnormal + HD*(h+OTholiday)) * shifts
+Step Target =
+VAR h   = [Hrs Per Shift]
+VAR s   = [Shifts]
+VAR wd  = SELECTEDVALUE ( Steps[WD] )
+VAR otd = SELECTEDVALUE ( Steps[OTdays] )
+VAR otn = SELECTEDVALUE ( Steps[OTnormal] )
+VAR hd  = SELECTEDVALUE ( Steps[HD] )
+VAR oth = SELECTEDVALUE ( Steps[OTholiday] )
+RETURN
+    IF ( NOT ISBLANK ( wd ), ( wd * h + otd * otn + hd * ( h + oth ) ) * s )
+
+// Max Cap = DaysInMonth × (h + MaxCapOT) × shifts, summed over the months in context.
+Max Cap =
+VAR h  = [Hrs Per Shift]
+VAR s  = [Shifts]
+VAR ot = [Max Cap OT]
+RETURN
+    SUMX ( VALUES ( DimDate[MonthStart] ), DAY ( EOMONTH ( DimDate[MonthStart], 0 ) ) * ( h + ot ) * s )
+
+// ======================= over / under =======================
+Over Hours vs Step = [Load Hours] - [Step Target]
+% Over vs Step     = DIVIDE ( [Load Hours], [Step Target] ) - 1
+% Over vs Max Cap  = DIVIDE ( [Load Hours], [Max Cap] ) - 1
+
+// Colour for conditional formatting (matches the app's ok / warn / over bands on the hours ratio).
+Status Colour =
+VAR r = DIVIDE ( [Load Hours], [Step Target] )
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( r ), "#EEEEEE",
+        r <= 0.85, "#1D9E75",   // ok
+        r <= 1.00, "#E1A100",   // warn
+        "#B00020"               // over
+    )
+
+// ======================= pieces mode (optional) =======================
+// Convert the hour thresholds to pieces with the CURRENT actual mix (hours ÷ planned pieces).
+// (The app uses a fixed volume-weighted mix so its threshold line stays straight; this is the
+//  simpler per-context version — good enough for monitoring.)
+Hrs per Piece     = DIVIDE ( [Load Hours], [Planned Pieces] )
+Step Target (pcs) = DIVIDE ( [Step Target], [Hrs per Piece] )
+Max Cap (pcs)     = DIVIDE ( [Max Cap], [Hrs per Piece] )
